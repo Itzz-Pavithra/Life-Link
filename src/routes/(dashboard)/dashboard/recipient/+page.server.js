@@ -1,31 +1,38 @@
+import { readDB } from '$lib/server/db.js';
+import { redirect } from '@sveltejs/kit';
+
 /** @type {import('./$types').PageServerLoad} */
-export async function load({ fetch, locals }) {
-	const donorsRes = await fetch('/api/donors');
-	const donors = await donorsRes.json();
+export async function load({ locals }) {
+	if (!locals.user || locals.user.role !== 'recipient') {
+		throw redirect(303, '/login');
+	}
 
-	const requestsRes = await fetch('/api/requests');
-	const { requests } = await requestsRes.json();
+	const db = readDB();
 
-	const bloodRes = await fetch('/api/blood');
-	const bloodBanks = await bloodRes.json();
+	// Load only the requests submitted by this recipient
+	const userRequests = db.blood_requests.filter(
+		r => r.submittedBy === locals.user.email
+	);
 
-	// Calculate recipient stats
-	const userRequests = requests.filter(r => r.contact === '9876543211' || r.contact === '9876543212' || r.contact === '9999999999');
-	const activeRequestsCount = userRequests.filter(r => r.status !== 'Completed').length;
-	const userBg = locals.user?.bloodGroup || 'A+';
-	const matchingDonorsCount = donors.filter(d => d.available && d.bloodGroup === userBg).length;
+	// Calculate statistics
+	const activeRequestsCount = userRequests.filter(r => r.status !== 'Completed' && r.status !== 'Rejected').length;
+	
+	// Find matching active donors in same region or compatible blood types
+	const userBg = locals.user.bloodGroup || 'O+';
+	const matchingDonors = db.users.filter(
+		u => u.role === 'donor' && u.status === 'active' && u.bloodGroup === userBg
+	);
 
 	const stats = {
 		activeRequests: activeRequestsCount,
-		matchingDonors: matchingDonorsCount
+		matchingDonors: matchingDonors.length
 	};
 
 	return {
 		user: locals.user,
-		donors,
+		donors: db.users.filter(u => u.role === 'donor' && u.status === 'active'),
 		requests: userRequests,
-		bloodBanks,
+		bloodBanks: db.blood_banks,
 		stats
 	};
 }
-

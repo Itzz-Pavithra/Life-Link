@@ -18,19 +18,24 @@
 			{ id: 'profile', label: 'Profile', icon: '👤' }
 		],
 		admin: [
-			{ id: 'dashboard', label: 'Dashboard', icon: '🏠' },
-			{ id: 'users', label: 'Manage Users', icon: '👥' },
+			{ id: 'dashboard', label: 'Overview', icon: '🏠' },
+			{ id: 'users', label: 'All Users', icon: '👥' },
+			{ id: 'donors', label: 'Donors List', icon: '🩸' },
+			{ id: 'receivers', label: 'Receivers List', icon: '📋' },
+			{ id: 'eligibility-requests', label: 'Eligibility Queue', icon: '🛡️' },
 			{ id: 'blood-requests', label: 'Blood Requests', icon: '📋' },
 			{ id: 'blood-banks', label: 'Blood Banks', icon: '🏥' },
-			{ id: 'reports', label: 'Reports', icon: '📈' }
+			{ id: 'donation-history', label: 'Donation History', icon: '🕒' },
+			{ id: 'reports', label: 'System Reports', icon: '📈' },
+			{ id: 'settings', label: 'Settings', icon: '⚙️' }
 		]
 	};
 
 	const activeRoleItems = $derived(data?.user ? menuItems[data.user.role] : []);
 </script>
 
-<aside class="w-68 min-h-screen bg-slate-900 border-r border-slate-800 text-slate-400 p-6 flex flex-col justify-between shrink-0">
-	<div class="space-y-8">
+<aside class="w-68 min-h-screen bg-slate-900 border-r border-slate-800 text-slate-405 text-slate-450 p-6 flex flex-col justify-between shrink-0">
+	<div class="space-y-6">
 		<!-- Branding Header -->
 		<a href="/" class="flex items-center gap-3 group">
 			<img src="/logo.png" alt="LifeLink Logo" class="h-10 w-10 object-contain group-hover:scale-105 transition" />
@@ -41,16 +46,16 @@
 		</a>
 
 		<!-- Navigation Menu -->
-		<nav class="space-y-1">
+		<nav class="space-y-1 overflow-y-auto max-h-[80vh] pr-1">
 			{#each activeRoleItems as item}
 				<button
-					class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 text-left cursor-pointer
+					class="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-xs font-semibold transition-all duration-200 text-left cursor-pointer
 					{db.activeTab === item.id 
 						? 'bg-red-700 text-white shadow-lg shadow-red-700/20 font-bold' 
-						: 'hover:bg-slate-800 hover:text-slate-200'}"
+						: 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}"
 					onclick={() => db.activeTab = item.id}
 				>
-					<span class="text-lg">{item.icon}</span>
+					<span class="text-base">{item.icon}</span>
 					<span>{item.label}</span>
 				</button>
 			{/each}
@@ -58,10 +63,10 @@
 	</div>
 
 	<!-- Logout Footer Button -->
-	<form action="/login?/logout" method="POST" class="w-full">
+	<form action="/login?/logout" method="POST" class="w-full pt-4">
 		<button
 			type="submit"
-			class="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-slate-400 hover:bg-red-950/20 hover:text-red-400 border border-slate-800 hover:border-red-950/40 transition cursor-pointer text-left"
+			class="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-xs font-bold text-slate-400 hover:bg-red-950/20 hover:text-red-400 border border-slate-800 hover:border-red-950/40 transition cursor-pointer text-left"
 		>
 			<span>🚪</span>
 			<span>Logout System</span>

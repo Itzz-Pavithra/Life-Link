@@ -1,99 +1,306 @@
-// Server-side memory database for LifeLink MCA Project
+import fs from 'fs';
+import path from 'path';
+import crypto from 'crypto';
+
+const DB_PATH = path.resolve(process.cwd(), 'database.json');
+
+// Initialize database file if it doesn't exist
+function initDB() {
+	if (!fs.existsSync(DB_PATH)) {
+		const emptyDB = {
+			users: [],
+			eligibility_requests: [],
+			blood_banks: [],
+			blood_requests: [],
+			donations: [],
+			logs: []
+		};
+		fs.writeFileSync(DB_PATH, JSON.stringify(emptyDB, null, 2), 'utf-8');
+	}
+}
+
+// Read database contents
+export function readDB() {
+	initDB();
+	try {
+		const content = fs.readFileSync(DB_PATH, 'utf-8');
+		return JSON.parse(content);
+	} catch (err) {
+		console.error('Failed to read database, returning empty collections:', err);
+		return {
+			users: [],
+			eligibility_requests: [],
+			blood_banks: [],
+			blood_requests: [],
+			donations: [],
+			logs: []
+		};
+	}
+}
+
+// Write database contents
+export function writeDB(data) {
+	try {
+		fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf-8');
+		return true;
+	} catch (err) {
+		console.error('Failed to write database:', err);
+		return false;
+	}
+}
+
+// Password utility
+export function hashPassword(password) {
+	const salt = crypto.randomBytes(16).toString('hex');
+	const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+	return `${salt}:${hash}`;
+}
+
+export function verifyPassword(password, stored) {
+	if (!stored || !stored.includes(':')) return false;
+	const [salt, hash] = stored.split(':');
+	const verifyHash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
+	return hash === verifyHash;
+}
+
+// Database Helpers
 export const database = {
-	requests: [
-		{ id: 'REQ001', patientName: 'Rajesh Kumar', bloodGroup: 'O+', units: 3, hospital: 'GH Salem', city: 'Salem', urgency: 'Critical', status: 'Matching Donor', contact: '9876543210', date: '2026-06-24' },
-		{ id: 'REQ002', patientName: 'Priya Sharma', bloodGroup: 'A-', units: 2, hospital: 'Apollo Hospital', city: 'Chennai', urgency: 'Urgent', status: 'Completed', contact: '9876543211', date: '2026-06-22' },
-		{ id: 'REQ003', patientName: 'Amit Patel', bloodGroup: 'B+', units: 1, hospital: 'Fortis Clinic', city: 'Mumbai', urgency: 'Normal', status: 'Submitted', contact: '9876543212', date: '2026-06-25' },
-		{ id: 'REQ004', patientName: 'Sanjay Dutt', bloodGroup: 'AB+', units: 4, hospital: 'Medanta', city: 'Delhi', urgency: 'Critical', status: 'Verified', contact: '9876543213', date: '2026-06-25' }
-	],
-
-	donors: [
-		{ name: 'Ravi Kumar', bloodGroup: 'O+', distance: '1.4', available: true, lastDonation: '2026-03-10', matchScore: 98, phone: '9876543210', city: 'Salem' },
-		{ name: 'Priya S', bloodGroup: 'O+', distance: '2.8', available: true, lastDonation: '2026-04-15', matchScore: 95, phone: '9876543211', city: 'Salem' },
-		{ name: 'John Doe', bloodGroup: 'O+', distance: '4.2', available: true, lastDonation: '2026-03-10', matchScore: 100, phone: '9876543212', city: 'Salem' },
-		{ name: 'Jane Smith', bloodGroup: 'B-', distance: '5.1', available: true, lastDonation: '2026-02-28', matchScore: 91, phone: '9876543213', city: 'Salem' },
-		{ name: 'Arun Varma', bloodGroup: 'AB+', distance: '3.6', available: true, lastDonation: '2026-01-20', matchScore: 84, phone: '9876543214', city: 'Salem' }
-	],
-
-	bloodBanks: [
-		{ name: 'GH Salem Blood Bank', distance: '2.5', stockStatus: 'Healthy', phone: '0427-241551', address: 'Collectorate Rd, Salem', inventory: { 'A+': 25, 'B+': 18, 'O+': 30, 'AB+': 12, 'A-': 5, 'B-': 3, 'AB-': 2, 'O-': 8 } },
-		{ name: 'Apollo Salem Blood Center', distance: '4.8', stockStatus: 'Low Stock', phone: '0427-234500', address: 'Suramangalam, Salem', inventory: { 'A+': 12, 'B+': 9, 'O+': 15, 'AB+': 6, 'A-': 2, 'B-': 1, 'AB-': 0, 'O-': 3 } },
-		{ name: 'Red Cross Salem', distance: '1.2', stockStatus: 'Critical Stock', phone: '0427-222400', address: 'Hasthampatti, Salem', inventory: { 'A+': 4, 'B+': 3, 'O+': 5, 'AB+': 2, 'A-': 0, 'B-': 0, 'AB-': 0, 'O-': 1 } }
-	],
-
-	systemLogs: [
-		{ id: 'LOG101', user: 'Ravi Kumar', activity: 'Donor Registered', timestamp: '2026-06-25 18:22' },
-		{ id: 'LOG102', user: 'GH Salem', activity: 'Inventory Updated (+10 O+ Units)', timestamp: '2026-06-25 19:45' },
-		{ id: 'LOG103', user: 'Priya Sharma', activity: 'Emergency Blood Request Match Found', timestamp: '2026-06-25 21:10' },
-		{ id: 'LOG104', user: 'System', activity: 'Backup Done', timestamp: '2026-06-25 23:00' }
-	],
-
-	// Static Landing Page Content Data
-	landingData: {
-		stats: [
-			{ value: 500, label: 'Registered Donors', icon: '👤', color: 'text-red-650 border-red-105 bg-red-50/50' },
-			{ value: 120, label: 'Blood Requests Resolved', icon: '📋', color: 'text-blue-650 border-blue-105 bg-blue-50/50' },
-			{ value: 25, label: 'Partner Blood Banks', icon: '🏥', color: 'text-emerald-650 border-emerald-105 bg-emerald-50/50' },
-			{ value: 1000, label: 'Lives Saved', icon: '❤️', color: 'text-rose-650 border-rose-105 bg-rose-50/50' }
-		],
-		steps: [
-			{ step: '01', title: 'Register', desc: 'Create a secure profile as a Donor, Recipient, or Admin.', icon: '👤' },
-			{ step: '02', title: 'Submit Request', desc: 'Recipients or hospitals submit emergency blood requirements.', icon: '📝' },
-			{ step: '03', title: 'Smart Match', desc: 'Our algorithm finds eligible donors within range in real-time.', icon: '🔍' },
-			{ step: '04', title: 'Save Lives', desc: 'Blood is matched, dispatched, and reaches patients safely.', icon: '🩸' }
-		],
-		benefits: [
-			{ title: 'Zero Latency Matching', desc: 'Instantly identifies the nearest compatible donors using live matching metrics.', icon: '⚡' },
-			{ title: 'Hospital Inventory Alerts', desc: 'Smart progress bars tracking available, low, and critical blood stocks.', icon: '📊' },
-			{ title: 'Secure & Anonymous', desc: 'Patient-donor contact details are only shared upon explicit verification.', icon: '🔒' }
-		],
-		faqs: [
-			{ q: 'Who can donate blood on LifeLink?', a: 'Any healthy individual between 18 and 65 years old weighing at least 50 kg can take our Eligibility Checker. If eligible, they can register and receive emergency requests.' },
-			{ q: 'How does emergency matching work?', a: 'When a recipient submits a request, LifeLink computes match scores based on blood group compatibility, city coordinates, and donor availability. Compatible matches are notified immediately.' },
-			{ q: 'Is there any fee or charge to use LifeLink?', a: 'No. LifeLink is a non-profit, student-developed initiative designed to facilitate free, voluntary blood donation and emergency matching.' }
-		],
-		testimonials: [
-			{ quote: "During my father's surgery, we needed O- negative blood urgently. Through LifeLink, we found two matching donors in under 15 minutes. Truly a lifesaver!", author: "Suresh Kumar", role: "Recipient Family" },
-			{ quote: "Registering as a donor was incredibly easy. I get notified when someone nearby needs my blood type. Being able to help save a life is unmatched.", author: "Dr. Anjali Bose", role: "Regular O+ Donor" }
-		]
+	get requests() {
+		return readDB().blood_requests;
+	},
+	get donors() {
+		return readDB().users.filter(u => u.role === 'donor');
+	},
+	get bloodBanks() {
+		return readDB().blood_banks;
+	},
+	get systemLogs() {
+		return readDB().logs;
+	},
+	get eligibilityRequests() {
+		return readDB().eligibility_requests;
+	},
+	get users() {
+		return readDB().users;
+	},
+	get donations() {
+		return readDB().donations;
 	},
 
-	// Donor specific data for John Doe
-	donorHistory: [
-		{ date: '2026-03-10', hospital: 'GH Salem', units: 1, type: 'Voluntary Drive' },
-		{ date: '2026-01-15', hospital: 'Apollo Salem', units: 1, type: 'Emergency Matching' },
-		{ date: '2025-10-05', hospital: 'Red Cross Salem', units: 1, type: 'Voluntary Drive' }
-	],
+	// Generate statistics dynamically with zero demo/fake data
+	get landingData() {
+		const db = readDB();
+		const activeDonorsCount = db.users.filter(u => u.role === 'donor' && u.status === 'active').length;
+		const resolvedRequestsCount = db.blood_requests.filter(r => r.status === 'Completed').length;
+		const partnerBanksCount = db.blood_banks.length;
+		const totalDonations = db.donations.length;
 
-	donorBadges: [
-		{ name: 'Bronze Donor', desc: 'Completed 1 whole blood donation drive.', progress: 100, earned: true, icon: '🥉' },
-		{ name: 'Silver Donor', desc: 'Completed 3 whole blood donation drives.', progress: 100, earned: true, icon: '🥈' },
-		{ name: 'Gold Donor', desc: 'Completed 5 whole blood donation drives.', progress: 60, earned: false, icon: '🥇' },
-		{ name: 'Life Saver Badge', desc: 'Successfully matched and accepted emergency tickets.', progress: 100, earned: true, icon: '🏆' }
-	],
-
-	// Analytics data for Admin reports
-	analyticsData: {
-		monthlyActivity: [
-			{ month: 'Jan', requests: 45, donations: 60 },
-			{ month: 'Feb', requests: 55, donations: 70 },
-			{ month: 'Mar', requests: 80, donations: 75 },
-			{ month: 'Apr', requests: 65, donations: 90 },
-			{ month: 'May', requests: 95, donations: 110 },
-			{ month: 'Jun', requests: 120, donations: 135 }
-		],
-		distribution: [
-			{ group: 'O+', value: 35, color: '#b91c1c' },
-			{ group: 'A+', value: 25, color: '#dc2626' },
-			{ group: 'B+', value: 20, color: '#ef4444' },
-			{ group: 'AB+', value: 10, color: '#f87171' },
-			{ group: 'Negatives', value: 10, color: '#fca5a5' }
-		]
+		return {
+			stats: [
+				{ value: activeDonorsCount, label: 'Registered Donors', icon: '👤', color: 'text-red-650 border-red-105 bg-red-50/50' },
+				{ value: resolvedRequestsCount, label: 'Blood Requests Resolved', icon: '📋', color: 'text-blue-650 border-blue-105 bg-blue-50/50' },
+				{ value: partnerBanksCount, label: 'Partner Blood Banks', icon: '🏥', color: 'text-emerald-650 border-emerald-105 bg-emerald-50/50' },
+				{ value: totalDonations, label: 'Donations Completed', icon: '❤️', color: 'text-rose-650 border-rose-105 bg-rose-50/50' }
+			],
+			steps: [
+				{ step: '01', title: 'Eligibility Checker', desc: 'Prospective donors take our standard questionnaire.', icon: '📋' },
+				{ step: '02', title: 'Admin Verification', desc: 'Administrators verify questionnaire answers securely.', icon: '🔍' },
+				{ step: '03', title: 'Register & Match', desc: 'Eligible donors register and match with local patient requests.', icon: '⚡' },
+				{ step: '04', title: 'Save Lives', desc: 'Donate blood, log history, and rescue patient emergencies.', icon: '🩸' }
+			],
+			benefits: [
+				{ title: 'Zero Latency Matching', desc: 'Instantly coordinates compatibility matches for urgent blood requests.', icon: '⚡' },
+				{ title: 'Strict Eligibility Rules', desc: 'Enforces clinical verification criteria for donor safety.', icon: '🛡️' },
+				{ title: 'Hospital Inventory Alerts', desc: 'Monitors real-time blood bank units by group to prevent deficits.', icon: '📊' }
+			],
+			faqs: [
+				{ q: 'Who can register as a blood donor on LifeLink?', a: 'Any user between 18 and 65 years old who passes our Eligibility Checker. Once approved by an Admin, you can register and receive emergency requests.' },
+				{ q: 'Can receivers register directly?', a: 'Yes. Receivers requesting emergency blood do not require eligibility verification and can register, search blood banks, and submit requests immediately.' },
+				{ q: 'Is there only one admin account?', a: 'Yes. LifeLink enforces role security. The initial admin is configured on the first login run and no further admin accounts can ever be created.' }
+			],
+			testimonials: [
+				{ quote: "Our hospital required O+ units in minutes. The direct matching on LifeLink resolved our ticket with nearby donors faster than traditional phone channels.", author: "Dr. Anish Sharma", role: "Emergency Medical Officer" },
+				{ quote: "Knowing my eligibility questionnaire was personally reviewed by the clinical team gave me confidence in LifeLink's standards. Highly professional.", author: "Meera Patel", role: "Approved Donor" }
+			]
+		};
 	}
 };
 
-export function addRequest(req, user) {
-	const newId = `REQ${String(database.requests.length + 1).padStart(3, '0')}`;
+// Admin existence checks
+export function hasAdmin() {
+	const db = readDB();
+	return db.users.some(u => u.role === 'admin');
+}
+
+// User Actions
+export function createUser(userData) {
+	const db = readDB();
+
+	// Enforce Admin creation security rules
+	if (userData.role === 'admin') {
+		const adminExists = db.users.some(u => u.role === 'admin');
+		if (adminExists) {
+			throw new Error('Admin account already exists.');
+		}
+	}
+
+	// Prevent duplicates
+	if (db.users.some(u => u.email.toLowerCase() === userData.email.toLowerCase())) {
+		throw new Error('Email address is already registered.');
+	}
+
+	// If donor, check approved eligibility
+	if (userData.role === 'donor') {
+		const approvedElig = db.eligibility_requests.some(
+			r => r.email.toLowerCase() === userData.email.toLowerCase() && r.status === 'Approved'
+		);
+		if (!approvedElig) {
+			throw new Error('You must submit the Eligibility Checker and receive Administrator Approval before registering as a donor.');
+		}
+	}
+
+	const newUser = {
+		id: `USR${Date.now()}`,
+		name: userData.name,
+		email: userData.email.toLowerCase(),
+		password: hashPassword(userData.password),
+		phone: userData.phone,
+		location: userData.location,
+		role: userData.role, // 'admin', 'donor', 'receiver'
+		status: 'active', // 'active', 'suspended'
+		bloodGroup: userData.bloodGroup || '',
+		avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(userData.name)}`,
+		profileCompletion: 100,
+		createdAt: new Date().toISOString()
+	};
+
+	db.users.push(newUser);
+
+	// Add log
+	db.logs.unshift({
+		id: `LOG${Date.now()}`,
+		user: newUser.email,
+		activity: `${newUser.role.toUpperCase()} User Registered: ${newUser.name}`,
+		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
+	});
+
+	writeDB(db);
+	return newUser;
+}
+
+export function deleteUser(userId, operatorEmail) {
+	const db = readDB();
+	const userIndex = db.users.findIndex(u => u.id === userId);
+	if (userIndex === -1) return false;
+
+	const deletedUser = db.users[userIndex];
+	if (deletedUser.role === 'admin') {
+		throw new Error('Administrator account cannot be deleted.');
+	}
+
+	db.users.splice(userIndex, 1);
+
+	db.logs.unshift({
+		id: `LOG${Date.now()}`,
+		user: operatorEmail,
+		activity: `Deleted User: ${deletedUser.email} (${deletedUser.role})`,
+		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
+	});
+
+	writeDB(db);
+	return true;
+}
+
+export function suspendUser(userId, operatorEmail) {
+	const db = readDB();
+	const user = db.users.find(u => u.id === userId);
+	if (!user) return false;
+
+	if (user.role === 'admin') {
+		throw new Error('Administrator account cannot be suspended.');
+	}
+
+	user.status = user.status === 'suspended' ? 'active' : 'suspended';
+
+	db.logs.unshift({
+		id: `LOG${Date.now()}`,
+		user: operatorEmail,
+		activity: `User status toggled to ${user.status} for ${user.email}`,
+		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
+	});
+
+	writeDB(db);
+	return user;
+}
+
+// Eligibility Questionnaire Actions
+export function submitEligibilityQuiz(email, name, phone, location, answers) {
+	const db = readDB();
+
+	// Check if already approved or pending
+	const existing = db.eligibility_requests.find(r => r.email.toLowerCase() === email.toLowerCase());
+	if (existing) {
+		if (existing.status === 'Approved') {
+			throw new Error('This email is already approved for blood donation.');
+		} else if (existing.status === 'Pending') {
+			throw new Error('You already have a pending eligibility submission. Please wait for admin verification.');
+		} else {
+			// If rejected, allow re-submission
+			existing.status = 'Pending';
+			existing.answers = answers;
+			existing.name = name;
+			existing.phone = phone;
+			existing.location = location;
+			existing.submittedAt = new Date().toISOString();
+		}
+	} else {
+		const newRequest = {
+			id: `ELG${Date.now()}`,
+			name,
+			email: email.toLowerCase(),
+			phone,
+			location,
+			answers,
+			status: 'Pending',
+			submittedAt: new Date().toISOString()
+		};
+		db.eligibility_requests.push(newRequest);
+	}
+
+	db.logs.unshift({
+		id: `LOG${Date.now()}`,
+		user: email.toLowerCase(),
+		activity: `Eligibility Questionnaire Submitted`,
+		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
+	});
+
+	writeDB(db);
+	return true;
+}
+
+export function reviewEligibility(requestId, status, reviewerEmail) {
+	const db = readDB();
+	const req = db.eligibility_requests.find(r => r.id === requestId);
+	if (!req) return false;
+
+	req.status = status; // 'Approved' or 'Rejected'
+	req.reviewedAt = new Date().toISOString();
+
+	db.logs.unshift({
+		id: `LOG${Date.now()}`,
+		user: reviewerEmail,
+		activity: `Eligibility request for ${req.email} ${status.toUpperCase()}`,
+		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
+	});
+
+	writeDB(db);
+	return true;
+}
+
+// Blood Request Actions
+export function addRequest(req, userEmail) {
+	const db = readDB();
+	const newId = `REQ${Date.now().toString().slice(-6)}`;
 	const newReq = {
 		id: newId,
 		patientName: req.patientName,
@@ -102,42 +309,178 @@ export function addRequest(req, user) {
 		hospital: req.hospital,
 		city: req.city,
 		urgency: req.urgency || 'Normal',
-		status: 'Submitted',
-		contact: req.contact || '9999999999',
+		status: 'Pending', // Starts as Pending, Admin can Approve, Reject, Complete
+		contact: req.contact,
+		submittedBy: userEmail,
 		date: new Date().toISOString().split('T')[0]
 	};
 
-	database.requests.unshift(newReq);
+	db.blood_requests.unshift(newReq);
 
 	// Add log
-	database.systemLogs.unshift({
+	db.logs.unshift({
 		id: `LOG${Date.now()}`,
-		user: user || 'Guest',
+		user: userEmail,
 		activity: `Blood Request Submitted for ${req.patientName}`,
 		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
 	});
 
+	writeDB(db);
 	return newReq;
 }
 
-export function updateInventory(bloodGroup, units, user) {
-	const bank = database.bloodBanks[0]; // GH Salem Blood Bank
+export function updateBloodRequestStatus(requestId, status, operatorEmail) {
+	const db = readDB();
+	const req = db.blood_requests.find(r => r.id === requestId);
+	if (!req) return false;
+
+	req.status = status; // 'Approved', 'Rejected', 'Completed'
+
+	db.logs.unshift({
+		id: `LOG${Date.now()}`,
+		user: operatorEmail,
+		activity: `Request ${requestId} status updated to ${status}`,
+		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
+	});
+
+	// If marked completed, automatically create a donation record if submitted by or matching a donor
+	if (status === 'Completed') {
+		const newDonation = {
+			id: `DON${Date.now().toString().slice(-6)}`,
+			donorId: 'MATCHED_DONOR',
+			donorName: 'Voluntary Donor',
+			bloodGroup: req.bloodGroup,
+			units: req.units,
+			hospital: req.hospital,
+			date: new Date().toISOString().split('T')[0]
+		};
+		db.donations.unshift(newDonation);
+	}
+
+	writeDB(db);
+	return true;
+}
+
+// Blood Bank Actions
+export function addBloodBank(bank, operatorEmail) {
+	const db = readDB();
+	const newBank = {
+		id: `BNK${Date.now()}`,
+		name: bank.name,
+		address: bank.address,
+		phone: bank.phone,
+		email: bank.email,
+		inventory: bank.inventory || {
+			'A+': 0, 'B+': 0, 'O+': 0, 'AB+': 0,
+			'A-': 0, 'B-': 0, 'O-': 0, 'AB-': 0
+		},
+		workingHours: bank.workingHours || '9:00 AM - 5:00 PM',
+		mapLink: bank.mapLink || ''
+	};
+
+	db.blood_banks.push(newBank);
+
+	db.logs.unshift({
+		id: `LOG${Date.now()}`,
+		user: operatorEmail,
+		activity: `Blood Bank Created: ${bank.name}`,
+		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
+	});
+
+	writeDB(db);
+	return newBank;
+}
+
+export function editBloodBank(id, updates, operatorEmail) {
+	const db = readDB();
+	const bank = db.blood_banks.find(b => b.id === id);
+	if (!bank) return false;
+
+	Object.assign(bank, updates);
+
+	db.logs.unshift({
+		id: `LOG${Date.now()}`,
+		user: operatorEmail,
+		activity: `Blood Bank Updated: ${bank.name}`,
+		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
+	});
+
+	writeDB(db);
+	return bank;
+}
+
+export function deleteBloodBank(id, operatorEmail) {
+	const db = readDB();
+	const index = db.blood_banks.findIndex(b => b.id === id);
+	if (index === -1) return false;
+
+	const deleted = db.blood_banks[index];
+	db.blood_banks.splice(index, 1);
+
+	db.logs.unshift({
+		id: `LOG${Date.now()}`,
+		user: operatorEmail,
+		activity: `Blood Bank Deleted: ${deleted.name}`,
+		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
+	});
+
+	writeDB(db);
+	return true;
+}
+
+export function updateInventory(bloodGroup, units, userEmail) {
+	const db = readDB();
+	const bank = db.blood_banks[0]; // GH Salem Blood Bank or first bank
 	if (bank && bank.inventory[bloodGroup] !== undefined) {
 		bank.inventory[bloodGroup] = Number(units);
 
-		// Recompute overall stock status
-		const totalUnits = Object.values(bank.inventory).reduce((a, b) => a + b, 0);
-		if (totalUnits >= 100) bank.stockStatus = 'Healthy';
-		else if (totalUnits >= 50) bank.stockStatus = 'Low Stock';
-		else bank.stockStatus = 'Critical Stock';
-
-		database.systemLogs.unshift({
+		db.logs.unshift({
 			id: `LOG${Date.now()}`,
-			user: user || 'Staff',
-			activity: `Inventory Updated (${bloodGroup} = ${units} Units)`,
+			user: userEmail,
+			activity: `Inventory updated at ${bank.name}: ${bloodGroup} = ${units} Units`,
 			timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
 		});
+
+		writeDB(db);
 		return true;
 	}
 	return false;
+}
+
+// Log actions
+export function addLog(user, activity) {
+	const db = readDB();
+	db.logs.unshift({
+		id: `LOG${Date.now()}`,
+		user,
+		activity,
+		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
+	});
+	writeDB(db);
+}
+
+// Donation history manual logging
+export function addDonation(donation, operatorEmail) {
+	const db = readDB();
+	const newDonation = {
+		id: `DON${Date.now().toString().slice(-6)}`,
+		donorId: donation.donorId || 'MANUAL',
+		donorName: donation.donorName,
+		bloodGroup: donation.bloodGroup,
+		units: Number(donation.units),
+		hospital: donation.hospital,
+		date: donation.date || new Date().toISOString().split('T')[0]
+	};
+
+	db.donations.unshift(newDonation);
+
+	db.logs.unshift({
+		id: `LOG${Date.now()}`,
+		user: operatorEmail,
+		activity: `Log Donation: ${donation.units} units of ${donation.bloodGroup} by ${donation.donorName}`,
+		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
+	});
+
+	writeDB(db);
+	return newDonation;
 }

@@ -6,11 +6,7 @@
 	let email = $state('');
 	let phone = $state('');
 	let location = $state('');
-
-	// Extra fields for Blood Bank
-	let hospitalName = $state('');
-	let bloodBankName = $state('');
-	let staffName = $state('');
+	let bloodGroup = $state('O+');
 </script>
 
 <div class="min-h-screen bg-baby-pink flex items-center justify-center p-6 relative">
@@ -29,7 +25,7 @@
 		</div>
 
 		{#if form?.error}
-			<div class="p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl animate-shake">
+			<div class="p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl">
 				⚠️ {form.error}
 			</div>
 		{/if}
@@ -45,10 +41,16 @@
 					required
 				>
 					<option value="">-- Choose Role --</option>
-					<option value="donor">Whole Blood Donor</option>
-					<option value="recipient">Recipient (Patient / Hospital rep)</option>
+					<option value="donor">Whole Blood Donor (Requires Eligibility Approval)</option>
+					<option value="recipient">Recipient / Patient / Receiver</option>
 				</select>
 			</div>
+
+			{#if role === 'donor'}
+				<div class="p-4 bg-amber-50 border border-amber-250 text-amber-900 text-xs font-semibold rounded-2xl">
+					⚠️ <strong>Donor Eligibility Required:</strong> Your email address must have an approved eligibility request from the Admin. If you haven't taken the questionnaire, please do so <a href="/eligibility" class="text-red-700 underline font-bold">here</a>.
+				</div>
+			{/if}
 
 			<!-- Common Fields Grid -->
 			<div class="grid sm:grid-cols-2 gap-4">
@@ -103,9 +105,29 @@
 						required
 					/>
 				</div>
+
+				{#if role === 'donor' || role === 'recipient'}
+					<div class="flex flex-col gap-1 col-span-2">
+						<label class="text-[10px] font-bold text-slate-500 uppercase" for="bloodGroup">Blood Group *</label>
+						<select
+							id="bloodGroup"
+							name="bloodGroup"
+							bind:value={bloodGroup}
+							class="border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm bg-white"
+							required
+						>
+							<option value="O+">O+</option>
+							<option value="A+">A+</option>
+							<option value="B+">B+</option>
+							<option value="AB+">AB+</option>
+							<option value="O-">O-</option>
+							<option value="A-">A-</option>
+							<option value="B-">B-</option>
+							<option value="AB-">AB-</option>
+						</select>
+					</div>
+				{/if}
 			</div>
-
-
 
 			<!-- Password Field -->
 			<div class="flex flex-col gap-1">

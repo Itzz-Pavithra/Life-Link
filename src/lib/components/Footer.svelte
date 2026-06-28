@@ -51,8 +51,8 @@
 		<div class="flex flex-col sm:flex-row items-center justify-between text-xs text-gray-500 gap-4">
 			<span>© 2026 LifeLink. All rights reserved.</span>
 			<div class="flex gap-4">
-				<a href="/login" class="hover:text-gray-400">Mock Admin Access</a>
-				<a href="/register" class="hover:text-gray-400">Register Bank</a>
+				<a href="/login" class="hover:text-gray-400">Administrator Console</a>
+				<a href="/register" class="hover:text-gray-400">Receiver Portal</a>
 			</div>
 		</div>
 	</div>

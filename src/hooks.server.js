@@ -1,4 +1,5 @@
 import { redirect } from '@sveltejs/kit';
+import { readDB } from '$lib/server/db.js';
 
 /** @type {import('@sveltejs/kit').Handle} */
 export async function handle({ event, resolve }) {
@@ -6,10 +7,30 @@ export async function handle({ event, resolve }) {
 
 	if (userCookie) {
 		try {
-			const user = JSON.parse(userCookie);
-			event.locals.user = user;
-			event.locals.role = user.role || null;
+			const parsed = JSON.parse(userCookie);
+			const db = readDB();
+			const user = db.users.find(u => u.email.toLowerCase() === parsed.email.toLowerCase());
+
+			if (user && user.status === 'active') {
+				event.locals.user = {
+					id: user.id,
+					name: user.name,
+					email: user.email,
+					role: user.role,
+					location: user.location,
+					bloodGroup: user.bloodGroup,
+					avatar: user.avatar,
+					profileCompletion: user.profileCompletion
+				};
+				event.locals.role = user.role || null;
+			} else {
+				// Invalidate cookie if user suspended, deleted, or not found
+				event.cookies.delete('lifelink_user', { path: '/' });
+				event.locals.user = null;
+				event.locals.role = null;
+			}
 		} catch (err) {
+			event.cookies.delete('lifelink_user', { path: '/' });
 			event.locals.user = null;
 			event.locals.role = null;
 		}
@@ -34,4 +55,3 @@ export async function handle({ event, resolve }) {
 	const response = await resolve(event);
 	return response;
 }
-

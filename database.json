@@ -1,0 +1,93 @@
+{
+  "users": [
+    {
+      "id": "USR1782668872940",
+      "name": "Pavithra",
+      "email": "pavithra.workss@gmail.com",
+      "password": "91ffbbc9b0d5961d0b1cb109177eee69:e1d2b99fa5f513d42ac6b61afecb888e948f093576ee1b3c2a32a658f9b64ca003009ece417824a8d80e564f65cf1b1be13c19e2941e5695650e84b5728de015",
+      "phone": "9345581448",
+      "location": "Cuddalore",
+      "role": "admin",
+      "status": "active",
+      "bloodGroup": "",
+      "avatar": "https://api.dicebear.com/7.x/initials/svg?seed=Pavithra",
+      "profileCompletion": 100,
+      "createdAt": "2026-06-28T17:47:52.958Z"
+    },
+    {
+      "id": "USR1782668926895",
+      "name": "Pavithra",
+      "email": "pavi@gmail.com",
+      "password": "e6ec8eee82768a03fce8d9787196b047:e0c5a93a06ae0a0e0ed9cfa589170f8491092951c762a3189dd40fef2de23f15c2fd0eefaf6839740bd7b7524c3200a256116663cbc83959580a0096d8eb38c5",
+      "phone": "9345581448",
+      "location": "Cuddalore",
+      "role": "donor",
+      "status": "active",
+      "bloodGroup": "A+",
+      "avatar": "https://api.dicebear.com/7.x/initials/svg?seed=Pavithra",
+      "profileCompletion": 100,
+      "createdAt": "2026-06-28T17:48:46.896Z"
+    }
+  ],
+  "eligibility_requests": [
+    {
+      "id": "ELG1782668838112",
+      "name": "Pavithra",
+      "email": "pavi@gmail.com",
+      "phone": "9345581448",
+      "location": "Cuddalore",
+      "answers": {
+        "age": 24,
+        "weight": 76,
+        "gender": "Female",
+        "lastDonation": 6,
+        "medicalHistory": "Nothing",
+        "diabetes": false,
+        "bloodPressure": "normal",
+        "surgeryHistory": "No",
+        "pregnancy": "no",
+        "fever": false,
+        "tattoo": false,
+        "smoking": false,
+        "alcohol": false,
+        "medication": "No",
+        "covidHistory": false,
+        "vaccination": false,
+        "hemoglobin": 13,
+        "chronicDisease": "No"
+      },
+      "status": "Approved",
+      "submittedAt": "2026-06-28T17:47:18.112Z",
+      "reviewedAt": "2026-06-28T17:48:17.716Z"
+    }
+  ],
+  "blood_banks": [],
+  "blood_requests": [],
+  "donations": [],
+  "logs": [
+    {
+      "id": "LOG1782668926896",
+      "user": "pavi@gmail.com",
+      "activity": "DONOR User Registered: Pavithra",
+      "timestamp": "2026-06-28 17:48"
+    },
+    {
+      "id": "LOG1782668897716",
+      "user": "pavithra.workss@gmail.com",
+      "activity": "Eligibility request for pavi@gmail.com APPROVED",
+      "timestamp": "2026-06-28 17:48"
+    },
+    {
+      "id": "LOG1782668872958",
+      "user": "pavithra.workss@gmail.com",
+      "activity": "ADMIN User Registered: Pavithra",
+      "timestamp": "2026-06-28 17:47"
+    },
+    {
+      "id": "LOG1782668838113",
+      "user": "pavi@gmail.com",
+      "activity": "Eligibility Questionnaire Submitted",
+      "timestamp": "2026-06-28 17:47"
+    }
+  ]
+}

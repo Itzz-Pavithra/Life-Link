@@ -1,4 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
+import { createUser, readDB } from '$lib/server/db.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export function load({ locals }) {
@@ -12,32 +13,61 @@ export function load({ locals }) {
 export const actions = {
 	register: async ({ request, cookies }) => {
 		const formData = await request.formData();
-		const role = formData.get('role');
+		const role = formData.get('role'); // 'donor' or 'recipient'
 		const name = formData.get('name');
 		const email = formData.get('email');
 		const phone = formData.get('phone');
 		const location = formData.get('location');
+		const password = formData.get('password');
+		const bloodGroup = formData.get('bloodGroup');
 
-		if (!role || !name || !email || !phone || !location) {
-			return fail(400, { success: false, error: 'Please fill in all common fields.' });
+		if (!role || !name || !email || !phone || !location || !password) {
+			return fail(400, { success: false, error: 'All fields are required.' });
 		}
 
-		const user = {
-			name: String(name),
-			email: String(email),
-			role: String(role),
-			location: String(location),
-			bloodGroup: role === 'donor' ? 'O+' : (role === 'recipient' ? 'A+' : ''),
-			profileCompletion: 85,
-			avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&h=100&q=80'
-		};
+		if (role !== 'donor' && role !== 'recipient') {
+			return fail(400, { success: false, error: 'Invalid selection for role.' });
+		}
 
-		cookies.set('lifelink_user', JSON.stringify(user), {
-			path: '/',
-			httpOnly: false,
-			maxAge: 60 * 60 * 24 // 1 day
-		});
+		// Additional validation for blood group
+		if (role === 'donor' && !bloodGroup) {
+			return fail(400, { success: false, error: 'Please select your blood group.' });
+		}
 
-		throw redirect(303, `/dashboard/${role}`);
+		try {
+			const user = createUser({
+				name: String(name),
+				email: String(email),
+				phone: String(phone),
+				location: String(location),
+				password: String(password),
+				role: String(role),
+				bloodGroup: bloodGroup ? String(bloodGroup) : ''
+			});
+
+			// Save session cookie
+			cookies.set('lifelink_user', JSON.stringify({
+				id: user.id,
+				name: user.name,
+				email: user.email,
+				role: user.role,
+				location: user.location,
+				bloodGroup: user.bloodGroup,
+				avatar: user.avatar,
+				profileCompletion: user.profileCompletion
+			}), {
+				path: '/',
+				httpOnly: false,
+				maxAge: 60 * 60 * 24 // 1 day
+			});
+
+			throw redirect(303, `/dashboard/${role}`);
+		} catch (err) {
+			// Handle redirects cleanly
+			if (err.status === 303) {
+				throw err;
+			}
+			return fail(400, { success: false, error: err.message });
+		}
 	}
 };

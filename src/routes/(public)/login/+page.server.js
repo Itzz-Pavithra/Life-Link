@@ -1,12 +1,16 @@
 import { fail, redirect } from '@sveltejs/kit';
+import { createUser, hasAdmin, readDB, verifyPassword } from '$lib/server/db.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export function load({ locals }) {
-	// If already logged in, redirect to their dashboard directly
+	// If already logged in, redirect to dashboard
 	if (locals.user) {
 		throw redirect(303, `/dashboard/${locals.user.role}`);
 	}
-	return {};
+
+	return {
+		hasAdminAccount: hasAdmin()
+	};
 }
 
 /** @type {import('./$types').Actions} */
@@ -14,40 +18,104 @@ export const actions = {
 	login: async ({ request, cookies }) => {
 		const formData = await request.formData();
 		const email = formData.get('email');
-		const role = formData.get('role');
+		const password = formData.get('password');
+		const role = formData.get('role'); // 'admin', 'donor', 'recipient'
 
-		if (!email || !role) {
-			return fail(400, { success: false, error: 'Email and Role are required' });
+		if (!email || !password || !role) {
+			return fail(400, { success: false, error: 'Email, Password, and Role are required.' });
 		}
 
-		if (role !== 'admin' && role !== 'donor' && role !== 'recipient') {
-			return fail(400, { success: false, error: 'Invalid user role selected.' });
+		const db = readDB();
+		const user = db.users.find(u => u.email.toLowerCase() === String(email).toLowerCase());
+
+		if (!user) {
+			return fail(400, { success: false, error: 'Invalid email or password.' });
 		}
 
-		let name = 'User';
-		if (role === 'admin') name = 'Admin Team';
-		else if (role === 'donor') name = 'John Doe (Donor)';
-		else if (role === 'recipient') name = 'Sarah Connor (Recipient)';
+		if (user.role !== String(role)) {
+			return fail(400, { success: false, error: 'The selected role does not match this account.' });
+		}
 
-		const user = {
-			name,
-			email: String(email),
-			role: String(role),
-			location: 'Salem',
-			bloodGroup: role === 'donor' ? 'O+' : (role === 'recipient' ? 'A+' : ''),
-			profileCompletion: 85,
-			avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&h=100&q=80'
-		};
+		if (user.status === 'suspended') {
+			return fail(400, { success: false, error: 'This account has been suspended by the administrator.' });
+		}
 
+		// Verify password securely
+		const passwordMatch = verifyPassword(String(password), user.password);
+		if (!passwordMatch) {
+			return fail(400, { success: false, error: 'Invalid email or password.' });
+		}
 
-		// Set httpOnly session cookie
-		cookies.set('lifelink_user', JSON.stringify(user), {
+		// Set cookie
+		cookies.set('lifelink_user', JSON.stringify({
+			id: user.id,
+			name: user.name,
+			email: user.email,
+			role: user.role,
+			location: user.location,
+			bloodGroup: user.bloodGroup,
+			avatar: user.avatar,
+			profileCompletion: user.profileCompletion
+		}), {
 			path: '/',
-			httpOnly: false, // Set to false so client components can read it if needed
+			httpOnly: false,
 			maxAge: 60 * 60 * 24 // 1 day
 		});
 
-		throw redirect(303, `/dashboard/${role}`);
+		throw redirect(303, `/dashboard/${user.role}`);
+	},
+
+	createAdmin: async ({ request, cookies }) => {
+		// Verify if admin exists first
+		if (hasAdmin()) {
+			return fail(400, { success: false, error: 'Admin account already exists.' });
+		}
+
+		const formData = await request.formData();
+		const name = formData.get('name');
+		const email = formData.get('email');
+		const phone = formData.get('phone');
+		const location = formData.get('location');
+		const password = formData.get('password');
+
+		if (!name || !email || !phone || !location || !password) {
+			return fail(400, { success: false, error: 'All fields are required to initialize the admin account.' });
+		}
+
+		try {
+			const adminUser = createUser({
+				name: String(name),
+				email: String(email),
+				phone: String(phone),
+				location: String(location),
+				password: String(password),
+				role: 'admin',
+				bloodGroup: ''
+			});
+
+			// Automatically log in the admin
+			cookies.set('lifelink_user', JSON.stringify({
+				id: adminUser.id,
+				name: adminUser.name,
+				email: adminUser.email,
+				role: adminUser.role,
+				location: adminUser.location,
+				bloodGroup: '',
+				avatar: adminUser.avatar,
+				profileCompletion: 100
+			}), {
+				path: '/',
+				httpOnly: false,
+				maxAge: 60 * 60 * 24 // 1 day
+			});
+
+			throw redirect(303, '/dashboard/admin');
+		} catch (err) {
+			if (err.status === 303) {
+				throw err;
+			}
+			return fail(400, { success: false, error: err.message });
+		}
 	},
 
 	logout: async ({ cookies }) => {

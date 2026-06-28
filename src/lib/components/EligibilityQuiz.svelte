@@ -1,70 +1,150 @@
 <script>
+	import { db } from '$lib/auth.svelte.js';
+
 	let step = $state(0);
-	
+	let errorMsg = $state('');
+	let successMsg = $state('');
+
+	// Personal Details
+	let name = $state('');
+	let email = $state('');
+	let phone = $state('');
+	let location = $state('');
+
+	// Assessment questions
 	let age = $state('');
 	let weight = $state('');
-	let hasCondition = $state(false);
-	let lastDonationMonths = $state('');
-	let hasRecentSurgery = $state(false);
-
-	let answers = $state({
-		age: '',
-		weight: '',
-		condition: false,
-		lastDonation: '',
-		surgery: false
-	});
+	let gender = $state('Male');
+	let lastDonation = $state('never'); // 'never' or number of months
+	let medicalHistory = $state('');
+	let diabetes = $state('no'); // 'yes' or 'no'
+	let bloodPressure = $state('normal'); // 'normal', 'high', 'low'
+	let surgeryHistory = $state('no'); // 'yes' or 'no'
+	let surgeryDetails = $state('');
+	let pregnancy = $state('na'); // 'yes', 'no', 'na'
+	let fever = $state('no');
+	let tattoo = $state('no'); // 'yes' (recent 6 months), 'no'
+	let smoking = $state('no');
+	let alcohol = $state('no'); // 'yes' (recent 24h), 'no'
+	let medication = $state('no');
+	let medicationDetails = $state('');
+	let covidHistory = $state('no'); // 'yes' (recent 14 days), 'no'
+	let vaccination = $state('no'); // 'yes' (recent 4 weeks), 'no'
+	let hemoglobin = $state('13.5'); // number
+	let chronicDisease = $state('no');
+	let chronicDetails = $state('');
 
 	function resetQuiz() {
 		step = 0;
+		errorMsg = '';
+		successMsg = '';
+		name = '';
+		email = '';
+		phone = '';
+		location = '';
 		age = '';
 		weight = '';
-		hasCondition = false;
-		lastDonationMonths = '';
-		hasRecentSurgery = false;
+		gender = 'Male';
+		lastDonation = 'never';
+		medicalHistory = '';
+		diabetes = 'no';
+		bloodPressure = 'normal';
+		surgeryHistory = 'no';
+		surgeryDetails = '';
+		pregnancy = 'na';
+		fever = 'no';
+		tattoo = 'no';
+		smoking = 'no';
+		alcohol = 'no';
+		medication = 'no';
+		medicationDetails = '';
+		covidHistory = 'no';
+		vaccination = 'no';
+		hemoglobin = '13.5';
+		chronicDisease = 'no';
+		chronicDetails = '';
 	}
 
-	// Computes eligibility based on standard donor rules
-	const eligibilityResult = $derived.by(() => {
-		const parsedAge = parseInt(age);
-		const parsedWeight = parseFloat(weight);
-		const parsedDonation = parseInt(lastDonationMonths);
+	async function handleSubmit() {
+		errorMsg = '';
+		successMsg = '';
 
-		if (isNaN(parsedAge) || parsedAge < 18 || parsedAge > 65) {
-			return { eligible: false, reason: 'Age must be between 18 and 65 years old.' };
-		}
-		if (isNaN(parsedWeight) || parsedWeight < 50) {
-			return { eligible: false, reason: 'Weight must be at least 50 kg (110 lbs).' };
-		}
-		if (hasCondition) {
-			return { eligible: false, reason: 'Chronic illnesses, infectious diseases, or high blood pressure make you temporarily ineligible.' };
-		}
-		if (!isNaN(parsedDonation) && parsedDonation < 3) {
-			return { eligible: false, reason: 'Must wait at least 3 months (90 days) between whole blood donations.' };
-		}
-		if (hasRecentSurgery) {
-			return { eligible: false, reason: 'Major surgeries within the last 6 months require full recovery before donating.' };
+		if (!name || !email || !phone || !location || !age || !weight) {
+			errorMsg = 'Please complete all required fields on the first step.';
+			step = 1;
+			return;
 		}
 
-		return { eligible: true, reason: 'You meet all the basic criteria for blood donation! Thank you for your support.' };
-	});
+		const payload = {
+			name,
+			email,
+			phone,
+			location,
+			answers: {
+				age: parseInt(age),
+				weight: parseFloat(weight),
+				gender,
+				lastDonation: lastDonation === 'never' ? 12 : parseInt(lastDonation),
+				medicalHistory,
+				diabetes: diabetes === 'yes',
+				bloodPressure,
+				surgeryHistory: surgeryHistory === 'yes' ? surgeryDetails || 'Yes' : 'No',
+				pregnancy,
+				fever: fever === 'yes',
+				tattoo: tattoo === 'yes',
+				smoking: smoking === 'yes',
+				alcohol: alcohol === 'yes',
+				medication: medication === 'yes' ? medicationDetails || 'Yes' : 'No',
+				covidHistory: covidHistory === 'yes',
+				vaccination: vaccination === 'yes',
+				hemoglobin: parseFloat(hemoglobin),
+				chronicDisease: chronicDisease === 'yes' ? chronicDetails || 'Yes' : 'No'
+			}
+		};
+
+		try {
+			const res = await fetch('/api/eligibility', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify(payload)
+			});
+			const data = await res.json();
+			if (res.ok) {
+				successMsg = 'Questionnaire submitted successfully!';
+				db.addToast('Eligibility quiz logged. Pending admin approval.', 'success');
+				step = 6;
+			} else {
+				errorMsg = data.error || 'Failed to submit questionnaire.';
+				db.addToast(errorMsg, 'error');
+			}
+		} catch (err) {
+			errorMsg = 'A network error occurred. Please try again.';
+			db.addToast(errorMsg, 'error');
+		}
+	}
 </script>
 
-<div class="bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden">
-	<div class="absolute -top-16 -right-16 w-32 h-32 bg-red-100 rounded-full blur-2xl pointer-events-none"></div>
+<div class="bg-white border border-slate-100 rounded-3xl p-6 md:p-8 shadow-xl relative overflow-hidden text-left">
+	<div class="absolute -top-16 -right-16 w-32 h-32 bg-red-50 rounded-full blur-2xl pointer-events-none"></div>
+
+	{#if errorMsg}
+		<div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl">
+			⚠️ {errorMsg}
+		</div>
+	{/if}
 
 	{#if step === 0}
 		<!-- Start View -->
 		<div class="text-center py-6">
 			<div class="text-5xl mb-4 animate-bounce">📋</div>
 			<h3 class="text-2xl font-bold text-gray-900 mb-2">
-				Blood Donation Eligibility Quiz
+				Blood Donor Eligibility Quiz
 			</h3>
 			<p class="text-gray-500 text-sm max-w-md mx-auto mb-6">
-				Take this simple 5-step test to check if you are eligible to donate blood. It only takes a minute.
+				Take this clinical assessment to check if you are eligible to donate blood. Submissions are reviewed by our medical team.
 			</p>
 			<button
-				class="bg-red-700 hover:bg-red-800 text-white font-bold px-8 py-3 rounded-xl shadow-lg transition-transform transform active:scale-95"
+				class="bg-red-700 hover:bg-red-800 text-white font-bold px-8 py-3 rounded-xl shadow-lg transition transform active:scale-95 cursor-pointer"
 				onclick={() => step = 1}
 			>
 				Start Assessment
@@ -72,182 +152,399 @@
 		</div>
 
 	{:else if step === 1}
-		<!-- Step 1: Age -->
+		<!-- Step 1: Personal Info & Vitals -->
 		<div>
-			<span class="text-xs font-bold text-red-600 uppercase tracking-widest">Step 1 of 5</span>
-			<h3 class="text-xl font-bold text-gray-900 mt-1 mb-4">What is your age?</h3>
-			<input
-				type="number"
-				bind:value={age}
-				placeholder="Enter age (e.g. 25)"
-				class="w-full border border-gray-200 p-3 rounded-xl mb-6 text-lg focus:ring-2 focus:ring-red-500 focus:outline-none"
-			/>
+			<span class="text-xs font-bold text-red-600 uppercase tracking-widest">Step 1 of 5: Candidate Details</span>
+			<h3 class="text-xl font-bold text-gray-900 mt-1 mb-6">Let's start with your demographics & basic vitals</h3>
+
+			<div class="grid sm:grid-cols-2 gap-4 mb-6">
+				<div class="flex flex-col gap-1">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Full Name *</label>
+					<input
+						type="text"
+						bind:value={name}
+						placeholder="John Doe"
+						class="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
+					/>
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Email Address *</label>
+					<input
+						type="email"
+						bind:value={email}
+						placeholder="johndoe@example.com"
+						class="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
+					/>
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Phone Number *</label>
+					<input
+						type="tel"
+						bind:value={phone}
+						placeholder="9876543210"
+						class="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
+					/>
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">City / Location *</label>
+					<input
+						type="text"
+						bind:value={location}
+						placeholder="Salem"
+						class="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
+					/>
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Age (years) *</label>
+					<input
+						type="number"
+						bind:value={age}
+						placeholder="Min 18 - Max 65"
+						class="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
+					/>
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Weight (kg) *</label>
+					<input
+						type="number"
+						bind:value={weight}
+						placeholder="Min 50 kg"
+						class="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
+					/>
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Gender *</label>
+					<select
+						bind:value={gender}
+						class="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm bg-white"
+					>
+						<option value="Male">Male</option>
+						<option value="Female">Female</option>
+						<option value="Other">Other</option>
+					</select>
+				</div>
+			</div>
+
 			<div class="flex justify-between">
 				<button class="text-gray-500 font-semibold px-4 py-2" onclick={() => step = 0}>Cancel</button>
 				<button
-					class="bg-red-700 hover:bg-red-800 text-white font-bold px-6 py-2.5 rounded-xl disabled:opacity-50"
-					disabled={!age}
+					class="bg-red-700 hover:bg-red-800 text-white font-bold px-6 py-2.5 rounded-xl disabled:opacity-50 cursor-pointer"
+					disabled={!name || !email || !phone || !location || !age || !weight}
 					onclick={() => step = 2}
 				>
-					Next
+					Next Step
 				</button>
 			</div>
 		</div>
 
 	{:else if step === 2}
-		<!-- Step 2: Weight -->
+		<!-- Step 2: Critical Health & Donation History -->
 		<div>
-			<span class="text-xs font-bold text-red-600 uppercase tracking-widest">Step 2 of 5</span>
-			<h3 class="text-xl font-bold text-gray-900 mt-1 mb-4">What is your weight (in kg)?</h3>
-			<input
-				type="number"
-				bind:value={weight}
-				placeholder="Enter weight in kg (e.g. 68)"
-				class="w-full border border-gray-200 p-3 rounded-xl mb-6 text-lg focus:ring-2 focus:ring-red-500 focus:outline-none"
-			/>
+			<span class="text-xs font-bold text-red-600 uppercase tracking-widest">Step 2 of 5: Donation & Chronic Vitals</span>
+			<h3 class="text-xl font-bold text-gray-900 mt-1 mb-6">Medical History & Donation History</h3>
+
+			<div class="space-y-4 mb-6">
+				<div class="flex flex-col gap-1">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Months Since Last Donation</label>
+					<select
+						bind:value={lastDonation}
+						class="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm bg-white"
+					>
+						<option value="never">Never donated before (or > 1 year ago)</option>
+						<option value="1">1 month ago</option>
+						<option value="2">2 months ago</option>
+						<option value="3">3 months ago</option>
+						<option value="6">6 months ago</option>
+						<option value="9">9 months ago</option>
+					</select>
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Are you Diabetic?</label>
+					<div class="flex gap-4">
+						<label class="inline-flex items-center gap-2 text-sm text-slate-800 font-semibold">
+							<input type="radio" name="diabetes" value="no" bind:group={diabetes} /> No
+						</label>
+						<label class="inline-flex items-center gap-2 text-sm text-slate-800 font-semibold">
+							<input type="radio" name="diabetes" value="yes" bind:group={diabetes} /> Yes
+						</label>
+					</div>
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Blood Pressure Level</label>
+					<select
+						bind:value={bloodPressure}
+						class="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm bg-white"
+					>
+						<option value="normal">Normal BP</option>
+						<option value="high">High Blood Pressure</option>
+						<option value="low">Low Blood Pressure</option>
+					</select>
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Do you have any chronic diseases?</label>
+					<div class="flex gap-4 mb-2">
+						<label class="inline-flex items-center gap-2 text-sm text-slate-800 font-semibold">
+							<input type="radio" name="chronic" value="no" bind:group={chronicDisease} /> No
+						</label>
+						<label class="inline-flex items-center gap-2 text-sm text-slate-800 font-semibold">
+							<input type="radio" name="chronic" value="yes" bind:group={chronicDisease} /> Yes
+						</label>
+					</div>
+					{#if chronicDisease === 'yes'}
+						<input
+							type="text"
+							bind:value={chronicDetails}
+							placeholder="Specify condition (e.g. Heart disease, Cancer, Epilepsy)"
+							class="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
+						/>
+					{/if}
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Medical History Notes (Optional)</label>
+					<textarea
+						bind:value={medicalHistory}
+						placeholder="List any ongoing medical treatments or allergies"
+						rows="2"
+						class="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
+					></textarea>
+				</div>
+			</div>
+
 			<div class="flex justify-between">
 				<button class="text-gray-500 font-semibold px-4 py-2" onclick={() => step = 1}>Back</button>
-				<button
-					class="bg-red-700 hover:bg-red-800 text-white font-bold px-6 py-2.5 rounded-xl disabled:opacity-50"
-					disabled={!weight}
-					onclick={() => step = 3}
-				>
-					Next
+				<button class="bg-red-700 hover:bg-red-800 text-white font-bold px-6 py-2.5 rounded-xl cursor-pointer" onclick={() => step = 3}>
+					Next Step
 				</button>
 			</div>
 		</div>
 
 	{:else if step === 3}
-		<!-- Step 3: Health Conditions -->
+		<!-- Step 3: Life Events, Pregnancy, Tattoo, Surgery -->
 		<div>
-			<span class="text-xs font-bold text-red-600 uppercase tracking-widest">Step 3 of 5</span>
-			<h3 class="text-xl font-bold text-gray-900 mt-1 mb-4">Do you suffer from any chronic health conditions or infections?</h3>
-			<p class="text-gray-500 text-sm mb-4">
-				(e.g., active cold/flu, diabetes under insulin, hepatitis, HIV, cancer, or heart conditions)
-			</p>
-			<div class="grid grid-cols-2 gap-4 mb-6">
-				<button
-					class="p-4 rounded-xl border font-bold text-center transition {hasCondition ? 'border-red-600 bg-red-50 text-red-700' : 'border-gray-200 hover:bg-gray-50'}"
-					onclick={() => hasCondition = true}
-				>
-					Yes, I do
-				</button>
-				<button
-					class="p-4 rounded-xl border font-bold text-center transition {!hasCondition ? 'border-red-600 bg-red-50 text-red-700' : 'border-gray-200 hover:bg-gray-50'}"
-					onclick={() => hasCondition = false}
-				>
-					No, I do not
-				</button>
+			<span class="text-xs font-bold text-red-600 uppercase tracking-widest">Step 3 of 5: Procedures & Exposure</span>
+			<h3 class="text-xl font-bold text-gray-900 mt-1 mb-6">Recent Procedures & Events</h3>
+
+			<div class="space-y-4 mb-6">
+				<div class="flex flex-col gap-1">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Have you had major surgery in the last 6 months?</label>
+					<div class="flex gap-4 mb-2">
+						<label class="inline-flex items-center gap-2 text-sm text-slate-800 font-semibold">
+							<input type="radio" name="surgery" value="no" bind:group={surgeryHistory} /> No
+						</label>
+						<label class="inline-flex items-center gap-2 text-sm text-slate-800 font-semibold">
+							<input type="radio" name="surgery" value="yes" bind:group={surgeryHistory} /> Yes
+						</label>
+					</div>
+					{#if surgeryHistory === 'yes'}
+						<input
+							type="text"
+							bind:value={surgeryDetails}
+							placeholder="Specify surgery date and type"
+							class="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
+						/>
+					{/if}
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Pregnancy Status (Females)</label>
+					<select
+						bind:value={pregnancy}
+						class="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm bg-white"
+					>
+						<option value="na">Not Applicable (Male/Other)</option>
+						<option value="no">Not currently pregnant/breastfeeding</option>
+						<option value="yes">Currently pregnant or breastfeeding</option>
+					</select>
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Do you currently have a fever, cold, or active flu?</label>
+					<div class="flex gap-4">
+						<label class="inline-flex items-center gap-2 text-sm text-slate-800 font-semibold">
+							<input type="radio" name="fever" value="no" bind:group={fever} /> No
+						</label>
+						<label class="inline-flex items-center gap-2 text-sm text-slate-800 font-semibold">
+							<input type="radio" name="fever" value="yes" bind:group={fever} /> Yes
+						</label>
+					</div>
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Have you gotten a tattoo or piercing in the last 6 months?</label>
+					<div class="flex gap-4">
+						<label class="inline-flex items-center gap-2 text-sm text-slate-800 font-semibold">
+							<input type="radio" name="tattoo" value="no" bind:group={tattoo} /> No
+						</label>
+						<label class="inline-flex items-center gap-2 text-sm text-slate-800 font-semibold">
+							<input type="radio" name="tattoo" value="yes" bind:group={tattoo} /> Yes
+						</label>
+					</div>
+				</div>
 			</div>
+
 			<div class="flex justify-between">
 				<button class="text-gray-500 font-semibold px-4 py-2" onclick={() => step = 2}>Back</button>
-				<button class="bg-red-700 hover:bg-red-800 text-white font-bold px-6 py-2.5 rounded-xl" onclick={() => step = 4}>
-					Next
+				<button class="bg-red-700 hover:bg-red-800 text-white font-bold px-6 py-2.5 rounded-xl cursor-pointer" onclick={() => step = 4}>
+					Next Step
 				</button>
 			</div>
 		</div>
 
 	{:else if step === 4}
-		<!-- Step 4: Last Blood Donation -->
+		<!-- Step 4: Lifestyle & Medication -->
 		<div>
-			<span class="text-xs font-bold text-red-600 uppercase tracking-widest">Step 4 of 5</span>
-			<h3 class="text-xl font-bold text-gray-900 mt-1 mb-4">How many months ago was your last blood donation?</h3>
-			<p class="text-gray-500 text-sm mb-4">
-				Enter 12 if you have never donated blood before.
-			</p>
-			<input
-				type="number"
-				bind:value={lastDonationMonths}
-				placeholder="Months (e.g. 4)"
-				class="w-full border border-gray-200 p-3 rounded-xl mb-6 text-lg focus:ring-2 focus:ring-red-500 focus:outline-none"
-			/>
+			<span class="text-xs font-bold text-red-600 uppercase tracking-widest">Step 4 of 5: Lifestyle & Medication</span>
+			<h3 class="text-xl font-bold text-gray-900 mt-1 mb-6">Lifestyle Habits & Medications</h3>
+
+			<div class="space-y-4 mb-6">
+				<div class="flex flex-col gap-1">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Do you smoke tobacco products?</label>
+					<div class="flex gap-4">
+						<label class="inline-flex items-center gap-2 text-sm text-slate-800 font-semibold">
+							<input type="radio" name="smoking" value="no" bind:group={smoking} /> No
+						</label>
+						<label class="inline-flex items-center gap-2 text-sm text-slate-800 font-semibold">
+							<input type="radio" name="smoking" value="yes" bind:group={smoking} /> Yes
+						</label>
+					</div>
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Have you consumed alcohol in the last 24 hours?</label>
+					<div class="flex gap-4">
+						<label class="inline-flex items-center gap-2 text-sm text-slate-800 font-semibold">
+							<input type="radio" name="alcohol" value="no" bind:group={alcohol} /> No
+						</label>
+						<label class="inline-flex items-center gap-2 text-sm text-slate-800 font-semibold">
+							<input type="radio" name="alcohol" value="yes" bind:group={alcohol} /> Yes
+						</label>
+					</div>
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Are you taking any prescribed medications?</label>
+					<div class="flex gap-4 mb-2">
+						<label class="inline-flex items-center gap-2 text-sm text-slate-800 font-semibold">
+							<input type="radio" name="medication" value="no" bind:group={medication} /> No
+						</label>
+						<label class="inline-flex items-center gap-2 text-sm text-slate-800 font-semibold">
+							<input type="radio" name="medication" value="yes" bind:group={medication} /> Yes
+						</label>
+					</div>
+					{#if medication === 'yes'}
+						<input
+							type="text"
+							bind:value={medicationDetails}
+							placeholder="Specify names of medications (e.g. Antibiotics, blood thinners)"
+							class="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
+						/>
+					{/if}
+				</div>
+			</div>
+
 			<div class="flex justify-between">
 				<button class="text-gray-500 font-semibold px-4 py-2" onclick={() => step = 3}>Back</button>
-				<button
-					class="bg-red-700 hover:bg-red-800 text-white font-bold px-6 py-2.5 rounded-xl disabled:opacity-50"
-					disabled={!lastDonationMonths}
-					onclick={() => step = 5}
-				>
-					Next
+				<button class="bg-red-700 hover:bg-red-800 text-white font-bold px-6 py-2.5 rounded-xl cursor-pointer" onclick={() => step = 5}>
+					Next Step
 				</button>
 			</div>
 		</div>
 
 	{:else if step === 5}
-		<!-- Step 5: Recent Surgery -->
+		<!-- Step 5: COVID, Vaccine & Hemoglobin -->
 		<div>
-			<span class="text-xs font-bold text-red-600 uppercase tracking-widest">Step 5 of 5</span>
-			<h3 class="text-xl font-bold text-gray-900 mt-1 mb-4">Have you had any major surgery or tattoos/piercings in the last 6 months?</h3>
-			<div class="grid grid-cols-2 gap-4 mb-6">
-				<button
-					class="p-4 rounded-xl border font-bold text-center transition {hasRecentSurgery ? 'border-red-600 bg-red-50 text-red-700' : 'border-gray-200 hover:bg-gray-50'}"
-					onclick={() => hasRecentSurgery = true}
-				>
-					Yes, within 6 months
-				</button>
-				<button
-					class="p-4 rounded-xl border font-bold text-center transition {!hasRecentSurgery ? 'border-red-600 bg-red-50 text-red-700' : 'border-gray-200 hover:bg-gray-50'}"
-					onclick={() => hasRecentSurgery = false}
-				>
-					No surgeries or tattoos
-				</button>
+			<span class="text-xs font-bold text-red-600 uppercase tracking-widest">Step 5 of 5: Infection & Chemistry</span>
+			<h3 class="text-xl font-bold text-gray-900 mt-1 mb-6">COVID History, Vaccines & Hemoglobin</h3>
+
+			<div class="space-y-4 mb-6">
+				<div class="flex flex-col gap-1">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Have you had COVID-19 or symptoms in the last 14 days?</label>
+					<div class="flex gap-4">
+						<label class="inline-flex items-center gap-2 text-sm text-slate-800 font-semibold">
+							<input type="radio" name="covid" value="no" bind:group={covidHistory} /> No
+						</label>
+						<label class="inline-flex items-center gap-2 text-sm text-slate-800 font-semibold">
+							<input type="radio" name="covid" value="yes" bind:group={covidHistory} /> Yes
+						</label>
+					</div>
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Have you received any vaccinations in the last 4 weeks?</label>
+					<div class="flex gap-4">
+						<label class="inline-flex items-center gap-2 text-sm text-slate-800 font-semibold">
+							<input type="radio" name="vaccine" value="no" bind:group={vaccination} /> No
+						</label>
+						<label class="inline-flex items-center gap-2 text-sm text-slate-800 font-semibold">
+							<input type="radio" name="vaccine" value="yes" bind:group={vaccination} /> Yes
+						</label>
+					</div>
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Est. Hemoglobin Level (g/dL) - Standard is 12-18</label>
+					<input
+						type="number"
+						step="0.1"
+						bind:value={hemoglobin}
+						placeholder="Enter Hb level (e.g. 13.5)"
+						class="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
+					/>
+				</div>
 			</div>
+
 			<div class="flex justify-between">
 				<button class="text-gray-500 font-semibold px-4 py-2" onclick={() => step = 4}>Back</button>
-				<button class="bg-red-700 hover:bg-red-800 text-white font-bold px-6 py-2.5 rounded-xl" onclick={() => step = 6}>
-					View Result
+				<button
+					class="bg-red-700 hover:bg-red-800 text-white font-bold px-6 py-2.5 rounded-xl cursor-pointer"
+					onclick={handleSubmit}
+				>
+					Submit Assessment
 				</button>
 			</div>
 		</div>
 
 	{:else if step === 6}
-		<!-- Results View -->
-		<div class="text-center py-6">
-			{#if eligibilityResult.eligible}
-				<div class="text-6xl mb-4 animate-bounce">🎉</div>
-				<h3 class="text-3xl font-extrabold text-emerald-600 mb-2">
-					You are Eligible!
-				</h3>
-				<p class="text-gray-600 text-sm max-w-md mx-auto mb-6">
-					{eligibilityResult.reason}
-				</p>
-				<div class="flex flex-col sm:flex-row gap-3 justify-center">
-					<a
-						href="/register"
-						class="bg-red-700 hover:bg-red-800 text-white font-bold px-6 py-3 rounded-xl shadow-lg transition"
-					>
-						Register as Donor
-					</a>
-					<button
-						class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold px-6 py-3 rounded-xl transition"
-						onclick={resetQuiz}
-					>
-						Retake Quiz
-					</button>
-				</div>
-			{:else}
-				<div class="text-6xl mb-4">🛑</div>
-				<h3 class="text-3xl font-extrabold text-red-600 mb-2">
-					Not Eligible Right Now
-				</h3>
-				<p class="text-gray-600 text-sm max-w-md mx-auto mb-6">
-					{eligibilityResult.reason}
-				</p>
-				<div class="flex flex-col sm:flex-row gap-3 justify-center">
-					<a
-						href="/contact"
-						class="bg-gray-850 hover:bg-gray-900 text-white font-bold px-6 py-3 rounded-xl shadow transition bg-gray-800"
-					>
-						Contact Medical Team
-					</a>
-					<button
-						class="bg-red-50 hover:bg-red-100 text-red-700 font-bold px-6 py-3 rounded-xl transition"
-						onclick={resetQuiz}
-					>
-						Retake Quiz
-					</button>
-				</div>
-			{/if}
+		<!-- Results Pending View -->
+		<div class="text-center py-6 space-y-4">
+			<div class="text-6xl mb-4 animate-bounce">⏳</div>
+			<h3 class="text-3xl font-extrabold text-slate-900">
+				Submission Pending Review
+			</h3>
+			<p class="text-gray-600 text-sm max-w-md mx-auto leading-relaxed">
+				Your clinical questionnaire has been successfully logged. Svelte system nodes require administrator review to authorize new blood donors.
+			</p>
+			
+			<div class="bg-red-50 border border-red-100 p-4 rounded-2xl text-xs max-w-sm mx-auto space-y-2 text-slate-800 font-semibold">
+				<p>📧 <strong>Email Checked:</strong> {email.toLowerCase()}</p>
+				<p>🛡️ <strong>Authorization Status:</strong> Pending Verification</p>
+			</div>
+
+			<p class="text-xs text-gray-500 max-w-xs mx-auto">
+				Once approved, you will be permitted to register a new donor profile using this email address.
+			</p>
+
+			<div class="pt-4 flex justify-center gap-3">
+				<a href="/" class="bg-slate-900 hover:bg-black text-white font-bold px-6 py-3 rounded-xl transition text-sm">
+					Return Home
+				</a>
+				<button
+					class="bg-red-50 hover:bg-red-100 text-red-700 font-bold px-6 py-3 rounded-xl transition text-sm cursor-pointer"
+					onclick={resetQuiz}
+				>
+					Retake Assessment
+				</button>
+			</div>
 		</div>
 	{/if}
 </div>
