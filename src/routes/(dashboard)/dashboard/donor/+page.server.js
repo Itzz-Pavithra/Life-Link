@@ -1,4 +1,4 @@
-import { readDB } from '$lib/server/db.js';
+import { database } from '$lib/server/db.js';
 import { redirect } from '@sveltejs/kit';
 
 /** @type {import('./$types').PageServerLoad} */
@@ -7,16 +7,16 @@ export async function load({ locals }) {
 		throw redirect(303, '/login');
 	}
 
-	const db = readDB();
+	const donations = await database.getDonations();
+	const bloodRequests = await database.getRequests();
 
 	// Load donor's personal donation history from the real donations table
-	const history = db.donations.filter(
+	const history = donations.filter(
 		d => d.donorId === locals.user.id || d.donorName.toLowerCase() === locals.user.name.toLowerCase()
 	);
 
 	// Load approved/pending requests that match donor's blood type compatibility
-	// (For simplicity, list all active requests in Salem/local area or same blood type)
-	const requests = db.blood_requests.filter(
+	const requests = bloodRequests.filter(
 		r => r.status === 'Approved' || r.status === 'Pending'
 	);
 

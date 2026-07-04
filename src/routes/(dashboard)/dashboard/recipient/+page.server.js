@@ -1,4 +1,4 @@
-import { readDB } from '$lib/server/db.js';
+import { database } from '$lib/server/db.js';
 import { redirect } from '@sveltejs/kit';
 
 /** @type {import('./$types').PageServerLoad} */
@@ -7,10 +7,12 @@ export async function load({ locals }) {
 		throw redirect(303, '/login');
 	}
 
-	const db = readDB();
+	const bloodRequests = await database.getRequests();
+	const users = await database.getUsers();
+	const bloodBanks = await database.getBloodBanks();
 
 	// Load only the requests submitted by this recipient
-	const userRequests = db.blood_requests.filter(
+	const userRequests = bloodRequests.filter(
 		r => r.submittedBy === locals.user.email
 	);
 
@@ -19,7 +21,7 @@ export async function load({ locals }) {
 	
 	// Find matching active donors in same region or compatible blood types
 	const userBg = locals.user.bloodGroup || 'O+';
-	const matchingDonors = db.users.filter(
+	const matchingDonors = users.filter(
 		u => u.role === 'donor' && u.status === 'active' && u.bloodGroup === userBg
 	);
 
@@ -30,9 +32,9 @@ export async function load({ locals }) {
 
 	return {
 		user: locals.user,
-		donors: db.users.filter(u => u.role === 'donor' && u.status === 'active'),
+		donors: users.filter(u => u.role === 'donor' && u.status === 'active'),
 		requests: userRequests,
-		bloodBanks: db.blood_banks,
+		bloodBanks,
 		stats
 	};
 }

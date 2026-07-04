@@ -1,63 +1,19 @@
-import fs from 'fs';
-import path from 'path';
 import crypto from 'crypto';
-
-const DB_PATH = path.resolve(process.cwd(), 'database.json');
-
-// Initialize database file if it doesn't exist
-function initDB() {
-	if (!fs.existsSync(DB_PATH)) {
-		const emptyDB = {
-			users: [],
-			eligibility_requests: [],
-			blood_banks: [],
-			blood_requests: [],
-			donations: [],
-			logs: []
-		};
-		fs.writeFileSync(DB_PATH, JSON.stringify(emptyDB, null, 2), 'utf-8');
-	}
-}
-
-// Read database contents
-export function readDB() {
-	initDB();
-	try {
-		const content = fs.readFileSync(DB_PATH, 'utf-8');
-		return JSON.parse(content);
-	} catch (err) {
-		console.error('Failed to read database, returning empty collections:', err);
-		return {
-			users: [],
-			eligibility_requests: [],
-			blood_banks: [],
-			blood_requests: [],
-			donations: [],
-			logs: []
-		};
-	}
-}
-
-// Write database contents
-export function writeDB(data) {
-	try {
-		fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2), 'utf-8');
-		return true;
-	} catch (err) {
-		console.error('Failed to write database:', err);
-		return false;
-	}
-}
+import bcrypt from 'bcryptjs';
+import { db } from './firebase.js';
 
 // Password utility
 export function hashPassword(password) {
-	const salt = crypto.randomBytes(16).toString('hex');
-	const hash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
-	return `${salt}:${hash}`;
+	return bcrypt.hashSync(password, 10);
 }
 
 export function verifyPassword(password, stored) {
-	if (!stored || !stored.includes(':')) return false;
+	if (!stored) return false;
+	if (stored.startsWith('$2a$') || stored.startsWith('$2b$')) {
+		return bcrypt.compareSync(password, stored);
+	}
+	// Fallback to existing pbkdf2 format (salt:hash)
+	if (!stored.includes(':')) return false;
 	const [salt, hash] = stored.split(':');
 	const verifyHash = crypto.pbkdf2Sync(password, salt, 1000, 64, 'sha512').toString('hex');
 	return hash === verifyHash;
@@ -65,96 +21,166 @@ export function verifyPassword(password, stored) {
 
 // Database Helpers
 export const database = {
-	get requests() {
-		return readDB().blood_requests;
+	async getRequests() {
+		try {
+			const snap = await db.collection('blood_requests').orderBy('id', 'desc').get();
+			return snap.docs.map(doc => doc.data());
+		} catch (err) {
+			console.error('Error getting requests:', err);
+			return [];
+		}
 	},
-	get donors() {
-		return readDB().users.filter(u => u.role === 'donor');
+	async getDonors() {
+		try {
+			const snap = await db.collection('users').where('role', '==', 'donor').get();
+			return snap.docs.map(doc => doc.data());
+		} catch (err) {
+			console.error('Error getting donors:', err);
+			return [];
+		}
 	},
-	get bloodBanks() {
-		return readDB().blood_banks;
+	async getBloodBanks() {
+		try {
+			const snap = await db.collection('blood_banks').get();
+			return snap.docs.map(doc => doc.data());
+		} catch (err) {
+			console.error('Error getting blood banks:', err);
+			return [];
+		}
 	},
-	get systemLogs() {
-		return readDB().logs;
+	async getSystemLogs() {
+		try {
+			const snap = await db.collection('logs').orderBy('id', 'desc').get();
+			return snap.docs.map(doc => doc.data());
+		} catch (err) {
+			console.error('Error getting system logs:', err);
+			return [];
+		}
 	},
-	get eligibilityRequests() {
-		return readDB().eligibility_requests;
+	async getEligibilityRequests() {
+		try {
+			const snap = await db.collection('eligibility_requests').get();
+			return snap.docs.map(doc => doc.data());
+		} catch (err) {
+			console.error('Error getting eligibility requests:', err);
+			return [];
+		}
 	},
-	get users() {
-		return readDB().users;
+	async getUsers() {
+		try {
+			const snap = await db.collection('users').get();
+			return snap.docs.map(doc => doc.data());
+		} catch (err) {
+			console.error('Error getting users:', err);
+			return [];
+		}
 	},
-	get donations() {
-		return readDB().donations;
+	async getDonations() {
+		try {
+			const snap = await db.collection('donations').orderBy('id', 'desc').get();
+			return snap.docs.map(doc => doc.data());
+		} catch (err) {
+			console.error('Error getting donations:', err);
+			return [];
+		}
 	},
 
-	// Generate statistics dynamically with zero demo/fake data
-	get landingData() {
-		const db = readDB();
-		const activeDonorsCount = db.users.filter(u => u.role === 'donor' && u.status === 'active').length;
-		const resolvedRequestsCount = db.blood_requests.filter(r => r.status === 'Completed').length;
-		const partnerBanksCount = db.blood_banks.length;
-		const totalDonations = db.donations.length;
+	// Generate statistics dynamically
+	async getLandingData() {
+		try {
+			const activeDonorsCount = (await db.collection('users')
+				.where('role', '==', 'donor')
+				.where('status', '==', 'active')
+				.get()).size;
+			const resolvedRequestsCount = (await db.collection('blood_requests')
+				.where('status', '==', 'Completed')
+				.get()).size;
+			const partnerBanksCount = (await db.collection('blood_banks').get()).size;
+			const totalDonations = (await db.collection('donations').get()).size;
 
-		return {
-			steps: [
-				{ step: '01', title: 'Eligibility Checker', desc: 'Prospective donors take our standard questionnaire.', icon: '📋' },
-				{ step: '02', title: 'Admin Verification', desc: 'Administrators verify questionnaire answers securely.', icon: '🔍' },
-				{ step: '03', title: 'Register & Match', desc: 'Eligible donors register and match with local patient requests.', icon: '⚡' },
-				{ step: '04', title: 'Save Lives', desc: 'Donate blood, log history, and rescue patient emergencies.', icon: '🩸' }
-			],
-			benefits: [
-				{ title: 'Zero Latency Matching', desc: 'Instantly coordinates compatibility matches for urgent blood requests.', icon: '⚡' },
-				{ title: 'Strict Eligibility Rules', desc: 'Enforces clinical verification criteria for donor safety.', icon: '🛡️' },
-				{ title: 'Hospital Inventory Alerts', desc: 'Monitors real-time blood bank units by group to prevent deficits.', icon: '📊' }
-			],
-			faqs: [
-				{ q: 'Who can register as a blood donor on LifeLink?', a: 'Any user between 18 and 65 years old who passes our Eligibility Checker. Once approved by an Admin, you can register and receive emergency requests.' },
-				{ q: 'Can receivers register directly?', a: 'Yes. Receivers requesting emergency blood do not require eligibility verification and can register, search blood banks, and submit requests immediately.' },
-				{ q: 'Is there only one admin account?', a: 'Yes. LifeLink enforces role security. The initial admin is configured on the first login run and no further admin accounts can ever be created.' }
-			],
-			testimonials: [
-				{ quote: "Our hospital required O+ units in minutes. The direct matching on LifeLink resolved our ticket with nearby donors faster than traditional phone channels.", author: "Dr. Anish Sharma", role: "Emergency Medical Officer" },
-				{ quote: "Knowing my eligibility questionnaire was personally reviewed by the clinical team gave me confidence in LifeLink's standards. Highly professional.", author: "Meera Patel", role: "Approved Donor" }
-			]
-		};
+			return {
+				steps: [
+					{ step: '01', title: 'Eligibility Checker', desc: 'Prospective donors take our standard questionnaire.', icon: '📋' },
+					{ step: '02', title: 'Admin Verification', desc: 'Administrators verify questionnaire answers securely.', icon: '🔍' },
+					{ step: '03', title: 'Register & Match', desc: 'Eligible donors register and match with local patient requests.', icon: '⚡' },
+					{ step: '04', title: 'Save Lives', desc: 'Donate blood, log history, and rescue patient emergencies.', icon: '🩸' }
+				],
+				benefits: [
+					{ title: 'Zero Latency Matching', desc: 'Instantly coordinates compatibility matches for urgent blood requests.', icon: '⚡' },
+					{ title: 'Strict Eligibility Rules', desc: 'Enforces clinical verification criteria for donor safety.', icon: '🛡️' },
+					{ title: 'Hospital Inventory Alerts', desc: 'Monitors real-time blood bank units by group to prevent deficits.', icon: '📊' }
+				],
+				faqs: [
+					{ q: 'Who can register as a blood donor on LifeLink?', a: 'Any user between 18 and 65 years old who passes our Eligibility Checker. Once approved by an Admin, you can register and receive emergency requests.' },
+					{ q: 'Can receivers register directly?', a: 'Yes. Receivers requesting emergency blood do not require eligibility verification and can register, search blood banks, and submit requests immediately.' },
+					{ q: 'Is there only one admin account?', a: 'Yes. LifeLink enforces role security. The initial admin is configured on the first login run and no further admin accounts can ever be created.' }
+				],
+				testimonials: [
+					{ quote: "Our hospital required O+ units in minutes. The direct matching on LifeLink resolved our ticket with nearby donors faster than traditional phone channels.", author: "Dr. Anish Sharma", role: "Emergency Medical Officer" },
+					{ quote: "Knowing my eligibility questionnaire was personally reviewed by the clinical team gave me confidence in LifeLink's standards. Highly professional.", author: "Meera Patel", role: "Approved Donor" }
+				],
+				stats: {
+					activeDonors: activeDonorsCount,
+					resolvedRequests: resolvedRequestsCount,
+					partnerBanks: partnerBanksCount,
+					totalDonations: totalDonations
+				}
+			};
+		} catch (err) {
+			console.error('Error generating landing data:', err);
+			return {
+				steps: [],
+				benefits: [],
+				faqs: [],
+				testimonials: [],
+				stats: { activeDonors: 0, resolvedRequests: 0, partnerBanks: 0, totalDonations: 0 }
+			};
+		}
 	}
 };
 
 // Admin existence checks
-export function hasAdmin() {
-	const db = readDB();
-	return db.users.some(u => u.role === 'admin');
+export async function hasAdmin() {
+	try {
+		const snap = await db.collection('users').where('role', '==', 'admin').limit(1).get();
+		return !snap.empty;
+	} catch (err) {
+		console.error('Error in hasAdmin:', err);
+		return false;
+	}
 }
 
 // User Actions
-export function createUser(userData) {
-	const db = readDB();
-
+export async function createUser(userData) {
 	// Enforce Admin creation security rules
 	if (userData.role === 'admin') {
-		const adminExists = db.users.some(u => u.role === 'admin');
+		const adminExists = await hasAdmin();
 		if (adminExists) {
 			throw new Error('Admin account already exists.');
 		}
 	}
 
 	// Prevent duplicates
-	if (db.users.some(u => u.email.toLowerCase() === userData.email.toLowerCase())) {
+	const existingUser = await getUserByEmail(userData.email);
+	if (existingUser) {
 		throw new Error('Email address is already registered.');
 	}
 
 	// If donor, check approved eligibility
 	if (userData.role === 'donor') {
-		const approvedElig = db.eligibility_requests.some(
-			r => r.email.toLowerCase() === userData.email.toLowerCase() && r.status === 'Approved'
-		);
-		if (!approvedElig) {
+		const snapshot = await db.collection('eligibility_requests')
+			.where('email', '==', userData.email.toLowerCase())
+			.where('status', '==', 'Approved')
+			.limit(1)
+			.get();
+		if (snapshot.empty) {
 			throw new Error('You must submit the Eligibility Checker and receive Administrator Approval before registering as a donor.');
 		}
 	}
 
+	const userId = `USR${Date.now()}`;
 	const newUser = {
-		id: `USR${Date.now()}`,
+		id: userId,
 		name: userData.name,
 		email: userData.email.toLowerCase(),
 		password: hashPassword(userData.password),
@@ -168,132 +194,132 @@ export function createUser(userData) {
 		createdAt: new Date().toISOString()
 	};
 
-	db.users.push(newUser);
+	await db.collection('users').doc(userId).set(newUser);
 
 	// Add log
-	db.logs.unshift({
-		id: `LOG${Date.now()}`,
-		user: newUser.email,
-		activity: `${newUser.role.toUpperCase()} User Registered: ${newUser.name}`,
-		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
-	});
+	await addLog(newUser.email, `${newUser.role.toUpperCase()} User Registered: ${newUser.name}`);
 
-	writeDB(db);
 	return newUser;
 }
 
-export function deleteUser(userId, operatorEmail) {
-	const db = readDB();
-	const userIndex = db.users.findIndex(u => u.id === userId);
-	if (userIndex === -1) return false;
+export async function getUserByEmail(email) {
+	if (!email) return null;
+	try {
+		const snap = await db.collection('users')
+			.where('email', '==', email.toLowerCase())
+			.limit(1)
+			.get();
+		return snap.empty ? null : snap.docs[0].data();
+	} catch (err) {
+		console.error(`Error getUserByEmail for ${email}:`, err);
+		return null;
+	}
+}
 
-	const deletedUser = db.users[userIndex];
-	if (deletedUser.role === 'admin') {
+export async function getUserById(id) {
+	if (!id) return null;
+	try {
+		const doc = await db.collection('users').doc(id).get();
+		return doc.exists ? doc.data() : null;
+	} catch (err) {
+		console.error(`Error getUserById for ${id}:`, err);
+		return null;
+	}
+}
+
+export async function deleteUser(userId, operatorEmail) {
+	const user = await getUserById(userId);
+	if (!user) return false;
+
+	if (user.role === 'admin') {
 		throw new Error('Administrator account cannot be deleted.');
 	}
 
-	db.users.splice(userIndex, 1);
+	await db.collection('users').doc(userId).delete();
 
-	db.logs.unshift({
-		id: `LOG${Date.now()}`,
-		user: operatorEmail,
-		activity: `Deleted User: ${deletedUser.email} (${deletedUser.role})`,
-		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
-	});
-
-	writeDB(db);
+	await addLog(operatorEmail, `Deleted User: ${user.email} (${user.role})`);
 	return true;
 }
 
-export function suspendUser(userId, operatorEmail) {
-	const db = readDB();
-	const user = db.users.find(u => u.id === userId);
-	if (!user) return false;
+export async function suspendUser(userId, operatorEmail) {
+	const userRef = db.collection('users').doc(userId);
+	const userDoc = await userRef.get();
+	if (!userDoc.exists) return false;
 
+	const user = userDoc.data();
 	if (user.role === 'admin') {
 		throw new Error('Administrator account cannot be suspended.');
 	}
 
-	user.status = user.status === 'suspended' ? 'active' : 'suspended';
+	const newStatus = user.status === 'suspended' ? 'active' : 'suspended';
+	await userRef.update({ status: newStatus });
 
-	db.logs.unshift({
-		id: `LOG${Date.now()}`,
-		user: operatorEmail,
-		activity: `User status toggled to ${user.status} for ${user.email}`,
-		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
-	});
-
-	writeDB(db);
-	return user;
+	await addLog(operatorEmail, `User status toggled to ${newStatus} for ${user.email}`);
+	return { ...user, status: newStatus };
 }
 
 // Eligibility Questionnaire Actions
-export function submitEligibilityQuiz(email, name, phone, location, answers) {
-	const db = readDB();
+export async function submitEligibilityQuiz(email, name, phone, location, answers) {
+	const lowercaseEmail = email.toLowerCase();
+	const snapshot = await db.collection('eligibility_requests')
+		.where('email', '==', lowercaseEmail)
+		.limit(1)
+		.get();
 
-	// Check if already approved or pending
-	const existing = db.eligibility_requests.find(r => r.email.toLowerCase() === email.toLowerCase());
-	if (existing) {
+	if (!snapshot.empty) {
+		const doc = snapshot.docs[0];
+		const existing = doc.data();
 		if (existing.status === 'Approved') {
 			throw new Error('This email is already approved for blood donation.');
 		} else if (existing.status === 'Pending') {
 			throw new Error('You already have a pending eligibility submission. Please wait for admin verification.');
 		} else {
 			// If rejected, allow re-submission
-			existing.status = 'Pending';
-			existing.answers = answers;
-			existing.name = name;
-			existing.phone = phone;
-			existing.location = location;
-			existing.submittedAt = new Date().toISOString();
+			await doc.ref.update({
+				status: 'Pending',
+				answers,
+				name,
+				phone,
+				location,
+				submittedAt: new Date().toISOString()
+			});
 		}
 	} else {
+		const id = `ELG${Date.now()}`;
 		const newRequest = {
-			id: `ELG${Date.now()}`,
+			id,
 			name,
-			email: email.toLowerCase(),
+			email: lowercaseEmail,
 			phone,
 			location,
 			answers,
 			status: 'Pending',
 			submittedAt: new Date().toISOString()
 		};
-		db.eligibility_requests.push(newRequest);
+		await db.collection('eligibility_requests').doc(id).set(newRequest);
 	}
 
-	db.logs.unshift({
-		id: `LOG${Date.now()}`,
-		user: email.toLowerCase(),
-		activity: `Eligibility Questionnaire Submitted`,
-		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
-	});
-
-	writeDB(db);
+	await addLog(lowercaseEmail, `Eligibility Questionnaire Submitted`);
 	return true;
 }
 
-export function reviewEligibility(requestId, status, reviewerEmail) {
-	const db = readDB();
-	const req = db.eligibility_requests.find(r => r.id === requestId);
-	if (!req) return false;
+export async function reviewEligibility(requestId, status, reviewerEmail) {
+	const ref = db.collection('eligibility_requests').doc(requestId);
+	const doc = await ref.get();
+	if (!doc.exists) return false;
 
-	req.status = status; // 'Approved' or 'Rejected'
-	req.reviewedAt = new Date().toISOString();
-
-	db.logs.unshift({
-		id: `LOG${Date.now()}`,
-		user: reviewerEmail,
-		activity: `Eligibility request for ${req.email} ${status.toUpperCase()}`,
-		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
+	const req = doc.data();
+	await ref.update({
+		status,
+		reviewedAt: new Date().toISOString()
 	});
 
-	writeDB(db);
+	await addLog(reviewerEmail, `Eligibility request for ${req.email} ${status.toUpperCase()}`);
 	return true;
 }
 
 // Blood Request Actions
-export function addRequest(req, userEmail) {
-	const db = readDB();
+export async function addRequest(req, userEmail) {
 	const newId = `REQ${Date.now().toString().slice(-6)}`;
 	const newReq = {
 		id: newId,
@@ -303,63 +329,51 @@ export function addRequest(req, userEmail) {
 		hospital: req.hospital,
 		city: req.city,
 		urgency: req.urgency || 'Normal',
-		status: 'Pending', // Starts as Pending, Admin can Approve, Reject, Complete
+		status: 'Pending', // Starts as Pending
 		contact: req.contact,
 		submittedBy: userEmail,
 		date: new Date().toISOString().split('T')[0]
 	};
 
-	db.blood_requests.unshift(newReq);
+	await db.collection('blood_requests').doc(newId).set(newReq);
 
 	// Add log
-	db.logs.unshift({
-		id: `LOG${Date.now()}`,
-		user: userEmail,
-		activity: `Blood Request Submitted for ${req.patientName}`,
-		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
-	});
-
-	writeDB(db);
+	await addLog(userEmail, `Blood Request Submitted for ${req.patientName}`);
 	return newReq;
 }
 
-export function updateBloodRequestStatus(requestId, status, operatorEmail) {
-	const db = readDB();
-	const req = db.blood_requests.find(r => r.id === requestId);
-	if (!req) return false;
+export async function updateBloodRequestStatus(requestId, status, operatorEmail) {
+	const ref = db.collection('blood_requests').doc(requestId);
+	const doc = await ref.get();
+	if (!doc.exists) return false;
 
-	req.status = status; // 'Approved', 'Rejected', 'Completed'
+	const req = doc.data();
+	await ref.update({ status });
 
-	db.logs.unshift({
-		id: `LOG${Date.now()}`,
-		user: operatorEmail,
-		activity: `Request ${requestId} status updated to ${status}`,
-		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
-	});
+	await addLog(operatorEmail, `Request ${requestId} status updated to ${status}`);
 
-	// If marked completed, automatically create a donation record if submitted by or matching a donor
+	// If marked completed, automatically create a donation record
 	if (status === 'Completed') {
 		const newDonation = {
 			id: `DON${Date.now().toString().slice(-6)}`,
 			donorId: 'MATCHED_DONOR',
 			donorName: 'Voluntary Donor',
 			bloodGroup: req.bloodGroup,
-			units: req.units,
+			units: Number(req.units),
 			hospital: req.hospital,
 			date: new Date().toISOString().split('T')[0]
 		};
-		db.donations.unshift(newDonation);
+		await db.collection('donations').doc(newDonation.id).set(newDonation);
 	}
 
-	writeDB(db);
 	return true;
 }
 
 // Blood Bank Actions
-export function addBloodBank(bank, operatorEmail) {
-	const db = readDB();
+export async function addBloodBank(bank, operatorEmail) {
+	const newId = `BNK${Date.now()}`;
 	const newBank = {
-		id: `BNK${Date.now()}`,
+		id: newId,
 		name: bank.name,
 		address: bank.address,
 		phone: bank.phone,
@@ -372,92 +386,72 @@ export function addBloodBank(bank, operatorEmail) {
 		mapLink: bank.mapLink || ''
 	};
 
-	db.blood_banks.push(newBank);
+	await db.collection('blood_banks').doc(newId).set(newBank);
 
-	db.logs.unshift({
-		id: `LOG${Date.now()}`,
-		user: operatorEmail,
-		activity: `Blood Bank Created: ${bank.name}`,
-		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
-	});
-
-	writeDB(db);
+	await addLog(operatorEmail, `Blood Bank Created: ${bank.name}`);
 	return newBank;
 }
 
-export function editBloodBank(id, updates, operatorEmail) {
-	const db = readDB();
-	const bank = db.blood_banks.find(b => b.id === id);
-	if (!bank) return false;
+export async function editBloodBank(id, updates, operatorEmail) {
+	const ref = db.collection('blood_banks').doc(id);
+	const doc = await ref.get();
+	if (!doc.exists) return false;
 
-	Object.assign(bank, updates);
+	const bank = doc.data();
+	const newBank = { ...bank, ...updates };
+	await ref.set(newBank);
 
-	db.logs.unshift({
-		id: `LOG${Date.now()}`,
-		user: operatorEmail,
-		activity: `Blood Bank Updated: ${bank.name}`,
-		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
-	});
-
-	writeDB(db);
-	return bank;
+	await addLog(operatorEmail, `Blood Bank Updated: ${bank.name}`);
+	return newBank;
 }
 
-export function deleteBloodBank(id, operatorEmail) {
-	const db = readDB();
-	const index = db.blood_banks.findIndex(b => b.id === id);
-	if (index === -1) return false;
+export async function deleteBloodBank(id, operatorEmail) {
+	const ref = db.collection('blood_banks').doc(id);
+	const doc = await ref.get();
+	if (!doc.exists) return false;
 
-	const deleted = db.blood_banks[index];
-	db.blood_banks.splice(index, 1);
+	const bank = doc.data();
+	await ref.delete();
 
-	db.logs.unshift({
-		id: `LOG${Date.now()}`,
-		user: operatorEmail,
-		activity: `Blood Bank Deleted: ${deleted.name}`,
-		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
-	});
-
-	writeDB(db);
+	await addLog(operatorEmail, `Blood Bank Deleted: ${bank.name}`);
 	return true;
 }
 
-export function updateInventory(bloodGroup, units, userEmail) {
-	const db = readDB();
-	const bank = db.blood_banks[0]; // GH Salem Blood Bank or first bank
-	if (bank && bank.inventory[bloodGroup] !== undefined) {
-		bank.inventory[bloodGroup] = Number(units);
+export async function updateInventory(bloodGroup, units, userEmail) {
+	const snapshot = await db.collection('blood_banks').limit(1).get();
+	if (snapshot.empty) return false;
 
-		db.logs.unshift({
-			id: `LOG${Date.now()}`,
-			user: userEmail,
-			activity: `Inventory updated at ${bank.name}: ${bloodGroup} = ${units} Units`,
-			timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
-		});
+	const doc = snapshot.docs[0];
+	const bank = doc.data();
+	
+	if (bank.inventory[bloodGroup] !== undefined) {
+		const newInventory = { ...bank.inventory };
+		newInventory[bloodGroup] = Number(units);
+		await doc.ref.update({ inventory: newInventory });
 
-		writeDB(db);
+		await addLog(userEmail, `Inventory updated at ${bank.name}: ${bloodGroup} = ${units} Units`);
 		return true;
 	}
 	return false;
 }
 
 // Log actions
-export function addLog(user, activity) {
-	const db = readDB();
-	db.logs.unshift({
-		id: `LOG${Date.now()}`,
+export async function addLog(user, activity) {
+	const newId = `LOG${Date.now()}`;
+	const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
+	await db.collection('logs').doc(newId).set({
+		id: newId,
 		user,
 		activity,
-		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
+		timestamp
 	});
-	writeDB(db);
 }
 
 // Donation history manual logging
-export function addDonation(donation, operatorEmail) {
-	const db = readDB();
+export async function addDonation(donation, operatorEmail) {
+	const newId = `DON${Date.now().toString().slice(-6)}`;
 	const newDonation = {
-		id: `DON${Date.now().toString().slice(-6)}`,
+		id: newId,
 		donorId: donation.donorId || 'MANUAL',
 		donorName: donation.donorName,
 		bloodGroup: donation.bloodGroup,
@@ -466,15 +460,8 @@ export function addDonation(donation, operatorEmail) {
 		date: donation.date || new Date().toISOString().split('T')[0]
 	};
 
-	db.donations.unshift(newDonation);
+	await db.collection('donations').doc(newId).set(newDonation);
 
-	db.logs.unshift({
-		id: `LOG${Date.now()}`,
-		user: operatorEmail,
-		activity: `Log Donation: ${donation.units} units of ${donation.bloodGroup} by ${donation.donorName}`,
-		timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
-	});
-
-	writeDB(db);
+	await addLog(operatorEmail, `Log Donation: ${donation.units} units of ${donation.bloodGroup} by ${donation.donorName}`);
 	return newDonation;
 }

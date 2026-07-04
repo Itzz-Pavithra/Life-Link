@@ -2,10 +2,12 @@ import { json } from '@sveltejs/kit';
 import { database, addRequest, updateBloodRequestStatus } from '$lib/server/db.js';
 
 /** @type {import('./$types').RequestHandler} */
-export function GET() {
+export async function GET() {
+	const requests = await database.getRequests();
+	const systemLogs = await database.getSystemLogs();
 	return json({
-		requests: database.requests,
-		systemLogs: database.systemLogs
+		requests,
+		systemLogs
 	});
 }
 
@@ -20,9 +22,11 @@ export async function POST({ request, locals }) {
 
 	// Check if this is a status update
 	if (body.id && body.status) {
-		const success = updateBloodRequestStatus(body.id, body.status, userEmail);
+		const success = await updateBloodRequestStatus(body.id, body.status, userEmail);
 		if (success) {
-			return json({ success: true, requests: database.requests, systemLogs: database.systemLogs });
+			const requests = await database.getRequests();
+			const systemLogs = await database.getSystemLogs();
+			return json({ success: true, requests, systemLogs });
 		}
 		return json({ success: false, error: 'Request not found.' }, { status: 404 });
 	}
@@ -33,8 +37,10 @@ export async function POST({ request, locals }) {
 	}
 
 	try {
-		const newReq = addRequest(body, userEmail);
-		return json({ success: true, request: newReq, requests: database.requests, systemLogs: database.systemLogs });
+		const newReq = await addRequest(body, userEmail);
+		const requests = await database.getRequests();
+		const systemLogs = await database.getSystemLogs();
+		return json({ success: true, request: newReq, requests, systemLogs });
 	} catch (err) {
 		return json({ success: false, error: err.message }, { status: 500 });
 	}
