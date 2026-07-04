@@ -10,7 +10,7 @@
 	async function handleLogout(e) {
 		if (e) e.preventDefault();
 		try {
-			await axios.post('http://localhost:5000/api/auth/logout');
+			await axios.post('/api/auth/logout');
 			db.addToast('Logged out successfully.', 'info');
 			window.location.href = '/login';
 		} catch (err) {

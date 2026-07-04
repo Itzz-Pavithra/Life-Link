@@ -15,8 +15,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey123';
 const DB_PATH = './database.json';
 
 // CORS configuration supporting credentials (cookies)
-const allowedOrigins = ['http://localhost:5173', 'http://localhost:5174', 'http://127.0.0.1:5173', 'http://127.0.0.1:5174'];
-app.use(cors({
+const allowedOrigins = [
+ 'http://localhost:5173',
+ 'http://localhost:5174',
+ 'http://127.0.0.1:5173',
+ 'http://127.0.0.1:5174',
+ 'https://life-link-git-main-pavithra-s-projects1.vercel.app',
+ 'https://life-link-ashen-rho.vercel.app'
+];app.use(cors({
 	origin: function (origin, callback) {
 		if (!origin || allowedOrigins.indexOf(origin) !== -1) {
 			callback(null, true);
