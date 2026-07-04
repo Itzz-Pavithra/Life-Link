@@ -1,5 +1,7 @@
 <script>
-	let { form } = $props();
+	import axios from 'axios';
+	import { goto } from '$app/navigation';
+	import { db } from '$lib/auth.svelte.js';
 
 	let role = $state('');
 	let name = $state('');
@@ -7,6 +9,34 @@
 	let phone = $state('');
 	let location = $state('');
 	let bloodGroup = $state('O+');
+	let password = $state('');
+	let errorMessage = $state('');
+
+	axios.defaults.withCredentials = true;
+
+	async function handleRegister(e) {
+		e.preventDefault();
+		errorMessage = '';
+		try {
+			const res = await axios.post('http://localhost:5000/api/auth/register', {
+				fullName: name,
+				email,
+				password,
+				confirmPassword: password,
+				phone,
+				location,
+				role,
+				bloodGroup: (role === 'donor' || role === 'recipient') ? bloodGroup : ''
+			});
+			if (res.data.success) {
+				db.addToast('Registration successful! Please login.', 'success');
+				goto('/login');
+			}
+		} catch (err) {
+			errorMessage = err.response?.data?.error || 'Registration failed. Please try again.';
+			db.addToast(errorMessage, 'error');
+		}
+	}
 </script>
 
 <div class="min-h-screen bg-baby-pink flex items-center justify-center p-6 relative">
@@ -24,18 +54,17 @@
 			<p class="text-slate-400 text-xs">Join our network to donate blood or request emergency support.</p>
 		</div>
 
-		{#if form?.error}
+		{#if errorMessage}
 			<div class="p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl">
-				⚠️ {form.error}
+				⚠️ {errorMessage}
 			</div>
 		{/if}
 
-		<form method="POST" action="?/register" class="space-y-6">
+		<form onsubmit={handleRegister} class="space-y-6">
 			<!-- Role Selector -->
 			<div class="flex flex-col gap-1.5">
 				<label class="text-[10px] font-bold text-slate-500 uppercase">I want to register as a *</label>
 				<select
-					name="role"
 					bind:value={role}
 					class="border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm bg-white font-semibold text-slate-800"
 					required
@@ -58,7 +87,6 @@
 					<label class="text-[10px] font-bold text-slate-500 uppercase" for="fullname">Full Name *</label>
 					<input
 						id="fullname"
-						name="name"
 						type="text"
 						bind:value={name}
 						placeholder="Enter your name"
@@ -71,7 +99,6 @@
 					<label class="text-[10px] font-bold text-slate-500 uppercase" for="email">Email Address *</label>
 					<input
 						id="email"
-						name="email"
 						type="email"
 						bind:value={email}
 						placeholder="email@example.com"
@@ -84,7 +111,6 @@
 					<label class="text-[10px] font-bold text-slate-500 uppercase" for="phone">Phone Number *</label>
 					<input
 						id="phone"
-						name="phone"
 						type="tel"
 						bind:value={phone}
 						placeholder="e.g. 9876543210"
@@ -97,7 +123,6 @@
 					<label class="text-[10px] font-bold text-slate-500 uppercase" for="city">City / Location *</label>
 					<input
 						id="city"
-						name="location"
 						type="text"
 						bind:value={location}
 						placeholder="e.g. Salem"
@@ -111,7 +136,6 @@
 						<label class="text-[10px] font-bold text-slate-500 uppercase" for="bloodGroup">Blood Group *</label>
 						<select
 							id="bloodGroup"
-							name="bloodGroup"
 							bind:value={bloodGroup}
 							class="border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm bg-white"
 							required
@@ -134,8 +158,8 @@
 				<label class="text-[10px] font-bold text-slate-500 uppercase" for="password">Choose Password *</label>
 				<input
 					id="password"
-					name="password"
 					type="password"
+					bind:value={password}
 					placeholder="••••••••"
 					class="border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
 					required

@@ -1,6 +1,22 @@
 <script>
+	import axios from 'axios';
+	import { db } from '$lib/auth.svelte.js';
+
 	let { data } = $props();
 	let mobileMenuOpen = $state(false);
+
+	axios.defaults.withCredentials = true;
+
+	async function handleLogout(e) {
+		if (e) e.preventDefault();
+		try {
+			await axios.post('http://localhost:5000/api/auth/logout');
+			db.addToast('Logged out successfully.', 'info');
+			window.location.href = '/login';
+		} catch (err) {
+			db.addToast('Failed to logout. Please try again.', 'error');
+		}
+	}
 </script>
 
 <nav class="sticky top-0 z-50 bg-white border-b border-gray-100 transition-all duration-300">
@@ -35,14 +51,12 @@
 					>
 						💻 Dashboard
 					</a>
-					<form action="/login?/logout" method="POST" class="inline">
-						<button
-							type="submit"
-							class="text-sm font-semibold text-gray-500 hover:text-red-650 transition cursor-pointer"
-						>
-							Logout
-						</button>
-					</form>
+					<button
+						onclick={handleLogout}
+						class="text-sm font-semibold text-gray-500 hover:text-red-650 transition cursor-pointer"
+					>
+						Logout
+					</button>
 				{:else}
 					<a href="/login" class="text-sm font-semibold text-gray-700 hover:text-red-700 transition">Login</a>
 					<a
@@ -98,14 +112,12 @@
 				>
 					💻 Dashboard
 				</a>
-				<form action="/login?/logout" method="POST" class="w-full">
-					<button
-						type="submit"
-						class="block w-full text-left text-sm font-semibold text-gray-500 hover:text-red-650 transition py-2 cursor-pointer"
-					>
-						Logout
-					</button>
-				</form>
+				<button
+					onclick={(e) => { mobileMenuOpen = false; handleLogout(e); }}
+					class="block w-full text-left text-sm font-semibold text-gray-500 hover:text-red-650 transition py-2 cursor-pointer"
+				>
+					Logout
+				</button>
 			{:else}
 				<a
 					href="/login"

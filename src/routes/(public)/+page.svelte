@@ -49,11 +49,12 @@
 	<section class="relative h-[600px] flex items-center justify-center overflow-hidden">
 		<!-- Background image container with blur effect (contained inside this section only) -->
 		<div class="absolute inset-0 z-0 overflow-hidden">
-			<!-- Blurred background image using cover, center center, no-repeat -->
-			<div 
-				class="absolute inset-0 bg-cover bg-center bg-no-repeat filter blur-[4px] scale-[1.05]" 
-				style="background-image: url('/blood-donation-bg.png');"
-			></div>
+			<!-- Blurred background image using real img tag for robust rendering -->
+			<img 
+				src="/blood-donation-bg.png" 
+				alt="Blood Donation Background"
+				class="w-full h-full object-cover filter blur-[4px] scale-[1.05]" 
+			/>
 			<!-- Precise dark transparent overlay above the image for readability -->
 			<div class="absolute inset-0" style="background-color: rgba(0, 0, 0, 0.45);"></div>
 		</div>
