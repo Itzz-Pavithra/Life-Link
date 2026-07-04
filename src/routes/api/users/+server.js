@@ -1,14 +1,13 @@
 import { json } from '@sveltejs/kit';
-import { deleteUser, suspendUser, readDB } from '$lib/server/db.js';
+import { deleteUser, suspendUser, database } from '$lib/server/db.js';
 
 /** @type {import('./$types').RequestHandler} */
 export async function GET({ locals }) {
 	if (!locals.user || locals.user.role !== 'admin') {
 		return json({ success: false, error: 'Unauthorized access.' }, { status: 403 });
 	}
-	const db = readDB();
-	// Return list of all users for administration
-	return json({ success: true, users: db.users });
+	const users = await database.getUsers();
+	return json({ success: true, users });
 }
 
 /** @type {import('./$types').RequestHandler} */
@@ -26,7 +25,7 @@ export async function POST({ request, locals }) {
 			return json({ success: false, error: 'Missing userId parameter.' }, { status: 400 });
 		}
 
-		const updatedUser = suspendUser(userId, locals.user.email);
+		const updatedUser = await suspendUser(userId, locals.user.email);
 		if (updatedUser) {
 			return json({ success: true, user: updatedUser });
 		} else {
@@ -52,7 +51,7 @@ export async function DELETE({ request, locals }) {
 			return json({ success: false, error: 'Missing userId parameter.' }, { status: 400 });
 		}
 
-		const success = deleteUser(userId, locals.user.email);
+		const success = await deleteUser(userId, locals.user.email);
 		if (success) {
 			return json({ success: true });
 		} else {

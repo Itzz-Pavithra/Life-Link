@@ -1,8 +1,10 @@
 import { redirect } from '@sveltejs/kit';
 import jwt from 'jsonwebtoken';
-import { readDB } from '$lib/server/db.js';
+import { getUserById, getUserByEmail } from '$lib/server/db.js';
+import dotenv from 'dotenv';
 
-const JWT_SECRET = 'supersecretkey123';
+dotenv.config();
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey123';
 
 /** @type {import('@sveltejs/kit').Handle} */
 export async function handle({ event, resolve }) {
@@ -12,8 +14,7 @@ export async function handle({ event, resolve }) {
 	if (token) {
 		try {
 			const decoded = jwt.verify(token, JWT_SECRET);
-			const db = readDB();
-			const user = db.users.find(u => u.id === decoded.id);
+			const user = await getUserById(decoded.id);
 
 			if (user && user.status === 'active') {
 				event.locals.user = {
@@ -40,8 +41,7 @@ export async function handle({ event, resolve }) {
 	} else if (userCookie) {
 		try {
 			const parsed = JSON.parse(userCookie);
-			const db = readDB();
-			const user = db.users.find(u => u.email.toLowerCase() === parsed.email.toLowerCase());
+			const user = await getUserByEmail(parsed.email);
 
 			if (user && user.status === 'active') {
 				event.locals.user = {

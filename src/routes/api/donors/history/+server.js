@@ -1,14 +1,14 @@
 import { json } from '@sveltejs/kit';
-import { readDB } from '$lib/server/db.js';
+import { database } from '$lib/server/db.js';
 
 /** @type {import('./$types').RequestHandler} */
-export function GET({ locals }) {
+export async function GET({ locals }) {
 	if (!locals.user) {
 		return json({ success: false, error: 'Unauthorized.' }, { status: 401 });
 	}
 
-	const db = readDB();
-	const history = db.donations.filter(
+	const donations = await database.getDonations();
+	const history = donations.filter(
 		d => d.donorId === locals.user.id || d.donorName.toLowerCase() === locals.user.name.toLowerCase()
 	);
 

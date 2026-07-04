@@ -2,8 +2,9 @@ import { json } from '@sveltejs/kit';
 import { database, updateInventory, addBloodBank, editBloodBank, deleteBloodBank } from '$lib/server/db.js';
 
 /** @type {import('./$types').RequestHandler} */
-export function GET() {
-	return json(database.bloodBanks);
+export async function GET() {
+	const bloodBanks = await database.getBloodBanks();
+	return json(bloodBanks);
 }
 
 /** @type {import('./$types').RequestHandler} */
@@ -18,8 +19,9 @@ export async function POST({ request, locals }) {
 
 		// Check if this is an inventory update
 		if (body.bloodGroup !== undefined && body.units !== undefined) {
-			const success = updateInventory(body.bloodGroup, body.units, userEmail);
-			return json({ success, bloodBanks: database.bloodBanks });
+			const success = await updateInventory(body.bloodGroup, body.units, userEmail);
+			const bloodBanks = await database.getBloodBanks();
+			return json({ success, bloodBanks });
 		}
 
 		// Otherwise, it's a new Blood Bank creation (Admin only)
@@ -31,8 +33,9 @@ export async function POST({ request, locals }) {
 			return json({ success: false, error: 'Missing required blood bank details.' }, { status: 400 });
 		}
 
-		const newBank = addBloodBank(body, userEmail);
-		return json({ success: true, bloodBank: newBank, bloodBanks: database.bloodBanks });
+		const newBank = await addBloodBank(body, userEmail);
+		const bloodBanks = await database.getBloodBanks();
+		return json({ success: true, bloodBank: newBank, bloodBanks });
 	} catch (err) {
 		return json({ success: false, error: err.message }, { status: 500 });
 	}
@@ -53,9 +56,10 @@ export async function PUT({ request, locals }) {
 			return json({ success: false, error: 'Missing blood bank ID.' }, { status: 400 });
 		}
 
-		const updatedBank = editBloodBank(id, updates, locals.user.email);
+		const updatedBank = await editBloodBank(id, updates, locals.user.email);
 		if (updatedBank) {
-			return json({ success: true, bloodBank: updatedBank, bloodBanks: database.bloodBanks });
+			const bloodBanks = await database.getBloodBanks();
+			return json({ success: true, bloodBank: updatedBank, bloodBanks });
 		} else {
 			return json({ success: false, error: 'Blood bank not found.' }, { status: 404 });
 		}
@@ -79,9 +83,10 @@ export async function DELETE({ request, locals }) {
 			return json({ success: false, error: 'Missing blood bank ID.' }, { status: 400 });
 		}
 
-		const success = deleteBloodBank(id, locals.user.email);
+		const success = await deleteBloodBank(id, locals.user.email);
 		if (success) {
-			return json({ success: true, bloodBanks: database.bloodBanks });
+			const bloodBanks = await database.getBloodBanks();
+			return json({ success: true, bloodBanks });
 		} else {
 			return json({ success: false, error: 'Blood bank not found.' }, { status: 404 });
 		}

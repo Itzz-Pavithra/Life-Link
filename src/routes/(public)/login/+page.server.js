@@ -1,15 +1,15 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { createUser, hasAdmin, readDB, verifyPassword } from '$lib/server/db.js';
+import { createUser, hasAdmin, getUserByEmail, verifyPassword } from '$lib/server/db.js';
 
 /** @type {import('./$types').PageServerLoad} */
-export function load({ locals }) {
+export async function load({ locals }) {
 	// If already logged in, redirect to dashboard
 	if (locals.user) {
 		throw redirect(303, `/dashboard/${locals.user.role}`);
 	}
 
 	return {
-		hasAdminAccount: hasAdmin()
+		hasAdminAccount: await hasAdmin()
 	};
 }
 
@@ -25,8 +25,7 @@ export const actions = {
 			return fail(400, { success: false, error: 'Email, Password, and Role are required.' });
 		}
 
-		const db = readDB();
-		const user = db.users.find(u => u.email.toLowerCase() === String(email).toLowerCase());
+		const user = await getUserByEmail(String(email));
 
 		if (!user) {
 			return fail(400, { success: false, error: 'Invalid email or password.' });
@@ -67,7 +66,8 @@ export const actions = {
 
 	createAdmin: async ({ request, cookies }) => {
 		// Verify if admin exists first
-		if (hasAdmin()) {
+		const adminExists = await hasAdmin();
+		if (adminExists) {
 			return fail(400, { success: false, error: 'Admin account already exists.' });
 		}
 
@@ -83,7 +83,7 @@ export const actions = {
 		}
 
 		try {
-			const adminUser = createUser({
+			const adminUser = await createUser({
 				name: String(name),
 				email: String(email),
 				phone: String(phone),

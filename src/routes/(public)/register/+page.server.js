@@ -1,5 +1,5 @@
 import { fail, redirect } from '@sveltejs/kit';
-import { createUser, readDB } from '$lib/server/db.js';
+import { createUser } from '$lib/server/db.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export function load({ locals }) {
@@ -35,7 +35,7 @@ export const actions = {
 		}
 
 		try {
-			const user = createUser({
+			const user = await createUser({
 				name: String(name),
 				email: String(email),
 				phone: String(phone),

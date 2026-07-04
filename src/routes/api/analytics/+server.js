@@ -1,13 +1,15 @@
 import { json } from '@sveltejs/kit';
-import { readDB } from '$lib/server/db.js';
+import { database } from '$lib/server/db.js';
 
 /** @type {import('./$types').RequestHandler} */
-export function GET() {
-	const db = readDB();
+export async function GET() {
+	const donors = await database.getDonors();
+	const requests = await database.getRequests();
+	const donations = await database.getDonations();
 
 	// Calculate counts dynamically from actual database
 	const bloodGroupCounts = {};
-	db.users.filter(u => u.role === 'donor').forEach(u => {
+	donors.forEach(u => {
 		if (u.bloodGroup) {
 			bloodGroupCounts[u.bloodGroup] = (bloodGroupCounts[u.bloodGroup] || 0) + 1;
 		}
@@ -30,7 +32,7 @@ export function GET() {
 			{ month: 'Mar', requests: 0, donations: 0 },
 			{ month: 'Apr', requests: 0, donations: 0 },
 			{ month: 'May', requests: 0, donations: 0 },
-			{ month: 'Jun', requests: db.blood_requests.length, donations: db.donations.length }
+			{ month: 'Jun', requests: requests.length, donations: donations.length }
 		],
 		distribution
 	};

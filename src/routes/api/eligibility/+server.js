@@ -1,5 +1,5 @@
 import { json } from '@sveltejs/kit';
-import { submitEligibilityQuiz, reviewEligibility, readDB } from '$lib/server/db.js';
+import { submitEligibilityQuiz, reviewEligibility, database } from '$lib/server/db.js';
 
 /** @type {import('./$types').RequestHandler} */
 export async function GET({ locals }) {
@@ -8,8 +8,8 @@ export async function GET({ locals }) {
 		return json({ success: false, error: 'Unauthorized access.' }, { status: 403 });
 	}
 
-	const db = readDB();
-	return json({ success: true, requests: db.eligibility_requests });
+	const requests = await database.getEligibilityRequests();
+	return json({ success: true, requests });
 }
 
 /** @type {import('./$types').RequestHandler} */
@@ -37,7 +37,7 @@ export async function POST({ request }) {
 		}
 
 		// Submit the questionnaire
-		submitEligibilityQuiz(email, name, phone, location, answers);
+		await submitEligibilityQuiz(email, name, phone, location, answers);
 
 		return json({ success: true, message: 'Eligibility questionnaire submitted successfully.' });
 	} catch (err) {
@@ -64,7 +64,7 @@ export async function PUT({ request, locals }) {
 			return json({ success: false, error: 'Invalid status update.' }, { status: 400 });
 		}
 
-		const success = reviewEligibility(requestId, status, locals.user.email);
+		const success = await reviewEligibility(requestId, status, locals.user.email);
 		if (success) {
 			return json({ success: true, message: `Request successfully ${status.toLowerCase()}.` });
 		} else {

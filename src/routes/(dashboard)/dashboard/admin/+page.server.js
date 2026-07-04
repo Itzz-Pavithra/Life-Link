@@ -1,4 +1,4 @@
-import { readDB, hasAdmin, addBloodBank, editBloodBank, deleteBloodBank, reviewEligibility, updateBloodRequestStatus, addDonation } from '$lib/server/db.js';
+import { database, addBloodBank, addDonation } from '$lib/server/db.js';
 import { fail, redirect } from '@sveltejs/kit';
 
 /** @type {import('./$types').PageServerLoad} */
@@ -7,13 +7,19 @@ export async function load({ locals }) {
 		throw redirect(303, '/login');
 	}
 
-	const db = readDB();
+	const users = await database.getUsers();
+	const bloodRequests = await database.getRequests();
+	const bloodBanks = await database.getBloodBanks();
+	const donations = await database.getDonations();
+	const eligibilityRequests = await database.getEligibilityRequests();
+	const logs = await database.getSystemLogs();
 
 	// Calculate counts
-	const totalDonors = db.users.filter(u => u.role === 'donor').length;
-	const totalRequests = db.blood_requests.length;
-	const resolvedRequests = db.blood_requests.filter(r => r.status === 'Completed').length;
-	const partnerBanks = db.blood_banks.length;
+	const donorsList = users.filter(u => u.role === 'donor');
+	const totalDonors = donorsList.length;
+	const totalRequests = bloodRequests.length;
+	const resolvedRequests = bloodRequests.filter(r => r.status === 'Completed').length;
+	const partnerBanks = bloodBanks.length;
 
 	const stats = {
 		totalDonors,
@@ -24,7 +30,7 @@ export async function load({ locals }) {
 
 	// Generate blood distribution metrics dynamically based on actual database contents
 	const bloodGroupCounts = {};
-	db.users.filter(u => u.role === 'donor').forEach(u => {
+	donorsList.forEach(u => {
 		if (u.bloodGroup) {
 			bloodGroupCounts[u.bloodGroup] = (bloodGroupCounts[u.bloodGroup] || 0) + 1;
 		}
@@ -47,21 +53,21 @@ export async function load({ locals }) {
 			{ month: 'Mar', requests: 0, donations: 0 },
 			{ month: 'Apr', requests: 0, donations: 0 },
 			{ month: 'May', requests: 0, donations: 0 },
-			{ month: 'Jun', requests: db.blood_requests.length, donations: db.donations.length }
+			{ month: 'Jun', requests: bloodRequests.length, donations: donations.length }
 		],
 		distribution
 	};
 
 	return {
 		user: locals.user,
-		users: db.users,
-		donors: db.users.filter(u => u.role === 'donor'),
-		receivers: db.users.filter(u => u.role === 'recipient'),
-		eligibilityRequests: db.eligibility_requests,
-		bloodBanks: db.blood_banks,
-		requests: db.blood_requests,
-		donations: db.donations,
-		systemLogs: db.logs,
+		users,
+		donors: donorsList,
+		receivers: users.filter(u => u.role === 'recipient'),
+		eligibilityRequests,
+		bloodBanks,
+		requests: bloodRequests,
+		donations,
+		systemLogs: logs,
 		analytics,
 		stats
 	};
@@ -87,7 +93,7 @@ export const actions = {
 			return fail(400, { error: 'Name, Address, Phone, and Email are required fields.' });
 		}
 
-		addBloodBank({
+		await addBloodBank({
 			name: String(name),
 			address: String(address),
 			phone: String(phone),
@@ -120,7 +126,7 @@ export const actions = {
 			return fail(400, { error: 'Donor Name, Blood Group, Units, and Hospital are required.' });
 		}
 
-		addDonation({
+		await addDonation({
 			donorName: String(donorName),
 			bloodGroup: String(bloodGroup),
 			units: Number(units),

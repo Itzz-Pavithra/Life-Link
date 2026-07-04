@@ -1,12 +1,12 @@
-import { readDB } from '$lib/server/db.js';
+import { database } from '$lib/server/db.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ fetch }) {
 	const res = await fetch('/api/landing');
 	const landingData = await res.json();
 
-	const db = readDB();
-	const activeRequests = db.blood_requests.filter(
+	const bloodRequests = await database.getRequests();
+	const activeRequests = bloodRequests.filter(
 		r => r.status === 'Approved' || r.status === 'Pending'
 	);
 
@@ -15,4 +15,3 @@ export async function load({ fetch }) {
 		activeRequests
 	};
 }
-

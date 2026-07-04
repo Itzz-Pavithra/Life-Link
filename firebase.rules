@@ -1,0 +1,103 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && 
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        getUserData().role == "admin";
+    }
+
+    // Validation helpers
+    function isValidString(val, maxLen) {
+      return val is string && val.size() <= maxLen;
+    }
+
+    // 1. Users collection rules
+    match /users/{userId} {
+      allow read: if isOwner(userId) || isAdmin();
+      
+      allow create: if isOwner(userId) 
+        && request.resource.data.role in ['admin', 'donor', 'recipient']
+        && isValidString(request.resource.data.name, 100)
+        && isValidString(request.resource.data.email, 150)
+        && request.resource.data.status == 'active';
+
+      allow update: if (isOwner(userId) 
+          && !("role" in request.resource.data.diff(resource.data).affectedKeys())
+          && !("createdAt" in request.resource.data.diff(resource.data).affectedKeys())
+          && !("id" in request.resource.data.diff(resource.data).affectedKeys())
+          && isValidString(request.resource.data.name, 100)
+        ) || isAdmin();
+
+      allow delete: if isAdmin() && resource.data.role != 'admin';
+    }
+
+    // 2. Eligibility requests rules
+    match /eligibility_requests/{requestId} {
+      // Admins can manage everything, guests/users can submit their questionnaire
+      allow read: if isAdmin();
+      allow create: if true // Anyone can submit an eligibility questionnaire
+        && isValidString(request.resource.data.email, 150)
+        && isValidString(request.resource.data.name, 100)
+        && request.resource.data.status == 'Pending';
+      allow update, delete: if isAdmin();
+    }
+
+    // 3. Blood Banks rules
+    match /blood_banks/{bankId} {
+      // Anyone signed in can read, only admin can write
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin()
+        && isValidString(request.resource.data.name, 150);
+    }
+
+    // 4. Blood Requests rules
+    match /blood_requests/{requestId} {
+      // Registered users can read all blood requests, submit their own, or update status if they own it
+      allow read: if isSignedIn();
+      allow create: if isSignedIn()
+        && isValidString(request.resource.data.patientName, 100)
+        && request.resource.data.units is number
+        && request.resource.data.status == 'Pending';
+      allow update: if isAdmin() || (
+        isSignedIn() && 
+        resource.data.submittedBy == request.auth.token.email && 
+        !("submittedBy" in request.resource.data.diff(resource.data).affectedKeys())
+      );
+      allow delete: if isAdmin();
+    }
+
+    // 5. Donations rules
+    match /donations/{donationId} {
+      allow read: if isSignedIn();
+      allow create, update, delete: if isAdmin();
+    }
+
+    // 6. System Logs rules
+    match /logs/{logId} {
+      allow read: if isAdmin();
+      allow create: if isSignedIn();
+      allow update, delete: if false; // Logs are write-once and immutable
+    }
+
+    // Default deny rule
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
