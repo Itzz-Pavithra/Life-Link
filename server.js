@@ -12,8 +12,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey123';
-const DB_PATH = './database.json';
-
+const DB_PATH = '/tmp/database.json';
 // CORS configuration supporting credentials (cookies)
 const allowedOrigins = [
  'http://localhost:5173',
