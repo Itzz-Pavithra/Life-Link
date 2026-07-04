@@ -96,12 +96,6 @@ export const database = {
 		const totalDonations = db.donations.length;
 
 		return {
-			stats: [
-				{ value: activeDonorsCount, label: 'Registered Donors', icon: '👤', color: 'text-red-650 border-red-105 bg-red-50/50' },
-				{ value: resolvedRequestsCount, label: 'Blood Requests Resolved', icon: '📋', color: 'text-blue-650 border-blue-105 bg-blue-50/50' },
-				{ value: partnerBanksCount, label: 'Partner Blood Banks', icon: '🏥', color: 'text-emerald-650 border-emerald-105 bg-emerald-50/50' },
-				{ value: totalDonations, label: 'Donations Completed', icon: '❤️', color: 'text-rose-650 border-rose-105 bg-rose-50/50' }
-			],
 			steps: [
 				{ step: '01', title: 'Eligibility Checker', desc: 'Prospective donors take our standard questionnaire.', icon: '📋' },
 				{ step: '02', title: 'Admin Verification', desc: 'Administrators verify questionnaire answers securely.', icon: '🔍' },

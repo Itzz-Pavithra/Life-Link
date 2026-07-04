@@ -52,9 +52,9 @@
 				</div>
 				<hr class="border-slate-50" />
 				<div class="space-y-2 text-xs text-slate-500">
-					<p><strong>Mobile:</strong> +91 98765 43210</p>
-					<p><strong>Region:</strong> Salem, TN</p>
-					<p><strong>Last Donation:</strong> 10th March 2026</p>
+					<p><strong>Mobile:</strong> {data.user?.phone || 'Not Provided'}</p>
+					<p><strong>Region:</strong> {data.user?.location || 'Not Provided'}</p>
+					<p><strong>Last Donation:</strong> {data.history && data.history.length > 0 ? data.history[0].date : 'No donations logged'}</p>
 				</div>
 			</div>
 
@@ -114,47 +114,55 @@
 				</div>
 			</div>
 
-			<div class="grid sm:grid-cols-2 gap-6">
-				{#each data.requests.filter(r => r.urgency === 'Critical' || r.urgency === 'Urgent') as req}
-					<div class="bg-white border border-slate-150 rounded-3xl p-6 shadow-md relative overflow-hidden group hover:shadow-xl transition flex flex-col justify-between min-h-60">
-						<div class="absolute top-4 right-4 bg-red-100 text-red-700 border border-red-200 px-3 py-1 rounded-xl text-xs font-bold uppercase tracking-wider animate-pulse">
-							{req.urgency}
-						</div>
+			{#if data.requests.filter(r => r.urgency === 'Critical' || r.urgency === 'Urgent').length === 0}
+				<div class="border border-slate-100 p-8 rounded-3xl text-center bg-slate-50/50">
+					<span class="text-3xl block mb-2">📋</span>
+					<p class="text-slate-550 font-bold text-slate-600">No emergency requests found</p>
+					<p class="text-slate-400 text-xs mt-1">There are no critical or urgent blood requests at this moment.</p>
+				</div>
+			{:else}
+				<div class="grid sm:grid-cols-2 gap-6">
+					{#each data.requests.filter(r => r.urgency === 'Critical' || r.urgency === 'Urgent') as req}
+						<div class="bg-white border border-slate-150 rounded-3xl p-6 shadow-md relative overflow-hidden group hover:shadow-xl transition flex flex-col justify-between min-h-60">
+							<div class="absolute top-4 right-4 bg-red-100 text-red-700 border border-red-200 px-3 py-1 rounded-xl text-xs font-bold uppercase tracking-wider animate-pulse">
+								{req.urgency}
+							</div>
 
-						<div class="space-y-4">
-							<div class="flex items-center gap-3">
-								<span class="w-12 h-12 rounded-2xl bg-red-50 border border-red-100 text-red-700 font-extrabold flex items-center justify-center text-lg">
-									{req.bloodGroup}
-								</span>
-								<div class="text-left">
-									<h4 class="font-bold text-slate-900 text-sm">Patient: {req.patientName}</h4>
-									<p class="text-[10px] text-gray-500">🏥 {req.hospital} • {req.city}</p>
+							<div class="space-y-4">
+								<div class="flex items-center gap-3">
+									<span class="w-12 h-12 rounded-2xl bg-red-50 border border-red-100 text-red-700 font-extrabold flex items-center justify-center text-lg">
+										{req.bloodGroup}
+									</span>
+									<div class="text-left">
+										<h4 class="font-bold text-slate-900 text-sm">Patient: {req.patientName}</h4>
+										<p class="text-[10px] text-gray-500">🏥 {req.hospital} • {req.city}</p>
+									</div>
+								</div>
+
+								<div class="bg-slate-50/50 border border-slate-100 p-3 rounded-2xl text-[10px] text-slate-500 space-y-1">
+									<p><strong>Required Units:</strong> {req.units} units</p>
+									<p><strong>Current Status:</strong> <span class="font-bold text-red-750 text-red-700">{req.status}</span></p>
 								</div>
 							</div>
 
-							<div class="bg-slate-50/50 border border-slate-100 p-3 rounded-2xl text-[10px] text-slate-500 space-y-1">
-								<p><strong>Required Units:</strong> {req.units} units</p>
-								<p><strong>Current Status:</strong> <span class="font-bold text-red-750 text-red-700">{req.status}</span></p>
+							<div class="mt-4">
+								{#if req.status !== 'Accepted'}
+									<button
+										class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-2.5 rounded-xl text-xs transition cursor-pointer"
+										onclick={() => handleAcceptEmergency(req.id)}
+									>
+										Accept Emergency Drive
+									</button>
+								{:else}
+									<span class="w-full block text-center bg-emerald-50 border border-emerald-250 text-emerald-750 text-emerald-700 font-extrabold py-2.5 rounded-xl text-xs">
+										Accepted ✓
+									</span>
+								{/if}
 							</div>
 						</div>
-
-						<div class="mt-4">
-							{#if req.status !== 'Accepted'}
-								<button
-									class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-2.5 rounded-xl text-xs transition cursor-pointer"
-									onclick={() => handleAcceptEmergency(req.id)}
-								>
-									Accept Emergency Drive
-								</button>
-							{:else}
-								<span class="w-full block text-center bg-emerald-50 border border-emerald-250 text-emerald-750 text-emerald-700 font-extrabold py-2.5 rounded-xl text-xs">
-									Accepted ✓
-								</span>
-							{/if}
-						</div>
-					</div>
-				{/each}
-			</div>
+					{/each}
+				</div>
+			{/if}
 		</div>
 
 	<!-- TAB 2: DONATION HISTORY -->
@@ -162,32 +170,40 @@
 		<div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
 			<h3 class="text-lg font-bold text-slate-900 mb-4">Historical Donations Log</h3>
 			
-			<div class="overflow-x-auto">
-				<table class="w-full border-collapse text-left text-sm">
-					<thead>
-						<tr class="border-b border-slate-100 text-slate-400 text-xs font-bold uppercase">
-							<th class="py-3 px-4">Donation Date</th>
-							<th class="py-3 px-4">Hospital Organization</th>
-							<th class="py-3 px-4">Quantity Supplied</th>
-							<th class="py-3 px-4">Campaign Drive Type</th>
-						</tr>
-					</thead>
-					<tbody class="divide-y divide-slate-50">
-						{#each data.history as record}
-							<tr class="hover:bg-slate-50/30 transition">
-								<td class="py-3 px-4 font-bold text-slate-900">{record.date}</td>
-								<td class="py-3 px-4 font-medium text-slate-800">{record.hospital}</td>
-								<td class="py-3 px-4 font-semibold text-red-700">{record.units} Bag (Whole Blood)</td>
-								<td class="py-3 px-4">
-									<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
-										{record.type}
-									</span>
-								</td>
+			{#if data.history.length === 0}
+				<div class="text-center p-8 bg-slate-50 border border-slate-100 rounded-2xl">
+					<span class="text-3xl block mb-2">🩸</span>
+					<p class="text-slate-500 font-bold">No donation history logged</p>
+					<p class="text-slate-400 text-xs mt-1">Your past donation campaigns will appear here.</p>
+				</div>
+			{:else}
+				<div class="overflow-x-auto">
+					<table class="w-full border-collapse text-left text-sm">
+						<thead>
+							<tr class="border-b border-slate-100 text-slate-400 text-xs font-bold uppercase">
+								<th class="py-3 px-4">Donation Date</th>
+								<th class="py-3 px-4">Hospital Organization</th>
+								<th class="py-3 px-4">Quantity Supplied</th>
+								<th class="py-3 px-4">Campaign Drive Type</th>
 							</tr>
-						{/each}
-					</tbody>
-				</table>
-			</div>
+						</thead>
+						<tbody class="divide-y divide-slate-50">
+							{#each data.history as record}
+								<tr class="hover:bg-slate-50/30 transition">
+									<td class="py-3 px-4 font-bold text-slate-900">{record.date}</td>
+									<td class="py-3 px-4 font-medium text-slate-800">{record.hospital}</td>
+									<td class="py-3 px-4 font-semibold text-red-700">{record.units} Bag (Whole Blood)</td>
+									<td class="py-3 px-4">
+										<span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-100 text-slate-700">
+											{record.type}
+										</span>
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
+				</div>
+			{/if}
 		</div>
 
 

@@ -1,27 +1,30 @@
 <script>
-	import { db } from '$lib/auth.svelte.js';
-	
-	let name = $state('');
-	let email = $state('');
-	let subject = $state('');
-	let message = $state('');
+	import { db } from "$lib/auth.svelte.js";
+
+	let name = $state("");
+	let email = $state("");
+	let subject = $state("");
+	let message = $state("");
 	let isSubmitted = $state(false);
 
 	function handleSubmit(e) {
 		e.preventDefault();
 		if (!name || !email || !message) {
-			db.addToast('Please fill in all required fields.', 'error');
+			db.addToast("Please fill in all required fields.", "error");
 			return;
 		}
 
 		isSubmitted = true;
-		db.addToast('Thank you! Your feedback message has been sent successfully.', 'success');
-		
+		db.addToast(
+			"Thank you! Your feedback message has been sent successfully.",
+			"success",
+		);
+
 		// Reset form
-		name = '';
-		email = '';
-		subject = '';
-		message = '';
+		name = "";
+		email = "";
+		subject = "";
+		message = "";
 	}
 </script>
 
@@ -29,26 +32,34 @@
 	<div class="max-w-5xl mx-auto space-y-12">
 		<!-- Header -->
 		<div class="text-center space-y-3">
-			<span class="text-xs font-bold text-red-700 uppercase tracking-widest bg-red-50 border border-red-200 px-3 py-1 rounded-full">
+			<span
+				class="text-xs font-bold text-red-700 uppercase tracking-widest bg-red-50 border border-red-200 px-3 py-1 rounded-full"
+			>
 				GET IN TOUCH
 			</span>
 			<h1 class="text-3xl sm:text-4xl font-extrabold text-slate-900">
 				Contact Our Coordinator Team
 			</h1>
 			<p class="text-slate-500 text-sm max-w-md mx-auto">
-				Have questions about eligibility, dashboard features, or local drives? Let us know.
+				Have questions about eligibility, dashboard features, or local
+				drives? Let us know.
 			</p>
 		</div>
 
 		<div class="grid md:grid-cols-12 gap-8 items-start">
 			<!-- Contact Form -->
-			<div class="md:col-span-7 bg-white border border-slate-100 p-8 rounded-3xl shadow-xl space-y-6">
+			<div
+				class="md:col-span-7 bg-white border border-slate-100 p-8 rounded-3xl shadow-xl space-y-6"
+			>
 				<h3 class="text-xl font-bold text-slate-900">Send a Message</h3>
 
 				<form onsubmit={handleSubmit} class="space-y-4">
 					<div class="grid sm:grid-cols-2 gap-4">
 						<div class="flex flex-col gap-1.5">
-							<label class="text-xs font-bold text-slate-500 uppercase" for="name">Full Name *</label>
+							<label
+								class="text-xs font-bold text-slate-500 uppercase"
+								for="name">Full Name *</label
+							>
 							<input
 								id="name"
 								type="text"
@@ -60,7 +71,10 @@
 						</div>
 
 						<div class="flex flex-col gap-1.5">
-							<label class="text-xs font-bold text-slate-500 uppercase" for="email">Email Address *</label>
+							<label
+								class="text-xs font-bold text-slate-500 uppercase"
+								for="email">Email Address *</label
+							>
 							<input
 								id="email"
 								type="email"
@@ -73,7 +87,10 @@
 					</div>
 
 					<div class="flex flex-col gap-1.5">
-						<label class="text-xs font-bold text-slate-500 uppercase" for="subject">Subject</label>
+						<label
+							class="text-xs font-bold text-slate-500 uppercase"
+							for="subject">Subject</label
+						>
 						<input
 							id="subject"
 							type="text"
@@ -84,7 +101,10 @@
 					</div>
 
 					<div class="flex flex-col gap-1.5">
-						<label class="text-xs font-bold text-slate-500 uppercase" for="message">Message *</label>
+						<label
+							class="text-xs font-bold text-slate-500 uppercase"
+							for="message">Message *</label
+						>
 						<textarea
 							id="message"
 							rows="5"
@@ -107,22 +127,40 @@
 			<!-- Quick Info Cards -->
 			<div class="md:col-span-5 space-y-6">
 				<!-- Help Hotline Card -->
-				<div class="bg-slate-900 text-white p-6 rounded-3xl shadow-lg relative overflow-hidden">
-					<div class="absolute -top-12 -right-12 w-24 h-24 bg-red-500/10 rounded-full blur-xl"></div>
-					<h4 class="text-red-500 text-xs font-bold uppercase tracking-wider mb-2">🚨 EMERGENCY HOTLINE</h4>
-					<p class="text-2xl font-bold mb-3">+91 98765 43210</p>
+				<div
+					class="bg-slate-900 text-white p-6 rounded-3xl shadow-lg relative overflow-hidden"
+				>
+					<div
+						class="absolute -top-12 -right-12 w-24 h-24 bg-red-500/10 rounded-full blur-xl"
+					></div>
+					<h4
+						class="text-red-500 text-xs font-bold uppercase tracking-wider mb-2"
+					>
+						🚨 EMERGENCY HOTLINE
+					</h4>
+					<p class="text-2xl font-bold mb-3">+91 93455 81448</p>
 					<p class="text-xs text-gray-400 leading-relaxed">
-						Call our emergency coordinator directly if you require immediate matching support outside standard response loops.
+						Call our emergency coordinator directly if you require
+						immediate matching support outside standard response
+						loops.
 					</p>
 				</div>
 
 				<!-- Office Card -->
-				<div class="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm space-y-4">
-					<h4 class="text-sm font-bold text-slate-900">Coordination Hub</h4>
-					<div class="space-y-3 text-xs text-slate-500 leading-relaxed">
+				<div
+					class="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm space-y-4"
+				>
+					<h4 class="text-sm font-bold text-slate-900">
+						Coordination Hub
+					</h4>
+					<div
+						class="space-y-3 text-xs text-slate-500 leading-relaxed"
+					>
 						<div class="flex gap-2">
 							<span>📍</span>
-							<span>Department of MCA, Salem, Tamil Nadu, India.</span>
+							<span
+								>Department of MCA, Salem, Tamil Nadu, India.</span
+							>
 						</div>
 						<div class="flex gap-2">
 							<span>✉️</span>

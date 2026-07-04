@@ -272,28 +272,36 @@
 	<!-- TAB 3: MY REQUESTS (TIMELINE) -->
 	{:else if db.activeTab === 'my-requests'}
 		<div class="space-y-6">
-			{#each data.requests as req}
-				<div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-6">
-					<div class="flex flex-wrap justify-between items-center gap-4">
-						<div>
-							<h3 class="text-lg font-bold text-slate-800">Request for {req.patientName}</h3>
-							<p class="text-xs text-gray-500">ID: {req.id} • Date: {req.date}</p>
-						</div>
-
-						<div class="flex items-center gap-3">
-							<span class="bg-red-50 border border-red-150 text-red-700 px-3 py-1 rounded-xl text-xs font-bold">
-								Blood Needed: {req.bloodGroup}
-							</span>
-							<span class="bg-slate-100 text-slate-700 px-3 py-1 rounded-xl text-xs font-semibold">
-								{req.units} Units
-							</span>
-						</div>
-					</div>
-
-					<!-- Animated timeline widget -->
-					<Timeline currentStatus={req.status} />
+			{#if data.requests.length === 0}
+				<div class="bg-white border border-slate-100 rounded-3xl p-8 text-center shadow-sm">
+					<span class="text-4xl block mb-2">📋</span>
+					<h3 class="text-slate-500 font-bold text-slate-700">No requests found</h3>
+					<p class="text-slate-400 text-xs mt-1">You have not submitted any blood requests yet.</p>
 				</div>
-			{/each}
+			{:else}
+				{#each data.requests as req}
+					<div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-6">
+						<div class="flex flex-wrap justify-between items-center gap-4">
+							<div>
+								<h3 class="text-lg font-bold text-slate-800">Request for {req.patientName}</h3>
+								<p class="text-xs text-gray-500">ID: {req.id} • Date: {req.date}</p>
+							</div>
+
+							<div class="flex items-center gap-3">
+								<span class="bg-red-50 border border-red-150 text-red-700 px-3 py-1 rounded-xl text-xs font-bold">
+									Blood Needed: {req.bloodGroup}
+								</span>
+								<span class="bg-slate-100 text-slate-700 px-3 py-1 rounded-xl text-xs font-semibold">
+									{req.units} Units
+								</span>
+							</div>
+						</div>
+
+						<!-- Animated timeline widget -->
+						<Timeline currentStatus={req.status} />
+					</div>
+				{/each}
+			{/if}
 		</div>
 	<!-- TAB 4: PROFILE -->
 	{:else if db.activeTab === 'profile'}

@@ -32,7 +32,7 @@
 				<ul class="space-y-2 text-sm">
 					<li class="flex items-center gap-2">
 						<span>📞</span>
-						<span class="text-white font-bold">+91 98765 43210</span>
+						<span class="text-white font-bold">+91 93455 81448</span>
 					</li>
 					<li class="flex items-center gap-2">
 						<span>✉️</span>

@@ -4,288 +4,352 @@
 
 	let { data } = $props();
 
-	const stats = $derived(data.landing?.stats || []);
 	const steps = $derived(data.landing?.steps || []);
 	const benefits = $derived(data.landing?.benefits || []);
-	const faqs = $derived(data.landing?.faqs || []);
-	const testimonials = $derived(data.landing?.testimonials || []);
+	const activeRequests = $derived(data.activeRequests || []);
 
-	let activeFaq = $state(null);
+	// Contact form fields state
+	let contactName = $state('');
+	let contactEmail = $state('');
+	let contactSubject = $state('');
+	let contactMessage = $state('');
+
+	function handleContactSubmit(e) {
+		e.preventDefault();
+		if (!contactName || !contactEmail || !contactMessage) {
+			db.addToast('Please fill in all required fields.', 'error');
+			return;
+		}
+		db.addToast('Thank you! Your feedback message has been sent successfully.', 'success');
+		contactName = '';
+		contactEmail = '';
+		contactSubject = '';
+		contactMessage = '';
+	}
 </script>
 
 <style>
-	@keyframes float {
-		0%, 100% { transform: translateY(0px) rotate(0deg); }
-		50% { transform: translateY(-12px) rotate(2deg); }
+	.glass-card-light {
+		background: rgba(255, 255, 255, 0.65);
+		backdrop-filter: blur(16px);
+		-webkit-backdrop-filter: blur(16px);
+		border: 1px solid rgba(255, 255, 255, 0.4);
 	}
-	@keyframes pulse-glow-slow {
-		0%, 100% { transform: scale(1); opacity: 0.15; }
-		50% { transform: scale(1.08); opacity: 0.3; }
-	}
-	.float-drop {
-		animation: float 5s ease-in-out infinite;
-	}
-	.pulse-glow {
-		animation: pulse-glow-slow 6s ease-in-out infinite;
+	.glass-card-dark {
+		background: rgba(15, 23, 42, 0.45);
+		backdrop-filter: blur(20px);
+		-webkit-backdrop-filter: blur(20px);
+		border: 1px solid rgba(255, 255, 255, 0.08);
 	}
 </style>
 
-<div class="min-h-screen bg-baby-pink text-slate-800 overflow-x-hidden">
-	<!-- Hero Section -->
-	<section class="relative bg-gradient-to-b from-red-55/20 via-baby-pink to-baby-pink pt-28 pb-24 px-6">
-		<div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-			<div class="absolute top-10 left-10 w-96 h-96 bg-red-400/5 rounded-full blur-3xl pulse-glow"></div>
-			<div class="absolute bottom-10 right-10 w-96 h-96 bg-amber-400/5 rounded-full blur-3xl pulse-glow" style="animation-delay: 2s"></div>
+<div class="min-h-screen bg-baby-pink text-slate-900 overflow-x-hidden">
+	
+	<!-- 1. HERO SECTION (Bounded Banner, Bounded Height, Blurred Image Overlay) -->
+	<section class="relative h-[600px] flex items-center justify-center overflow-hidden">
+		<!-- Background image container with blur effect (contained inside this section only) -->
+		<div class="absolute inset-0 z-0 overflow-hidden">
+			<!-- Blurred background image using cover, center center, no-repeat -->
+			<div 
+				class="absolute inset-0 bg-cover bg-center bg-no-repeat filter blur-[4px] scale-[1.05]" 
+				style="background-image: url('/blood-donation-bg.png');"
+			></div>
+			<!-- Precise dark transparent overlay above the image for readability -->
+			<div class="absolute inset-0" style="background-color: rgba(0, 0, 0, 0.45);"></div>
 		</div>
 
-		<div class="max-w-7xl mx-auto grid lg:grid-cols-12 gap-16 items-center relative z-10">
-			<!-- Hero Text -->
-			<div class="lg:col-span-7 space-y-8 text-left">
-				<div class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-red-100/50 border border-red-200 text-red-700 text-xs font-bold uppercase tracking-wider animate-pulse">
-					❤️ Emergency Life Saving Network
-				</div>
-				<h1 class="text-4xl sm:text-6xl font-extrabold text-slate-900 tracking-tight leading-[1.15]">
-					Connecting Blood <span class="text-red-700">Donors</span> & <span class="text-red-650 text-red-650">Recipients</span> Instantly
-				</h1>
-				<p class="text-base sm:text-lg text-slate-600 max-w-2xl leading-relaxed">
-					LifeLink is a premium, real-time matching network built to eliminate blood inventory latency. Check your eligibility, register your availability, and coordinate deliveries securely.
-				</p>
-				<div class="flex flex-wrap gap-4 pt-2">
-					<!-- Flow logic redirection: Donor must go to Eligibility check first -->
-					<a
-						href="/eligibility"
-						class="bg-red-700 hover:bg-red-800 text-white font-bold px-8 py-4 rounded-2xl shadow-xl shadow-red-700/25 transition transform hover:-translate-y-0.5 active:scale-95 text-sm"
-					>
-						Donate Blood (Check Eligibility)
-					</a>
-					<a
-						href="/register"
-						class="bg-white border border-slate-200 text-slate-700 hover:text-red-700 hover:border-red-200 font-bold px-8 py-4 rounded-2xl shadow-sm transition transform hover:-translate-y-0.5 text-sm"
-					>
-						Request Blood (Register)
-					</a>
-				</div>
+		<!-- Hero Centered Content (Sharp text and buttons) -->
+		<div class="relative z-10 max-w-7xl mx-auto px-6 w-full text-center text-white space-y-6 flex flex-col items-center">
+			<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/20 border border-red-500/30 text-red-300 text-xs font-bold uppercase tracking-wider animate-pulse">
+				❤️ Emergency Life Saving Network
 			</div>
-
-			<!-- Visual Widget -->
-			<div class="lg:col-span-5 flex justify-center relative">
-				<div class="relative w-80 h-80 sm:w-96 sm:h-96 bg-white border border-slate-100 rounded-[40px] shadow-2xl p-8 flex flex-col justify-center items-center overflow-hidden group hover:shadow-red-150 transition-all duration-500">
-					<!-- Floating Background circles -->
-					<div class="absolute -top-10 -right-10 w-28 h-28 bg-red-500/5 rounded-full blur-xl group-hover:scale-125 transition-transform"></div>
-					<div class="absolute -bottom-10 -left-10 w-28 h-28 bg-red-500/5 rounded-full blur-xl group-hover:scale-125 transition-transform"></div>
-					
-					<!-- LifeLink logo display -->
-					<div class="float-drop flex flex-col items-center">
-						<img src="/logo.png" alt="LifeLink Branding" class="w-44 h-44 object-contain mb-4 filter drop-shadow-2xl" />
-						<div class="text-center">
-							<span class="text-2xl font-black text-slate-900">LifeLink Node</span>
-							<div class="w-16 h-1 bg-red-650 bg-red-600 mx-auto mt-2 rounded-full"></div>
-						</div>
-					</div>
-
-					<!-- Heartbeat Monitor simulation widget -->
-					<div class="absolute bottom-6 left-6 right-6 border border-red-105 bg-red-50/50 rounded-2xl p-3.5 flex items-center justify-between shadow-sm">
-						<div class="flex items-center gap-2.5">
-							<span class="text-xl animate-pulse">💓</span>
-							<div class="text-left">
-								<p class="text-xs font-black text-slate-950">Matching Engine</p>
-								<p class="text-[10px] text-gray-500">Listening to active nodes...</p>
-							</div>
-						</div>
-						<span class="text-[10px] font-bold text-red-700 bg-red-100/50 px-2.5 py-1 rounded-full uppercase tracking-wider">Online</span>
-					</div>
-				</div>
+			
+			<h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight leading-[1.1] max-w-4xl text-white">
+				Donate Blood, <span class="text-red-500 drop-shadow-[0_2px_10px_rgba(239,68,68,0.3)]">Save Lives</span>
+			</h1>
+			
+			<p class="text-base sm:text-lg text-slate-200 max-w-2xl leading-relaxed font-medium">
+				LifeLink connects donors with people who need blood urgently.
+			</p>
+			
+			<div class="flex flex-wrap gap-4 justify-center pt-2">
+				<a
+					href="/eligibility"
+					class="bg-red-600 hover:bg-red-700 text-white font-bold px-8 py-3.5 rounded-2xl shadow-xl shadow-red-600/30 transition transform hover:-translate-y-0.5 active:scale-95 text-sm"
+				>
+					Become a Donor
+				</a>
+				<a
+					href="/request-blood"
+					class="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold px-8 py-3.5 rounded-2xl shadow-sm transition transform hover:-translate-y-0.5 text-sm backdrop-blur-md"
+				>
+					Request Blood
+				</a>
 			</div>
 		</div>
 	</section>
 
-	<!-- Dynamic Statistics Counters -->
-	<section class="max-w-7xl mx-auto px-6 py-12">
-		<div class="grid grid-cols-2 lg:grid-cols-4 gap-6">
-			{#each stats as stat}
-				<div class="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm text-center transition hover:shadow-xl hover:-translate-y-1 duration-300">
-					<span class="text-4xl mb-2 block">{stat.icon}</span>
-					<h3 class="text-3xl font-black text-slate-900 mb-1">{stat.value}</h3>
-					<p class="text-xs font-bold text-slate-500 uppercase tracking-wide">{stat.label}</p>
-				</div>
-			{/each}
-		</div>
-	</section>
+	<!-- 2. HOW IT WORKS SECTION -->
+	<section id="how-it-works" class="py-24 px-6 bg-slate-950 text-white relative">
+		<!-- Background decorations -->
+		<div class="absolute top-10 left-10 w-96 h-96 bg-red-600/5 rounded-full blur-3xl pointer-events-none"></div>
+		<div class="absolute bottom-10 right-10 w-96 h-96 bg-red-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
-	<!-- How LifeLink Works -->
-	<section class="bg-red-50/10 border-y border-red-100/30 py-24 px-6">
-		<div class="max-w-7xl mx-auto">
-			<div class="text-center max-w-xl mx-auto mb-16 space-y-3">
-				<h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 tracking-tight">
+		<div class="max-w-7xl mx-auto relative z-10">
+			<div class="text-center max-w-xl mx-auto mb-20 space-y-4">
+				<span class="text-xs font-bold text-red-500 uppercase tracking-widest bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-full">
+					PROCESS STEPS
+				</span>
+				<h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight">
 					How LifeLink Works
 				</h2>
-				<p class="text-slate-550 text-sm max-w-md mx-auto">
+				<p class="text-slate-400 text-sm leading-relaxed max-w-md mx-auto">
 					Our platform coordinates emergency requests and availability with absolute clinical efficiency.
 				</p>
 			</div>
 
 			<div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-8">
 				{#each steps as step}
-					<div class="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm relative group hover:shadow-md transition text-left">
-						<span class="absolute top-4 right-4 text-4xl font-black text-slate-100 group-hover:text-red-50/50 transition">
-							{step.step}
-						</span>
-						<div class="w-12 h-12 rounded-2xl bg-red-50 border border-red-100 flex items-center justify-center text-2xl mb-6">
-							{step.icon}
-						</div>
-						<h4 class="text-base font-bold text-slate-900 mb-2">{step.title}</h4>
-						<p class="text-xs text-slate-500 leading-relaxed">{step.desc}</p>
-					</div>
-				{/each}
-			</div>
-		</div>
-	</section>
-
-	<!-- Compatibility Chart -->
-	<section class="max-w-7xl mx-auto px-6 py-24">
-		<div class="grid lg:grid-cols-12 gap-16 items-center">
-			<div class="lg:col-span-5 space-y-6 text-left">
-				<h2 class="text-3xl sm:text-4xl font-extrabold text-slate-900 leading-tight">
-					Understand Your Blood Group Compatibility
-				</h2>
-				<p class="text-sm text-slate-650 leading-relaxed">
-					Blood compatibility is crucial for emergency matchings. Different blood groups have distinct antigens and antibodies that determine who can safely give or receive blood.
-				</p>
-				
-				<div class="space-y-4 pt-2">
-					<div class="flex items-start gap-3">
-						<span class="text-emerald-500 text-lg font-bold">✔</span>
+					<div class="glass-card-dark p-8 rounded-[32px] relative group hover:shadow-xl hover:shadow-red-950/10 hover:border-white/15 transition duration-300 text-left flex flex-col justify-between min-h-64">
 						<div>
-							<strong class="text-slate-900 block text-sm">Universal Donor</strong>
-							<span class="text-xs text-slate-500">O Negative (O-) blood can be transfused to patients of any blood group.</span>
-						</div>
-					</div>
-					<div class="flex items-start gap-3">
-						<span class="text-sky-500 text-lg font-bold">✔</span>
-						<div>
-							<strong class="text-slate-900 block text-sm">Universal Recipient</strong>
-							<span class="text-xs text-slate-500">AB Positive (AB+) individuals can safely receive blood of any blood group.</span>
-						</div>
-					</div>
-				</div>
-			</div>
-
-			<div class="lg:col-span-7">
-				<CompatibilityGuide />
-			</div>
-		</div>
-	</section>
-
-	<!-- Why Choose LifeLink -->
-	<section class="bg-slate-900 text-white py-24 px-6 relative text-left">
-		<div class="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-			<div class="absolute top-1/2 left-10 w-96 h-96 bg-red-700/5 rounded-full blur-3xl"></div>
-		</div>
-
-		<div class="max-w-7xl mx-auto relative z-10">
-			<div class="text-center max-w-xl mx-auto mb-16 space-y-3">
-				<span class="text-xs font-bold text-red-500 uppercase tracking-widest block">WHY LIFELINK</span>
-				<h2 class="text-3xl sm:text-4xl font-bold">Hospital-Grade Logistics</h2>
-				<p class="text-gray-400 text-sm">
-					Engineered with the care and responsiveness that critical environments demand.
-				</p>
-			</div>
-
-			<div class="grid md:grid-cols-3 gap-8">
-				{#each benefits as benefit}
-					<div class="bg-gray-800/40 border border-gray-805 border-gray-800 p-8 rounded-3xl shadow-xl backdrop-blur">
-						<div class="text-4xl mb-6">{benefit.icon}</div>
-						<h3 class="text-lg font-bold mb-3">{benefit.title}</h3>
-						<p class="text-xs text-gray-400 leading-relaxed">{benefit.desc}</p>
-					</div>
-				{/each}
-			</div>
-		</div>
-	</section>
-
-	<!-- Testimonials -->
-	<section class="max-w-7xl mx-auto px-6 py-24">
-		<div class="text-center max-w-xl mx-auto mb-16 space-y-2">
-			<h2 class="text-3xl font-extrabold text-slate-900">What Health Professionals Say</h2>
-			<p class="text-xs text-slate-500">Stories of matches made and lives saved through the LifeLink network.</p>
-		</div>
-
-		<div class="grid md:grid-cols-2 gap-8">
-			{#each testimonials as t}
-				<div class="bg-white border border-slate-100 p-8 rounded-3xl shadow-sm flex flex-col justify-between text-left">
-					<p class="italic text-slate-600 mb-6 text-base leading-relaxed">
-						" {t.quote} "
-					</p>
-					<div class="flex items-center gap-3">
-						<div class="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center font-bold text-red-700">
-							{t.author.charAt(0)}
-						</div>
-						<div>
-							<h4 class="font-bold text-slate-900 text-sm leading-none">{t.author}</h4>
-							<span class="text-xs text-slate-550 text-slate-500 mt-1 block">{t.role}</span>
-						</div>
-					</div>
-				</div>
-			{/each}
-		</div>
-	</section>
-
-	<!-- FAQ -->
-	<section class="bg-red-55/10 py-24 px-6 border-t border-red-100/30">
-		<div class="max-w-4xl mx-auto">
-			<h2 class="text-3xl font-bold text-center text-slate-900 mb-16">
-				Frequently Asked Questions
-			</h2>
-
-			<div class="space-y-4 text-left">
-				{#each faqs as faq, index}
-					<div class="bg-white border border-slate-205 border-slate-200/60 rounded-2xl overflow-hidden shadow-sm transition">
-						<button
-							class="w-full p-5 text-left font-bold text-slate-800 flex justify-between items-center hover:bg-slate-50 transition text-sm cursor-pointer"
-							onclick={() => activeFaq = activeFaq === index ? null : index}
-						>
-							<span>{faq.q}</span>
-							<span class="text-xs transition-transform duration-300 {activeFaq === index ? 'rotate-180 text-red-700' : 'text-slate-400'}">
-								▼
+							<span class="absolute top-6 right-6 text-4xl font-black text-white/5 group-hover:text-red-500/10 transition">
+								{step.step}
 							</span>
-						</button>
-						{#if activeFaq === index}
-							<div class="p-5 border-t border-slate-100 text-xs text-slate-500 leading-relaxed bg-slate-50/50">
-								{faq.a}
+							<div class="w-14 h-14 rounded-2xl bg-red-950/50 border border-red-500/20 flex items-center justify-center text-3xl mb-8">
+								{step.icon}
 							</div>
-						{/if}
+							<h4 class="text-lg font-bold text-white mb-3">{step.title}</h4>
+							<p class="text-xs text-slate-400 leading-relaxed">{step.desc}</p>
+						</div>
 					</div>
 				{/each}
 			</div>
 		</div>
 	</section>
 
-	<!-- CTA -->
-	<section class="bg-red-700 text-white py-24 px-6 text-center relative overflow-hidden">
-		<!-- Glowing shapes -->
-		<div class="absolute -top-32 -left-32 w-64 h-64 bg-white/5 rounded-full blur-2xl"></div>
-		<div class="absolute -bottom-32 -right-32 w-64 h-64 bg-white/5 rounded-full blur-2xl"></div>
+	<!-- 3. WHY DONATE BLOOD SECTION (with Compatibility Guide) -->
+	<section id="why-donate" class="py-24 px-6 bg-baby-pink relative text-left">
+		<div class="max-w-7xl mx-auto">
+			<div class="grid lg:grid-cols-12 gap-16 items-center">
+				<div class="lg:col-span-5 space-y-8">
+					<div class="space-y-4">
+						<span class="text-xs font-bold text-red-700 uppercase tracking-widest bg-red-100 border border-red-200 px-3 py-1 rounded-full">
+							WHY CHOOSE LIFELINK
+						</span>
+						<h2 class="text-3xl sm:text-5xl font-extrabold text-slate-900 leading-tight">
+							Hospital-Grade Logistics & Matching
+						</h2>
+						<p class="text-sm text-slate-600 leading-relaxed">
+							LifeLink is engineered to minimize blood coordination latencies. By registering your donation status, you provide immediate lifesaving buffers in critical clinical cases.
+						</p>
+					</div>
 
-		<div class="max-w-3xl mx-auto space-y-6 relative z-10">
-			<h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight">
-				Ready to Make an Impact?
-			</h2>
-			<p class="text-red-100 text-base leading-relaxed max-w-xl mx-auto">
-				Join hundreds of voluntary medical professionals. Register request tickets or check donation eligibility.
-			</p>
-			<div class="flex flex-wrap gap-4 justify-center pt-4">
-				<a
-					href="/eligibility"
-					class="bg-white text-red-700 font-bold px-8 py-3.5 rounded-2xl shadow-xl transition transform hover:-translate-y-0.5 active:scale-95 text-sm"
-				>
-					Start Eligibility Test
-				</a>
-				<a
-					href="/login"
-					class="bg-transparent border border-red-300 text-white hover:bg-white/10 font-bold px-8 py-3.5 rounded-2xl transition text-sm"
-				>
-					Access Account
-				</a>
+					<div class="grid gap-4">
+						{#each benefits as benefit}
+							<div class="glass-card-light p-5 rounded-2xl border flex gap-4 items-start shadow-sm">
+								<div class="text-2xl bg-red-100 p-2.5 rounded-xl border border-red-200">{benefit.icon}</div>
+								<div>
+									<h4 class="font-bold text-slate-900 text-sm mb-1">{benefit.title}</h4>
+									<p class="text-xs text-slate-550 text-slate-500 leading-relaxed">{benefit.desc}</p>
+								</div>
+							</div>
+						{/each}
+					</div>
+				</div>
+
+				<div class="lg:col-span-7">
+					<CompatibilityGuide />
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<!-- 4. EMERGENCY BLOOD REQUEST SECTION -->
+	<section id="emergency-requests" class="py-24 px-6 bg-slate-950 text-white relative">
+		<!-- Glow overlay -->
+		<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-red-600/5 rounded-full blur-3xl pointer-events-none"></div>
+
+		<div class="max-w-7xl mx-auto relative z-10 text-center">
+			<div class="max-w-xl mx-auto mb-16 space-y-4">
+				<span class="text-xs font-bold text-red-500 uppercase tracking-widest bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-full">
+					🚨 REAL-TIME MATCHING
+				</span>
+				<h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight">
+					Emergency Blood Requests
+				</h2>
+				<p class="text-slate-400 text-sm leading-relaxed max-w-md mx-auto">
+					Below are the active emergency donation requests registered on the network.
+				</p>
+			</div>
+
+			<!-- Dynamic Requests List or Empty State -->
+			{#if activeRequests.length === 0}
+				<div class="max-w-md mx-auto glass-card-dark p-12 rounded-[32px] border text-center space-y-4 shadow-xl">
+					<span class="text-5xl block animate-bounce" style="animation-duration: 3s">🩸</span>
+					<h3 class="text-lg font-bold text-white">No requests found</h3>
+					<p class="text-xs text-slate-400 leading-relaxed">
+						There are currently no active emergency blood requests. Register as a donor to receive alerts when new patient drives are logged.
+					</p>
+					<div class="pt-2">
+						<a href="/register" class="inline-block bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-6 py-3 rounded-xl transition">
+							Register to Receive Alerts
+						</a>
+					</div>
+				</div>
+			{:else}
+				<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
+					{#each activeRequests as req}
+						<div class="glass-card-dark p-6 rounded-[32px] border hover:border-red-500/30 transition duration-300 flex flex-col justify-between text-left min-h-64 shadow-md relative overflow-hidden group">
+							<!-- Urgency Tag -->
+							<div class="absolute top-4 right-4 text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg border
+								{req.urgency === 'Critical' ? 'bg-red-500/20 text-red-400 border-red-500/35 animate-pulse' : ''}
+								{req.urgency === 'Urgent' ? 'bg-amber-500/20 text-amber-400 border-amber-500/35' : ''}
+								{req.urgency === 'Normal' ? 'bg-slate-500/20 text-slate-400 border-slate-500/35' : ''}">
+								{req.urgency}
+							</div>
+
+							<div class="space-y-6">
+								<div class="flex items-center gap-3">
+									<span class="w-12 h-12 bg-red-600 text-white font-extrabold text-lg rounded-2xl flex items-center justify-center shadow-lg shadow-red-600/20 border border-red-500/20">
+										{req.bloodGroup}
+									</span>
+									<div>
+										<h4 class="font-bold text-white text-sm">Patient: {req.patientName}</h4>
+										<p class="text-[10px] text-slate-400">🏥 {req.hospital} • {req.city}</p>
+									</div>
+								</div>
+
+								<div class="space-y-1 text-xs text-slate-400 bg-white/5 border border-white/5 p-4 rounded-2xl">
+									<p>📊 <strong>Required Units:</strong> <span class="font-bold text-white">{req.units} Bags</span></p>
+									<p>📅 <strong>Date Published:</strong> {req.date}</p>
+								</div>
+							</div>
+
+							<div class="mt-6">
+								<a
+									href="/login"
+									class="w-full text-center block bg-white/10 hover:bg-red-600 hover:text-white border border-white/10 text-white font-bold py-3 rounded-2xl transition text-xs"
+								>
+									Log In to Help Patient
+								</a>
+							</div>
+						</div>
+					{/each}
+				</div>
+			{/if}
+		</div>
+	</section>
+
+	<!-- 5. CONTACT SECTION -->
+	<section id="contact" class="py-24 px-6 bg-baby-pink relative text-left">
+		<div class="max-w-7xl mx-auto">
+			<div class="text-center max-w-xl mx-auto mb-16 space-y-4">
+				<span class="text-xs font-bold text-red-700 uppercase tracking-widest bg-red-50 border border-red-200 px-3 py-1 rounded-full">
+					GET IN TOUCH
+				</span>
+				<h2 class="text-3xl sm:text-5xl font-extrabold text-slate-900">
+					Contact Our Coordinator Team
+				</h2>
+				<p class="text-slate-550 text-sm max-w-md mx-auto">
+					Have questions about eligibility, dashboard features, or local drives? Let us know.
+				</p>
+			</div>
+
+			<div class="grid md:grid-cols-12 gap-8 items-start">
+				<!-- Embedded Contact Form -->
+				<div class="md:col-span-7 glass-card-light p-8 rounded-[32px] border shadow-xl space-y-6">
+					<h3 class="text-xl font-bold text-slate-900">Send a Message</h3>
+
+					<form onsubmit={handleContactSubmit} class="space-y-4">
+						<div class="grid sm:grid-cols-2 gap-4">
+							<div class="flex flex-col gap-1.5">
+								<label class="text-xs font-bold text-slate-500 uppercase" for="cname">Full Name *</label>
+								<input
+									id="cname"
+									type="text"
+									bind:value={contactName}
+									placeholder="Enter full name"
+									class="border border-slate-200 p-3.5 rounded-2xl focus:ring-2 focus:ring-red-500 focus:outline-none bg-white text-sm"
+									required
+								/>
+							</div>
+
+							<div class="flex flex-col gap-1.5">
+								<label class="text-xs font-bold text-slate-500 uppercase" for="cemail">Email Address *</label>
+								<input
+									id="cemail"
+									type="email"
+									bind:value={contactEmail}
+									placeholder="Enter email address"
+									class="border border-slate-200 p-3.5 rounded-2xl focus:ring-2 focus:ring-red-500 focus:outline-none bg-white text-sm"
+									required
+								/>
+							</div>
+						</div>
+
+						<div class="flex flex-col gap-1.5">
+							<label class="text-xs font-bold text-slate-500 uppercase" for="csubject">Subject</label>
+							<input
+								id="csubject"
+								type="text"
+								bind:value={contactSubject}
+								placeholder="Enter subject"
+								class="border border-slate-200 p-3.5 rounded-2xl focus:ring-2 focus:ring-red-500 focus:outline-none bg-white text-sm"
+							/>
+						</div>
+
+						<div class="flex flex-col gap-1.5">
+							<label class="text-xs font-bold text-slate-500 uppercase" for="cmessage">Message *</label>
+							<textarea
+								id="cmessage"
+								rows="5"
+								bind:value={contactMessage}
+								placeholder="Type your message..."
+								class="border border-slate-200 p-3.5 rounded-2xl focus:ring-2 focus:ring-red-500 focus:outline-none bg-white text-sm resize-none"
+								required
+							></textarea>
+						</div>
+
+						<button
+							type="submit"
+							class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-4 rounded-2xl shadow-lg shadow-red-700/25 transition transform active:scale-95 text-sm cursor-pointer"
+						>
+							Send Message
+						</button>
+					</form>
+				</div>
+
+				<!-- Quick Coordinator Contacts -->
+				<div class="md:col-span-5 space-y-6">
+					<!-- Hotline -->
+					<div class="bg-slate-900 text-white p-8 rounded-[32px] shadow-lg relative overflow-hidden">
+						<div class="absolute -top-12 -right-12 w-24 h-24 bg-red-500/10 rounded-full blur-xl"></div>
+						<h4 class="text-red-500 text-xs font-bold uppercase tracking-wider mb-2">🚨 EMERGENCY HOTLINE</h4>
+						<p class="text-3xl font-extrabold mb-4">+91 93455 81448</p>
+						<p class="text-xs text-slate-400 leading-relaxed">
+							Call our emergency coordinator directly if you require immediate matching support outside standard response loops.
+						</p>
+					</div>
+
+					<!-- Coordination Address -->
+					<div class="glass-card-light p-8 rounded-[32px] border shadow-sm space-y-6">
+						<h4 class="text-base font-bold text-slate-900">Coordination Hub</h4>
+						<div class="space-y-4 text-xs text-slate-650 leading-relaxed">
+							<div class="flex gap-3">
+								<span class="text-lg">📍</span>
+								<span>Department of MCA, Salem, Tamil Nadu, India.</span>
+							</div>
+							<div class="flex gap-3">
+								<span class="text-lg">✉️</span>
+								<span>support@lifelink.org</span>
+							</div>
+							<div class="flex gap-3">
+								<span class="text-lg">⏰</span>
+								<span>Monday - Friday: 09:00 AM - 05:00 PM</span>
+							</div>
+						</div>
+					</div>
+				</div>
 			</div>
 		</div>
 	</section>
