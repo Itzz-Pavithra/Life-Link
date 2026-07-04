@@ -4,24 +4,32 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-console.log(`Firebase project id exists: ${!!process.env.FIREBASE_PROJECT_ID}`);
-console.log(`Firebase email exists: ${!!process.env.FIREBASE_CLIENT_EMAIL}`);
-console.log(`Firebase key exists: ${!!process.env.FIREBASE_PRIVATE_KEY}`);
+const rawPrivateKey = process.env.FIREBASE_PRIVATE_KEY || process.env.FIREBASE_PRIVATEKEY;
 
-const hasEnv = process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY;
+const hasProjectId = !!process.env.FIREBASE_PROJECT_ID;
+const hasClientEmail = !!process.env.FIREBASE_CLIENT_EMAIL;
+const hasPrivateKey = !!rawPrivateKey;
+
+console.log(`Firebase project id exists: ${hasProjectId}`);
+console.log(`Firebase email exists: ${hasClientEmail}`);
+console.log(`Firebase key exists: ${hasPrivateKey}`);
+
+const hasEnv = hasProjectId && hasClientEmail && hasPrivateKey;
 const isBuild = process.env.npm_lifecycle_event === 'build' || !!process.env.SVELTEKIT_FORK;
 
 if (!isBuild || hasEnv) {
-	if (
-		!process.env.FIREBASE_PROJECT_ID ||
-		!process.env.FIREBASE_CLIENT_EMAIL ||
-		!process.env.FIREBASE_PRIVATE_KEY
-	) {
-		throw new Error('Missing Firebase environment variables');
+	const missing = [];
+	if (!process.env.FIREBASE_PROJECT_ID) missing.push('FIREBASE_PROJECT_ID');
+	if (!process.env.FIREBASE_CLIENT_EMAIL) missing.push('FIREBASE_CLIENT_EMAIL');
+	if (!rawPrivateKey) missing.push('FIREBASE_PRIVATE_KEY');
+
+	if (missing.length > 0) {
+		throw new Error(`Missing ${missing.join(', ')}`);
 	}
 
-	const privateKey =
-	process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+	const privateKey = rawPrivateKey
+		?.replace(/\\n/g, '\n')
+		?.replace(/^"|"$/g, "");
 
 	if (!getApps().length) {
 		initializeApp({
