@@ -1,6 +1,13 @@
 import crypto from 'crypto';
 import bcrypt from 'bcryptjs';
-import { db } from './firebase.js';
+import {
+	db,
+	createDocument,
+	getDocument,
+	getCollection,
+	updateDocument,
+	deleteDocument
+} from './firebase.js';
 
 // Password utility
 export function hashPassword(password) {
@@ -23,8 +30,9 @@ export function verifyPassword(password, stored) {
 export const database = {
 	async getRequests() {
 		try {
-			const snap = await db.collection('blood_requests').orderBy('id', 'desc').get();
-			return snap.docs.map(doc => doc.data());
+			const reqs = await getCollection('blood_requests');
+			// Sort descending by id
+			return reqs.sort((a, b) => b.id.localeCompare(a.id));
 		} catch (err) {
 			console.error('Error getting requests:', err);
 			return [];
@@ -32,8 +40,8 @@ export const database = {
 	},
 	async getDonors() {
 		try {
-			const snap = await db.collection('users').where('role', '==', 'donor').get();
-			return snap.docs.map(doc => doc.data());
+			const users = await getCollection('users');
+			return users.filter(u => u.role === 'donor');
 		} catch (err) {
 			console.error('Error getting donors:', err);
 			return [];
@@ -41,8 +49,7 @@ export const database = {
 	},
 	async getBloodBanks() {
 		try {
-			const snap = await db.collection('blood_banks').get();
-			return snap.docs.map(doc => doc.data());
+			return await getCollection('blood_banks');
 		} catch (err) {
 			console.error('Error getting blood banks:', err);
 			return [];
@@ -50,8 +57,9 @@ export const database = {
 	},
 	async getSystemLogs() {
 		try {
-			const snap = await db.collection('logs').orderBy('id', 'desc').get();
-			return snap.docs.map(doc => doc.data());
+			const logs = await getCollection('logs');
+			// Sort descending by id
+			return logs.sort((a, b) => b.id.localeCompare(a.id));
 		} catch (err) {
 			console.error('Error getting system logs:', err);
 			return [];
@@ -59,8 +67,7 @@ export const database = {
 	},
 	async getEligibilityRequests() {
 		try {
-			const snap = await db.collection('eligibility_requests').get();
-			return snap.docs.map(doc => doc.data());
+			return await getCollection('eligibility_requests');
 		} catch (err) {
 			console.error('Error getting eligibility requests:', err);
 			return [];
@@ -68,8 +75,7 @@ export const database = {
 	},
 	async getUsers() {
 		try {
-			const snap = await db.collection('users').get();
-			return snap.docs.map(doc => doc.data());
+			return await getCollection('users');
 		} catch (err) {
 			console.error('Error getting users:', err);
 			return [];
@@ -77,8 +83,9 @@ export const database = {
 	},
 	async getDonations() {
 		try {
-			const snap = await db.collection('donations').orderBy('id', 'desc').get();
-			return snap.docs.map(doc => doc.data());
+			const donations = await getCollection('donations');
+			// Sort descending by id
+			return donations.sort((a, b) => b.id.localeCompare(a.id));
 		} catch (err) {
 			console.error('Error getting donations:', err);
 			return [];
@@ -88,15 +95,17 @@ export const database = {
 	// Generate statistics dynamically
 	async getLandingData() {
 		try {
-			const activeDonorsCount = (await db.collection('users')
-				.where('role', '==', 'donor')
-				.where('status', '==', 'active')
-				.get()).size;
-			const resolvedRequestsCount = (await db.collection('blood_requests')
-				.where('status', '==', 'Completed')
-				.get()).size;
-			const partnerBanksCount = (await db.collection('blood_banks').get()).size;
-			const totalDonations = (await db.collection('donations').get()).size;
+			const users = await getCollection('users');
+			const activeDonorsCount = users.filter(u => u.role === 'donor' && u.status === 'active').length;
+
+			const requests = await getCollection('blood_requests');
+			const resolvedRequestsCount = requests.filter(r => r.status === 'Completed').length;
+
+			const bloodBanks = await getCollection('blood_banks');
+			const partnerBanksCount = bloodBanks.length;
+
+			const donations = await getCollection('donations');
+			const totalDonations = donations.length;
 
 			return {
 				steps: [
@@ -142,8 +151,8 @@ export const database = {
 // Admin existence checks
 export async function hasAdmin() {
 	try {
-		const snap = await db.collection('users').where('role', '==', 'admin').limit(1).get();
-		return !snap.empty;
+		const users = await getCollection('users');
+		return users.some(u => u.role === 'admin');
 	} catch (err) {
 		console.error('Error in hasAdmin:', err);
 		return false;
@@ -168,12 +177,11 @@ export async function createUser(userData) {
 
 	// If donor, check approved eligibility
 	if (userData.role === 'donor') {
-		const snapshot = await db.collection('eligibility_requests')
-			.where('email', '==', userData.email.toLowerCase())
-			.where('status', '==', 'Approved')
-			.limit(1)
-			.get();
-		if (snapshot.empty) {
+		const eligReqs = await getCollection('eligibility_requests');
+		const approvedElig = eligReqs.some(
+			r => r.email.toLowerCase() === userData.email.toLowerCase() && r.status === 'Approved'
+		);
+		if (!approvedElig) {
 			throw new Error('You must submit the Eligibility Checker and receive Administrator Approval before registering as a donor.');
 		}
 	}
@@ -194,7 +202,7 @@ export async function createUser(userData) {
 		createdAt: new Date().toISOString()
 	};
 
-	await db.collection('users').doc(userId).set(newUser);
+	await createDocument('users', userId, newUser);
 
 	// Add log
 	await addLog(newUser.email, `${newUser.role.toUpperCase()} User Registered: ${newUser.name}`);
@@ -205,11 +213,8 @@ export async function createUser(userData) {
 export async function getUserByEmail(email) {
 	if (!email) return null;
 	try {
-		const snap = await db.collection('users')
-			.where('email', '==', email.toLowerCase())
-			.limit(1)
-			.get();
-		return snap.empty ? null : snap.docs[0].data();
+		const users = await getCollection('users');
+		return users.find(u => u.email.toLowerCase() === email.toLowerCase()) || null;
 	} catch (err) {
 		console.error(`Error getUserByEmail for ${email}:`, err);
 		return null;
@@ -219,8 +224,7 @@ export async function getUserByEmail(email) {
 export async function getUserById(id) {
 	if (!id) return null;
 	try {
-		const doc = await db.collection('users').doc(id).get();
-		return doc.exists ? doc.data() : null;
+		return await getDocument('users', id);
 	} catch (err) {
 		console.error(`Error getUserById for ${id}:`, err);
 		return null;
@@ -235,24 +239,22 @@ export async function deleteUser(userId, operatorEmail) {
 		throw new Error('Administrator account cannot be deleted.');
 	}
 
-	await db.collection('users').doc(userId).delete();
+	await deleteDocument('users', userId);
 
 	await addLog(operatorEmail, `Deleted User: ${user.email} (${user.role})`);
 	return true;
 }
 
 export async function suspendUser(userId, operatorEmail) {
-	const userRef = db.collection('users').doc(userId);
-	const userDoc = await userRef.get();
-	if (!userDoc.exists) return false;
+	const user = await getUserById(userId);
+	if (!user) return false;
 
-	const user = userDoc.data();
 	if (user.role === 'admin') {
 		throw new Error('Administrator account cannot be suspended.');
 	}
 
 	const newStatus = user.status === 'suspended' ? 'active' : 'suspended';
-	await userRef.update({ status: newStatus });
+	await updateDocument('users', userId, { status: newStatus });
 
 	await addLog(operatorEmail, `User status toggled to ${newStatus} for ${user.email}`);
 	return { ...user, status: newStatus };
@@ -261,21 +263,17 @@ export async function suspendUser(userId, operatorEmail) {
 // Eligibility Questionnaire Actions
 export async function submitEligibilityQuiz(email, name, phone, location, answers) {
 	const lowercaseEmail = email.toLowerCase();
-	const snapshot = await db.collection('eligibility_requests')
-		.where('email', '==', lowercaseEmail)
-		.limit(1)
-		.get();
+	const eligReqs = await getCollection('eligibility_requests');
+	const existing = eligReqs.find(r => r.email.toLowerCase() === lowercaseEmail);
 
-	if (!snapshot.empty) {
-		const doc = snapshot.docs[0];
-		const existing = doc.data();
+	if (existing) {
 		if (existing.status === 'Approved') {
 			throw new Error('This email is already approved for blood donation.');
 		} else if (existing.status === 'Pending') {
 			throw new Error('You already have a pending eligibility submission. Please wait for admin verification.');
 		} else {
 			// If rejected, allow re-submission
-			await doc.ref.update({
+			await updateDocument('eligibility_requests', existing.id, {
 				status: 'Pending',
 				answers,
 				name,
@@ -296,7 +294,7 @@ export async function submitEligibilityQuiz(email, name, phone, location, answer
 			status: 'Pending',
 			submittedAt: new Date().toISOString()
 		};
-		await db.collection('eligibility_requests').doc(id).set(newRequest);
+		await createDocument('eligibility_requests', id, newRequest);
 	}
 
 	await addLog(lowercaseEmail, `Eligibility Questionnaire Submitted`);
@@ -304,12 +302,10 @@ export async function submitEligibilityQuiz(email, name, phone, location, answer
 }
 
 export async function reviewEligibility(requestId, status, reviewerEmail) {
-	const ref = db.collection('eligibility_requests').doc(requestId);
-	const doc = await ref.get();
-	if (!doc.exists) return false;
+	const req = await getDocument('eligibility_requests', requestId);
+	if (!req) return false;
 
-	const req = doc.data();
-	await ref.update({
+	await updateDocument('eligibility_requests', requestId, {
 		status,
 		reviewedAt: new Date().toISOString()
 	});
@@ -335,7 +331,7 @@ export async function addRequest(req, userEmail) {
 		date: new Date().toISOString().split('T')[0]
 	};
 
-	await db.collection('blood_requests').doc(newId).set(newReq);
+	await createDocument('blood_requests', newId, newReq);
 
 	// Add log
 	await addLog(userEmail, `Blood Request Submitted for ${req.patientName}`);
@@ -343,12 +339,10 @@ export async function addRequest(req, userEmail) {
 }
 
 export async function updateBloodRequestStatus(requestId, status, operatorEmail) {
-	const ref = db.collection('blood_requests').doc(requestId);
-	const doc = await ref.get();
-	if (!doc.exists) return false;
+	const req = await getDocument('blood_requests', requestId);
+	if (!req) return false;
 
-	const req = doc.data();
-	await ref.update({ status });
+	await updateDocument('blood_requests', requestId, { status });
 
 	await addLog(operatorEmail, `Request ${requestId} status updated to ${status}`);
 
@@ -363,7 +357,7 @@ export async function updateBloodRequestStatus(requestId, status, operatorEmail)
 			hospital: req.hospital,
 			date: new Date().toISOString().split('T')[0]
 		};
-		await db.collection('donations').doc(newDonation.id).set(newDonation);
+		await createDocument('donations', newDonation.id, newDonation);
 	}
 
 	return true;
@@ -386,48 +380,43 @@ export async function addBloodBank(bank, operatorEmail) {
 		mapLink: bank.mapLink || ''
 	};
 
-	await db.collection('blood_banks').doc(newId).set(newBank);
+	await createDocument('blood_banks', newId, newBank);
 
 	await addLog(operatorEmail, `Blood Bank Created: ${bank.name}`);
 	return newBank;
 }
 
 export async function editBloodBank(id, updates, operatorEmail) {
-	const ref = db.collection('blood_banks').doc(id);
-	const doc = await ref.get();
-	if (!doc.exists) return false;
+	const bank = await getDocument('blood_banks', id);
+	if (!bank) return false;
 
-	const bank = doc.data();
 	const newBank = { ...bank, ...updates };
-	await ref.set(newBank);
+	await createDocument('blood_banks', id, newBank);
 
 	await addLog(operatorEmail, `Blood Bank Updated: ${bank.name}`);
 	return newBank;
 }
 
 export async function deleteBloodBank(id, operatorEmail) {
-	const ref = db.collection('blood_banks').doc(id);
-	const doc = await ref.get();
-	if (!doc.exists) return false;
+	const bank = await getDocument('blood_banks', id);
+	if (!bank) return false;
 
-	const bank = doc.data();
-	await ref.delete();
+	await deleteDocument('blood_banks', id);
 
 	await addLog(operatorEmail, `Blood Bank Deleted: ${bank.name}`);
 	return true;
 }
 
 export async function updateInventory(bloodGroup, units, userEmail) {
-	const snapshot = await db.collection('blood_banks').limit(1).get();
-	if (snapshot.empty) return false;
+	const bloodBanks = await getCollection('blood_banks');
+	if (bloodBanks.length === 0) return false;
 
-	const doc = snapshot.docs[0];
-	const bank = doc.data();
+	const bank = bloodBanks[0];
 	
 	if (bank.inventory[bloodGroup] !== undefined) {
 		const newInventory = { ...bank.inventory };
 		newInventory[bloodGroup] = Number(units);
-		await doc.ref.update({ inventory: newInventory });
+		await updateDocument('blood_banks', bank.id, { inventory: newInventory });
 
 		await addLog(userEmail, `Inventory updated at ${bank.name}: ${bloodGroup} = ${units} Units`);
 		return true;
@@ -439,7 +428,7 @@ export async function updateInventory(bloodGroup, units, userEmail) {
 export async function addLog(user, activity) {
 	const newId = `LOG${Date.now()}`;
 	const timestamp = new Date().toISOString().replace('T', ' ').slice(0, 16);
-	await db.collection('logs').doc(newId).set({
+	await createDocument('logs', newId, {
 		id: newId,
 		user,
 		activity,
@@ -460,7 +449,7 @@ export async function addDonation(donation, operatorEmail) {
 		date: donation.date || new Date().toISOString().split('T')[0]
 	};
 
-	await db.collection('donations').doc(newId).set(newDonation);
+	await createDocument('donations', newId, newDonation);
 
 	await addLog(operatorEmail, `Log Donation: ${donation.units} units of ${donation.bloodGroup} by ${donation.donorName}`);
 	return newDonation;
