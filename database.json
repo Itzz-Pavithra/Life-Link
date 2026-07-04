@@ -41,6 +41,20 @@
       "avatar": "https://api.dicebear.com/7.x/initials/svg?seed=Test%20Patient",
       "profileCompletion": 100,
       "createdAt": "2026-07-04T17:35:42.109Z"
+    },
+    {
+      "id": "USR1783187400188",
+      "name": "Pavithra",
+      "email": "sarathi.workss@gmail.com",
+      "password": "$2b$10$5PQaiNydPyi8Cl4t..x7lOW2AcWdyeqLj4538D64lr60r/G80q/Qq",
+      "phone": "9345581448",
+      "location": "Cuddalore",
+      "role": "recipient",
+      "status": "active",
+      "bloodGroup": "O-",
+      "avatar": "https://api.dicebear.com/7.x/initials/svg?seed=Pavithra",
+      "profileCompletion": 100,
+      "createdAt": "2026-07-04T17:50:00.189Z"
     }
   ],
   "eligibility_requests": [
@@ -79,6 +93,12 @@
   "blood_requests": [],
   "donations": [],
   "logs": [
+    {
+      "id": "LOG1783187400189",
+      "user": "sarathi.workss@gmail.com",
+      "activity": "RECIPIENT User Registered: Pavithra",
+      "timestamp": "2026-07-04 17:50"
+    },
     {
       "id": "LOG1783186542109",
       "user": "patient@example.com",
