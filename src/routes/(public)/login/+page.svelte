@@ -22,7 +22,7 @@
 		e.preventDefault();
 		errorMessage = '';
 		try {
-			const res = await axios.post('http://localhost:5000/api/auth/login', {
+			const res = await axios.post('/api/auth/login', {
 				email,
 				password,
 				role: selectedRole
@@ -42,7 +42,7 @@
 		e.preventDefault();
 		errorMessage = '';
 		try {
-			const res = await axios.post('http://localhost:5000/api/auth/createAdmin', {
+			const res = await axios.post('/api/auth/createAdmin', {
 				name: setupName,
 				email: setupEmail,
 				phone: setupPhone,
