@@ -1,106 +1,120 @@
-import { initializeApp, cert, getApps } from 'firebase-admin';
+import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import dotenv from 'dotenv';
 
-// Load environment variables in development
 dotenv.config();
 
-if (!getApps().length) {
-	const rawPrivateKey = process.env.FIREBASE_PRIVATE_KEY;
-	const privateKey = rawPrivateKey ? rawPrivateKey.replace(/\\n/g, '\n') : undefined;
+console.log(`Firebase project id exists: ${!!process.env.FIREBASE_PROJECT_ID}`);
+console.log(`Firebase email exists: ${!!process.env.FIREBASE_CLIENT_EMAIL}`);
+console.log(`Firebase key exists: ${!!process.env.FIREBASE_PRIVATE_KEY}`);
 
-	if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && privateKey) {
+const hasEnv = process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && process.env.FIREBASE_PRIVATE_KEY;
+const isBuild = process.env.npm_lifecycle_event === 'build' || !!process.env.SVELTEKIT_FORK;
+
+if (!isBuild || hasEnv) {
+	if (
+		!process.env.FIREBASE_PROJECT_ID ||
+		!process.env.FIREBASE_CLIENT_EMAIL ||
+		!process.env.FIREBASE_PRIVATE_KEY
+	) {
+		throw new Error('Missing Firebase environment variables');
+	}
+
+	const privateKey =
+	process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n');
+
+	if (!getApps().length) {
 		initializeApp({
 			credential: cert({
 				projectId: process.env.FIREBASE_PROJECT_ID,
 				clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-				privateKey: privateKey
+				privateKey
 			})
 		});
-	} else {
-		// During SvelteKit build or local setup without variables, initialize a dummy default app to avoid crash
-		initializeApp({
-			projectId: process.env.FIREBASE_PROJECT_ID || 'dummy-project-id'
-		});
 	}
 }
 
-export const db = getFirestore();
-
-// Firestore Helper Functions
-
-/**
- * Create or overwrite a document in a collection
- * @param {string} collectionName
- * @param {string} docId
- * @param {object} data
- */
-export async function createDocument(collectionName, docId, data) {
-	try {
-		await db.collection(collectionName).doc(docId).set(data);
-		return true;
-	} catch (err) {
-		console.error(`Error creating document in ${collectionName}/${docId}:`, err);
-		throw err;
+let dbInstance;
+export const db = new Proxy({}, {
+	get(target, prop) {
+		if (!dbInstance) {
+			dbInstance = getFirestore();
+		}
+		const val = dbInstance[prop];
+		if (typeof val === 'function') {
+			return val.bind(dbInstance);
+		}
+		return val;
 	}
+});
+
+
+// CREATE
+export async function createDocument(collection, id, data) {
+
+	await db
+	.collection(collection)
+	.doc(id)
+	.set(data);
+
+	return true;
+
 }
 
-/**
- * Get a document from a collection
- * @param {string} collectionName
- * @param {string} docId
- */
-export async function getDocument(collectionName, docId) {
-	try {
-		const doc = await db.collection(collectionName).doc(docId).get();
-		return doc.exists ? doc.data() : null;
-	} catch (err) {
-		console.error(`Error getting document ${collectionName}/${docId}:`, err);
-		throw err;
-	}
+
+// READ ONE
+export async function getDocument(collection, id) {
+
+	const snap = await db
+	.collection(collection)
+	.doc(id)
+	.get();
+
+
+	return snap.exists 
+		? { id: snap.id, ...snap.data() }
+		: null;
+
 }
 
-/**
- * Get all documents from a collection
- * @param {string} collectionName
- */
-export async function getCollection(collectionName) {
-	try {
-		const snap = await db.collection(collectionName).get();
-		return snap.docs.map(doc => doc.data());
-	} catch (err) {
-		console.error(`Error getting collection ${collectionName}:`, err);
-		throw err;
-	}
+
+// READ ALL
+export async function getCollection(collection) {
+
+	const snap = await db
+	.collection(collection)
+	.get();
+
+
+	return snap.docs.map(doc => ({
+		id: doc.id,
+		...doc.data()
+	}));
+
 }
 
-/**
- * Update dynamic fields in an existing document
- * @param {string} collectionName
- * @param {string} docId
- * @param {object} data
- */
-export async function updateDocument(collectionName, docId, data) {
-	try {
-		await db.collection(collectionName).doc(docId).update(data);
-		return true;
-	} catch (err) {
-		console.error(`Error updating document ${collectionName}/${docId}:`, err);
-		throw err;
-	}
+
+// UPDATE
+export async function updateDocument(collection, id, data) {
+
+	await db
+	.collection(collection)
+	.doc(id)
+	.update(data);
+
+	return true;
+
 }
 
-/**
- * Delete a document from a collection
- * @param {string} collectionName
- * @param {string} docId
- */
-export async function deleteDocument(collectionName, docId) {
-	try {
-		await db.collection(collectionName).doc(docId).delete();
-		return true;
-	} catch (err) {
-		console.error(`Error deleting document ${collectionName}/${docId}:`, err);
-		throw err;
-	}
+
+// DELETE
+export async function deleteDocument(collection, id) {
+
+	await db
+	.collection(collection)
+	.doc(id)
+	.delete();
+
+	return true;
+
 }

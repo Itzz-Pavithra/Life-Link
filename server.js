@@ -5,8 +5,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
-import { initializeApp, cert, getApps } from 'firebase-admin';
-import { getFirestore } from 'firebase-admin/firestore';
+import { db } from './src/lib/server/firebase.js';
 
 dotenv.config();
 
@@ -14,26 +13,6 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey123';
 
-// Firebase Admin SDK Initialization
-if (!getApps().length) {
-	const rawPrivateKey = process.env.FIREBASE_PRIVATE_KEY;
-	const privateKey = rawPrivateKey ? rawPrivateKey.replace(/\\n/g, '\n') : undefined;
-
-	if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && privateKey) {
-		initializeApp({
-			credential: cert({
-				projectId: process.env.FIREBASE_PROJECT_ID,
-				clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-				privateKey: privateKey
-			})
-		});
-	} else {
-		initializeApp({
-			projectId: process.env.FIREBASE_PROJECT_ID || 'dummy-project-id'
-		});
-	}
-}
-const db = getFirestore();
 
 // CORS configuration supporting credentials (cookies)
 const allowedOrigins = [
