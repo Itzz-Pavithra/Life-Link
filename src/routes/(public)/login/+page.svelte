@@ -1,12 +1,63 @@
 <script>
-	let { data, form } = $props();
+	import axios from 'axios';
+	import { db } from '$lib/auth.svelte.js';
+
+	let { data } = $props();
 
 	let email = $state('');
+	let password = $state('');
 	let selectedRole = $state('recipient'); // Default to receiver
+
 	let setupName = $state('');
 	let setupEmail = $state('');
 	let setupPhone = $state('');
 	let setupLocation = $state('');
+	let setupPassword = $state('');
+
+	let errorMessage = $state('');
+
+	axios.defaults.withCredentials = true;
+
+	async function handleLogin(e) {
+		e.preventDefault();
+		errorMessage = '';
+		try {
+			const res = await axios.post('http://localhost:5000/api/auth/login', {
+				email,
+				password,
+				role: selectedRole
+			});
+			if (res.data.success) {
+				db.addToast('Welcome back! Logging you in...', 'success');
+				// Full navigation refresh so SvelteKit hooks parse the cookie
+				window.location.href = `/dashboard/${res.data.user.role}`;
+			}
+		} catch (err) {
+			errorMessage = err.response?.data?.error || 'Failed to login. Please check details.';
+			db.addToast(errorMessage, 'error');
+		}
+	}
+
+	async function handleCreateAdmin(e) {
+		e.preventDefault();
+		errorMessage = '';
+		try {
+			const res = await axios.post('http://localhost:5000/api/auth/createAdmin', {
+				name: setupName,
+				email: setupEmail,
+				phone: setupPhone,
+				location: setupLocation,
+				password: setupPassword
+			});
+			if (res.data.success) {
+				db.addToast('System initialized! Welcome Admin.', 'success');
+				window.location.href = '/dashboard/admin';
+			}
+		} catch (err) {
+			errorMessage = err.response?.data?.error || 'Failed to initialize system admin.';
+			db.addToast(errorMessage, 'error');
+		}
+	}
 </script>
 
 <div class="min-h-screen bg-baby-pink flex items-center justify-center p-6 relative">
@@ -27,17 +78,17 @@
 				<p class="text-slate-500 text-xs">No system administrator account detected. Setup the primary admin profile.</p>
 			</div>
 
-			{#if form?.error}
+			{#if errorMessage}
 				<div class="p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl">
-					⚠️ {form.error}
+					⚠️ {errorMessage}
 				</div>
 			{/if}
 
-			<form method="POST" action="?/createAdmin" class="space-y-4">
+			<form onsubmit={handleCreateAdmin} class="space-y-4">
 				<div class="flex flex-col gap-1">
-					<label class="text-[10px] font-bold text-slate-500 uppercase">Admin Name *</label>
+					<label class="text-[10px] font-bold text-slate-500 uppercase" for="admin-name">Admin Name *</label>
 					<input
-						name="name"
+						id="admin-name"
 						type="text"
 						bind:value={setupName}
 						placeholder="Administrator Name"
@@ -47,9 +98,9 @@
 				</div>
 
 				<div class="flex flex-col gap-1">
-					<label class="text-[10px] font-bold text-slate-500 uppercase">Admin Email *</label>
+					<label class="text-[10px] font-bold text-slate-500 uppercase" for="admin-email">Admin Email *</label>
 					<input
-						name="email"
+						id="admin-email"
 						type="email"
 						bind:value={setupEmail}
 						placeholder="admin@lifelink.org"
@@ -60,9 +111,9 @@
 
 				<div class="grid grid-cols-2 gap-4">
 					<div class="flex flex-col gap-1">
-						<label class="text-[10px] font-bold text-slate-500 uppercase">Phone *</label>
+						<label class="text-[10px] font-bold text-slate-500 uppercase" for="admin-phone">Phone *</label>
 						<input
-							name="phone"
+							id="admin-phone"
 							type="tel"
 							bind:value={setupPhone}
 							placeholder="9876543210"
@@ -72,9 +123,9 @@
 					</div>
 
 					<div class="flex flex-col gap-1">
-						<label class="text-[10px] font-bold text-slate-500 uppercase">Location *</label>
+						<label class="text-[10px] font-bold text-slate-500 uppercase" for="admin-loc">Location *</label>
 						<input
-							name="location"
+							id="admin-loc"
 							type="text"
 							bind:value={setupLocation}
 							placeholder="Salem"
@@ -85,10 +136,11 @@
 				</div>
 
 				<div class="flex flex-col gap-1">
-					<label class="text-[10px] font-bold text-slate-500 uppercase">Choose Password *</label>
+					<label class="text-[10px] font-bold text-slate-500 uppercase" for="admin-pass">Choose Password *</label>
 					<input
-						name="password"
+						id="admin-pass"
 						type="password"
+						bind:value={setupPassword}
 						placeholder="••••••••"
 						class="border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
 						required
@@ -113,18 +165,17 @@
 				<p class="text-slate-400 text-xs">Enter your details to sign in to your dashboard.</p>
 			</div>
 
-			{#if form?.error}
+			{#if errorMessage}
 				<div class="p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl">
-					⚠️ {form.error}
+					⚠️ {errorMessage}
 				</div>
 			{/if}
 
-			<form method="POST" action="?/login" class="space-y-4">
+			<form onsubmit={handleLogin} class="space-y-4">
 				<div class="flex flex-col gap-1">
 					<label class="text-[10px] font-bold text-slate-500 uppercase" for="email">Email Address</label>
 					<input
 						id="email"
-						name="email"
 						type="email"
 						bind:value={email}
 						placeholder="name@example.com"
@@ -137,8 +188,8 @@
 					<label class="text-[10px] font-bold text-slate-500 uppercase" for="password">Password</label>
 					<input
 						id="password"
-						name="password"
 						type="password"
+						bind:value={password}
 						placeholder="••••••••"
 						class="border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
 						required
@@ -146,9 +197,9 @@
 				</div>
 
 				<div class="flex flex-col gap-1">
-					<label class="text-[10px] font-bold text-slate-500 uppercase">Dashboard Role</label>
+					<label class="text-[10px] font-bold text-slate-500 uppercase" for="role-select">Dashboard Role</label>
 					<select
-						name="role"
+						id="role-select"
 						bind:value={selectedRole}
 						class="border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm bg-white"
 					>

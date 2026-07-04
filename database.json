@@ -27,6 +27,20 @@
       "avatar": "https://api.dicebear.com/7.x/initials/svg?seed=Pavithra",
       "profileCompletion": 100,
       "createdAt": "2026-06-28T17:48:46.896Z"
+    },
+    {
+      "id": "USR1783186542109",
+      "name": "Test Patient",
+      "email": "patient@example.com",
+      "password": "$2b$10$wyFEtPRDkUSnbLXK6.ZxpO.uisIojOmQX.vYUsNnmPNJ2gk0hV9Fe",
+      "phone": "9876543210",
+      "location": "Salem",
+      "role": "recipient",
+      "status": "active",
+      "bloodGroup": "A+",
+      "avatar": "https://api.dicebear.com/7.x/initials/svg?seed=Test%20Patient",
+      "profileCompletion": 100,
+      "createdAt": "2026-07-04T17:35:42.109Z"
     }
   ],
   "eligibility_requests": [
@@ -65,6 +79,12 @@
   "blood_requests": [],
   "donations": [],
   "logs": [
+    {
+      "id": "LOG1783186542109",
+      "user": "patient@example.com",
+      "activity": "RECIPIENT User Registered: Test Patient",
+      "timestamp": "2026-07-04 17:35"
+    },
     {
       "id": "LOG1782668926896",
       "user": "pavi@gmail.com",
