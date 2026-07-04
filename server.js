@@ -19,13 +19,19 @@ if (!getApps().length) {
 	const rawPrivateKey = process.env.FIREBASE_PRIVATE_KEY;
 	const privateKey = rawPrivateKey ? rawPrivateKey.replace(/\\n/g, '\n') : undefined;
 
-	initializeApp({
-		credential: cert({
-			projectId: process.env.FIREBASE_PROJECT_ID,
-			clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-			privateKey: privateKey
-		})
-	});
+	if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && privateKey) {
+		initializeApp({
+			credential: cert({
+				projectId: process.env.FIREBASE_PROJECT_ID,
+				clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+				privateKey: privateKey
+			})
+		});
+	} else {
+		initializeApp({
+			projectId: process.env.FIREBASE_PROJECT_ID || 'dummy-project-id'
+		});
+	}
 }
 const db = getFirestore();
 

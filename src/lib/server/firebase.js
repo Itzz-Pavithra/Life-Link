@@ -9,17 +9,20 @@ if (!getApps().length) {
 	const rawPrivateKey = process.env.FIREBASE_PRIVATE_KEY;
 	const privateKey = rawPrivateKey ? rawPrivateKey.replace(/\\n/g, '\n') : undefined;
 
-	if (!process.env.FIREBASE_PROJECT_ID || !process.env.FIREBASE_CLIENT_EMAIL || !privateKey) {
-		console.warn('WARNING: Missing one or more Firebase Admin environment variables.');
+	if (process.env.FIREBASE_PROJECT_ID && process.env.FIREBASE_CLIENT_EMAIL && privateKey) {
+		initializeApp({
+			credential: cert({
+				projectId: process.env.FIREBASE_PROJECT_ID,
+				clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+				privateKey: privateKey
+			})
+		});
+	} else {
+		// During SvelteKit build or local setup without variables, initialize a dummy default app to avoid crash
+		initializeApp({
+			projectId: process.env.FIREBASE_PROJECT_ID || 'dummy-project-id'
+		});
 	}
-
-	initializeApp({
-		credential: cert({
-			projectId: process.env.FIREBASE_PROJECT_ID,
-			clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-			privateKey: privateKey
-		})
-	});
 }
 
 export const db = getFirestore();
