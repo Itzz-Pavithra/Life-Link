@@ -68,7 +68,7 @@
 	<div class="absolute top-1/4 left-1/4 w-72 h-72 bg-red-400/5 rounded-full blur-3xl pointer-events-none"></div>
 	<div class="absolute bottom-1/4 right-1/4 w-72 h-72 bg-amber-450/5 rounded-full blur-3xl pointer-events-none"></div>
 
-	<div class="bg-white border border-slate-100 p-8 rounded-[32px] shadow-2xl w-full max-w-lg space-y-8 relative z-10">
+	<div class="bg-white border border-slate-100 p-6 sm:p-8 rounded-[32px] shadow-2xl w-full max-w-lg space-y-8 relative z-10">
 		
 		{#if !data.hasAdminAccount}
 			<!-- System Initialization Setup Screen (renders only if no admin is registered) -->
@@ -78,7 +78,7 @@
 					<span class="text-2xl font-black text-slate-900 tracking-tight">LifeLink</span>
 				</div>
 				<h2 class="text-xl font-bold text-red-700">Initialize Admin Account</h2>
-				<p class="text-slate-500 text-xs">No system administrator account detected. Setup the primary admin profile.</p>
+				<p class="text-slate-550 text-xs">No system administrator account detected. Setup the primary admin profile.</p>
 			</div>
 
 			{#if errorMessage}
@@ -112,7 +112,7 @@
 					/>
 				</div>
 
-				<div class="grid grid-cols-2 gap-4">
+				<div class="grid sm:grid-cols-2 gap-4">
 					<div class="flex flex-col gap-1">
 						<label class="text-[10px] font-bold text-slate-500 uppercase" for="admin-phone">Phone *</label>
 						<input

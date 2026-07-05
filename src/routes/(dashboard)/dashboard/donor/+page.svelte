@@ -3,7 +3,137 @@
 	import { db } from '$lib/auth.svelte.js';
 
 	let { data } = $props();
-	let isAvailable = $state(true);
+
+	// Availability state
+	let isAvailable = $state(data.user?.isAvailable !== false);
+
+	// Edit Mode State
+	let isEditing = $state(false);
+
+	// Form inputs state
+	let profileName = $state(data.user?.name || '');
+	let profilePhone = $state(data.user?.phone || '');
+	let profileLocation = $state(data.user?.location || '');
+	let profileAddress = $state(data.user?.address || '');
+	let profileBloodGroup = $state(data.user?.bloodGroup || '');
+	let profileAvatar = $state(data.user?.avatar || '');
+	let profileIsAvailable = $state(data.user?.isAvailable !== false);
+
+	let imageValidationError = $state('');
+
+	// Keep states in sync when data updates
+	$effect(() => {
+		if (data.user) {
+			isAvailable = data.user.isAvailable !== false;
+			if (!isEditing) {
+				profileName = data.user.name || '';
+				profilePhone = data.user.phone || '';
+				profileLocation = data.user.location || '';
+				profileAddress = data.user.address || '';
+				profileBloodGroup = data.user.bloodGroup || '';
+				profileAvatar = data.user.avatar || '';
+				profileIsAvailable = data.user.isAvailable !== false;
+			}
+		}
+	});
+
+	async function toggleAvailability() {
+		const newStatus = !isAvailable;
+		isAvailable = newStatus;
+		profileIsAvailable = newStatus;
+
+		try {
+			const res = await fetch('/api/user/profile', {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ isAvailable: newStatus })
+			});
+			const result = await res.json();
+			if (result.success) {
+				db.addToast(`Availability updated to: ${newStatus ? 'Available' : 'Unavailable'}`, 'success');
+				await invalidateAll();
+			} else {
+				db.addToast(result.error || 'Failed to update availability status.', 'error');
+				isAvailable = !newStatus;
+				profileIsAvailable = !newStatus;
+			}
+		} catch (err) {
+			db.addToast('Network error, failed to sync status.', 'error');
+			isAvailable = !newStatus;
+			profileIsAvailable = !newStatus;
+		}
+	}
+
+	function handleFileChange(e) {
+		const file = e.target.files[0];
+		if (!file) return;
+
+		const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+		const fileExtension = file.name.split('.').pop().toLowerCase();
+		const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
+
+		if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
+			imageValidationError = 'Only image files are allowed';
+			db.addToast('Only image files are allowed', 'error');
+			e.target.value = '';
+			return;
+		}
+
+		imageValidationError = '';
+		const reader = new FileReader();
+		reader.onload = (event) => {
+			profileAvatar = event.target.result;
+		};
+		reader.readAsDataURL(file);
+	}
+
+	async function handleSaveProfile(e) {
+		if (e) e.preventDefault();
+		if (!profileName || !profilePhone || !profileLocation) {
+			db.addToast('Please fill in Name, Phone, and City.', 'error');
+			return;
+		}
+
+		try {
+			const res = await fetch('/api/user/profile', {
+				method: 'PUT',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					name: profileName,
+					phone: profilePhone,
+					location: profileLocation,
+					address: profileAddress,
+					bloodGroup: profileBloodGroup,
+					isAvailable: profileIsAvailable,
+					avatar: profileAvatar
+				})
+			});
+			const result = await res.json();
+			if (result.success) {
+				db.addToast('Profile changes saved successfully.', 'success');
+				isEditing = false;
+				await invalidateAll();
+			} else {
+				db.addToast(result.error || 'Failed to save changes.', 'error');
+			}
+		} catch (err) {
+			db.addToast('Network error, failed to save profile.', 'error');
+		}
+	}
+
+	function cancelEditing() {
+		isEditing = false;
+		imageValidationError = '';
+		if (data.user) {
+			profileName = data.user.name || '';
+			profilePhone = data.user.phone || '';
+			profileLocation = data.user.location || '';
+			profileAddress = data.user.address || '';
+			profileBloodGroup = data.user.bloodGroup || '';
+			profileAvatar = data.user.avatar || '';
+			profileIsAvailable = data.user.isAvailable !== false;
+		}
+	}
 
 	async function handleAcceptEmergency(id) {
 		const req = data.requests.find(r => r.id === id);
@@ -42,9 +172,17 @@
 			<div class="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm space-y-4">
 				<h3 class="font-bold text-slate-900">My Donor Identity</h3>
 				<div class="flex items-center gap-4">
-					<span class="w-16 h-16 rounded-3xl bg-red-700 text-white font-black text-2xl flex items-center justify-center shadow-lg shadow-red-700/20">
-						{data.user?.bloodGroup || 'O+'}
-					</span>
+					{#if data.user?.avatar}
+						<img
+							src={data.user.avatar}
+							alt="Profile Avatar"
+							class="w-16 h-16 rounded-3xl object-cover border border-slate-200 shadow-md"
+						/>
+					{:else}
+						<span class="w-16 h-16 rounded-3xl bg-red-700 text-white font-black text-2xl flex items-center justify-center shadow-lg shadow-red-700/20">
+							{data.user?.bloodGroup || 'O+'}
+						</span>
+					{/if}
 					<div class="text-left">
 						<h4 class="font-bold text-slate-800 text-base">{data.user?.name}</h4>
 						<p class="text-[10px] text-gray-500">Voluntary blood donor</p>
@@ -71,7 +209,7 @@
 					<button
 						class="w-12 h-6 rounded-full p-1 transition-colors duration-300 relative cursor-pointer
 						{isAvailable ? 'bg-red-700' : 'bg-slate-200'}"
-						onclick={() => { isAvailable = !isAvailable; db.addToast(`Availability updated to: ${isAvailable ? 'Available' : 'Unavailable'}`, 'info'); }}
+						onclick={toggleAvailability}
 					>
 						<span
 							class="block w-4 h-4 rounded-full bg-white transition-transform duration-300 transform
@@ -221,7 +359,7 @@
 				<button
 					class="w-12 h-6 rounded-full p-1 transition-colors duration-300 relative cursor-pointer
 					{isAvailable ? 'bg-red-750 bg-red-700' : 'bg-slate-200'}"
-					onclick={() => { isAvailable = !isAvailable; db.addToast(`Availability updated: ${isAvailable ? 'Available' : 'Unavailable'}`, 'info'); }}
+					onclick={toggleAvailability}
 				>
 					<span
 						class="block w-4 h-4 rounded-full bg-white transition-transform duration-300 transform
@@ -233,28 +371,167 @@
 
 	<!-- TAB 4: PROFILE -->
 	{:else if db.activeTab === 'profile'}
-		<div class="max-w-2xl mx-auto bg-white border border-slate-100 rounded-3xl p-8 shadow-lg space-y-6">
-			<h3 class="text-xl font-bold text-slate-900">Donor Profile & Settings</h3>
-			<form onsubmit={(e) => { e.preventDefault(); db.addToast('Donor details saved.', 'success'); }} class="space-y-4">
+		<div class="max-w-2xl mx-auto bg-white border border-slate-100 rounded-3xl p-8 shadow-lg space-y-6 text-left">
+			<div class="flex justify-between items-center border-b border-slate-100 pb-4">
+				<h3 class="text-xl font-bold text-slate-900">Donor Profile & Settings</h3>
+				{#if !isEditing}
+					<button
+						onclick={() => isEditing = true}
+						class="bg-red-700 hover:bg-red-800 text-white font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer"
+					>
+						✏️ Edit Profile
+					</button>
+				{/if}
+			</div>
+
+			<form onsubmit={handleSaveProfile} class="space-y-6">
+				<!-- Avatar Section -->
+				<div class="flex flex-col items-center gap-4 border-b border-slate-50 pb-6">
+					<div class="relative group">
+						<img
+							src={profileAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80'}
+							alt="Profile Avatar"
+							class="w-24 h-24 rounded-full object-cover border-2 border-red-100 shadow-md"
+						/>
+						{#if isEditing}
+							<label
+								for="avatar-upload"
+								class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center text-white text-xs font-bold opacity-0 group-hover:opacity-100 transition cursor-pointer"
+							>
+								Change Photo
+							</label>
+							<input
+								id="avatar-upload"
+								type="file"
+								accept="image/*"
+								onchange={handleFileChange}
+								class="hidden"
+							/>
+						{/if}
+					</div>
+					{#if isEditing}
+						<div class="text-center">
+							<p class="text-[10px] text-slate-400">Allowed formats: JPG, JPEG, PNG, WEBP</p>
+							{#if imageValidationError}
+								<p class="text-red-700 font-bold text-[10px] mt-1">{imageValidationError}</p>
+							{/if}
+						</div>
+					{/if}
+				</div>
+
+				<!-- Form Inputs Grid -->
 				<div class="grid sm:grid-cols-2 gap-4">
 					<div class="flex flex-col gap-1.5">
-						<label class="text-[10px] font-bold text-slate-500 uppercase" for="dpname">Full Name</label>
-						<input id="dpname" type="text" value={data.user?.name} class="border border-slate-200 p-3 rounded-xl text-sm" disabled />
+						<label class="text-[10px] font-bold text-slate-500 uppercase" for="dpname">Full Name *</label>
+						<input
+							id="dpname"
+							type="text"
+							bind:value={profileName}
+							class="border border-slate-200 p-3 rounded-xl text-sm bg-slate-50/50"
+							disabled={!isEditing}
+							required
+						/>
 					</div>
+
 					<div class="flex flex-col gap-1.5">
 						<label class="text-[10px] font-bold text-slate-500 uppercase" for="dpemail">Email Address</label>
-						<input id="dpemail" type="email" value={data.user?.email} class="border border-slate-200 p-3 rounded-xl text-sm" disabled />
+						<input
+							id="dpemail"
+							type="email"
+							value={data.user?.email}
+							class="border border-slate-200 p-3 rounded-xl text-sm bg-slate-100 text-slate-500"
+							disabled
+						/>
+					</div>
+
+					<div class="flex flex-col gap-1.5">
+						<label class="text-[10px] font-bold text-slate-500 uppercase" for="dpphone">Phone Number *</label>
+						<input
+							id="dpphone"
+							type="tel"
+							bind:value={profilePhone}
+							class="border border-slate-200 p-3 rounded-xl text-sm bg-slate-50/50"
+							disabled={!isEditing}
+							required
+						/>
+					</div>
+
+					<div class="flex flex-col gap-1.5">
+						<label class="text-[10px] font-bold text-slate-500 uppercase" for="dploc">City / Location *</label>
+						<input
+							id="dploc"
+							type="text"
+							bind:value={profileLocation}
+							class="border border-slate-200 p-3 rounded-xl text-sm bg-slate-50/50"
+							disabled={!isEditing}
+							required
+						/>
+					</div>
+
+					<div class="flex flex-col gap-1.5 sm:col-span-2">
+						<label class="text-[10px] font-bold text-slate-500 uppercase" for="dpaddress">Home Address</label>
+						<textarea
+							id="dpaddress"
+							bind:value={profileAddress}
+							rows="2"
+							placeholder="Enter address details..."
+							class="border border-slate-200 p-3 rounded-xl text-sm bg-slate-50/50 resize-none"
+							disabled={!isEditing}
+						></textarea>
+					</div>
+
+					<div class="flex flex-col gap-1.5">
+						<label class="text-[10px] font-bold text-slate-500 uppercase" for="dpbg">Blood Group *</label>
+						<select
+							id="dpbg"
+							bind:value={profileBloodGroup}
+							class="border border-slate-200 p-3 rounded-xl text-sm bg-white"
+							disabled={!isEditing}
+							required
+						>
+							<option>A+</option>
+							<option>A-</option>
+							<option>B+</option>
+							<option>B-</option>
+							<option>AB+</option>
+							<option>AB-</option>
+							<option>O+</option>
+							<option>O-</option>
+						</select>
+					</div>
+
+					<div class="flex items-center gap-2.5 sm:col-span-2 border border-slate-100 bg-slate-50/50 p-4 rounded-2xl">
+						<input
+							type="checkbox"
+							id="dpavailability"
+							bind:checked={profileIsAvailable}
+							class="w-4 h-4 text-red-650 accent-red-700"
+							disabled={!isEditing}
+						/>
+						<label for="dpavailability" class="text-xs font-semibold text-slate-800 cursor-pointer">
+							Active & Available for urgent emergency requests
+						</label>
 					</div>
 				</div>
 
-				<div class="flex flex-col gap-1.5">
-					<label class="text-[10px] font-bold text-slate-500 uppercase" for="dpbg">Blood Group</label>
-					<input id="dpbg" type="text" value={data.user?.bloodGroup} class="border border-slate-200 p-3 rounded-xl text-sm" />
-				</div>
-
-				<button type="submit" class="w-full bg-slate-900 hover:bg-black text-white font-bold py-3 rounded-xl transition cursor-pointer">
-					Save Profile Settings
-				</button>
+				<!-- Action Buttons -->
+				{#if isEditing}
+					<div class="grid grid-cols-2 gap-4">
+						<button
+							type="button"
+							onclick={cancelEditing}
+							class="w-full bg-slate-150 hover:bg-slate-200 text-slate-800 font-bold py-3 rounded-xl transition cursor-pointer text-sm"
+						>
+							Cancel
+						</button>
+						<button
+							type="submit"
+							class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 rounded-xl transition cursor-pointer text-sm"
+						>
+							Save Changes
+						</button>
+					</div>
+				{/if}
 			</form>
 		</div>
 	{/if}

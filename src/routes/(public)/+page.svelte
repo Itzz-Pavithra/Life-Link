@@ -6,7 +6,6 @@
 
 	const steps = $derived(data.landing?.steps || []);
 	const benefits = $derived(data.landing?.benefits || []);
-	const activeRequests = $derived(data.activeRequests || []);
 
 	// Contact form fields state
 	let contactName = $state('');
@@ -79,12 +78,6 @@
 					class="bg-red-600 hover:bg-red-700 text-white font-bold px-8 py-3.5 rounded-2xl shadow-xl shadow-red-600/30 transition transform hover:-translate-y-0.5 active:scale-95 text-sm"
 				>
 					Become a Donor
-				</a>
-				<a
-					href="/request-blood"
-					class="bg-white/10 hover:bg-white/20 border border-white/20 text-white font-bold px-8 py-3.5 rounded-2xl shadow-sm transition transform hover:-translate-y-0.5 text-sm backdrop-blur-md"
-				>
-					Request Blood
 				</a>
 			</div>
 		</div>
@@ -162,82 +155,6 @@
 					<CompatibilityGuide />
 				</div>
 			</div>
-		</div>
-	</section>
-
-	<!-- 4. EMERGENCY BLOOD REQUEST SECTION -->
-	<section id="emergency-requests" class="py-24 px-6 bg-slate-950 text-white relative">
-		<!-- Glow overlay -->
-		<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-red-600/5 rounded-full blur-3xl pointer-events-none"></div>
-
-		<div class="max-w-7xl mx-auto relative z-10 text-center">
-			<div class="max-w-xl mx-auto mb-16 space-y-4">
-				<span class="text-xs font-bold text-red-500 uppercase tracking-widest bg-red-500/10 border border-red-500/20 px-3 py-1 rounded-full">
-					🚨 REAL-TIME MATCHING
-				</span>
-				<h2 class="text-3xl sm:text-5xl font-extrabold tracking-tight">
-					Emergency Blood Requests
-				</h2>
-				<p class="text-slate-400 text-sm leading-relaxed max-w-md mx-auto">
-					Below are the active emergency donation requests registered on the network.
-				</p>
-			</div>
-
-			<!-- Dynamic Requests List or Empty State -->
-			{#if activeRequests.length === 0}
-				<div class="max-w-md mx-auto glass-card-dark p-12 rounded-[32px] border text-center space-y-4 shadow-xl">
-					<span class="text-5xl block animate-bounce" style="animation-duration: 3s">🩸</span>
-					<h3 class="text-lg font-bold text-white">No requests found</h3>
-					<p class="text-xs text-slate-400 leading-relaxed">
-						There are currently no active emergency blood requests. Register as a donor to receive alerts when new patient drives are logged.
-					</p>
-					<div class="pt-2">
-						<a href="/register" class="inline-block bg-red-600 hover:bg-red-700 text-white text-xs font-bold px-6 py-3 rounded-xl transition">
-							Register to Receive Alerts
-						</a>
-					</div>
-				</div>
-			{:else}
-				<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-					{#each activeRequests as req}
-						<div class="glass-card-dark p-6 rounded-[32px] border hover:border-red-500/30 transition duration-300 flex flex-col justify-between text-left min-h-64 shadow-md relative overflow-hidden group">
-							<!-- Urgency Tag -->
-							<div class="absolute top-4 right-4 text-[9px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-lg border
-								{req.urgency === 'Critical' ? 'bg-red-500/20 text-red-400 border-red-500/35 animate-pulse' : ''}
-								{req.urgency === 'Urgent' ? 'bg-amber-500/20 text-amber-400 border-amber-500/35' : ''}
-								{req.urgency === 'Normal' ? 'bg-slate-500/20 text-slate-400 border-slate-500/35' : ''}">
-								{req.urgency}
-							</div>
-
-							<div class="space-y-6">
-								<div class="flex items-center gap-3">
-									<span class="w-12 h-12 bg-red-600 text-white font-extrabold text-lg rounded-2xl flex items-center justify-center shadow-lg shadow-red-600/20 border border-red-500/20">
-										{req.bloodGroup}
-									</span>
-									<div>
-										<h4 class="font-bold text-white text-sm">Patient: {req.patientName}</h4>
-										<p class="text-[10px] text-slate-400">🏥 {req.hospital} • {req.city}</p>
-									</div>
-								</div>
-
-								<div class="space-y-1 text-xs text-slate-400 bg-white/5 border border-white/5 p-4 rounded-2xl">
-									<p>📊 <strong>Required Units:</strong> <span class="font-bold text-white">{req.units} Bags</span></p>
-									<p>📅 <strong>Date Published:</strong> {req.date}</p>
-								</div>
-							</div>
-
-							<div class="mt-6">
-								<a
-									href="/login"
-									class="w-full text-center block bg-white/10 hover:bg-red-600 hover:text-white border border-white/10 text-white font-bold py-3 rounded-2xl transition text-xs"
-								>
-									Log In to Help Patient
-								</a>
-							</div>
-						</div>
-					{/each}
-				</div>
-			{/if}
 		</div>
 	</section>
 

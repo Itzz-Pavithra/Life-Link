@@ -9,7 +9,7 @@
 </script>
 
 <div class="min-h-screen bg-baby-pink py-16 px-6">
-	<div class="max-w-3xl mx-auto bg-white border border-rose-100 rounded-3xl shadow-xl p-8 md:p-10 relative z-10">
+	<div class="max-w-3xl mx-auto bg-white border border-rose-100 rounded-3xl shadow-xl p-6 sm:p-8 md:p-10 relative z-10">
 
 		<div class="text-center mb-10">
 			<div class="text-6xl animate-bounce" style="animation-duration: 3s">🚨</div>

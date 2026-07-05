@@ -295,6 +295,32 @@
 	const paginatedElig = $derived(filteredEligibility.slice((eligPage - 1) * PAGE_SIZE, eligPage * PAGE_SIZE));
 	const paginatedReqs = $derived(filteredRequests.slice((reqPage - 1) * PAGE_SIZE, reqPage * PAGE_SIZE));
 	const paginatedBanks = $derived(filteredBanks.slice((bankPage - 1) * PAGE_SIZE, bankPage * PAGE_SIZE));
+
+	// Blood Availability Analytics
+	const bloodGroupsList = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+	
+	const availabilityAnalytics = $derived.by(() => {
+		const counts = {};
+		bloodGroupsList.forEach(bg => {
+			counts[bg] = 0;
+		});
+		
+		(data.donors || []).forEach(d => {
+			const isAvail = d.isAvailable !== false && d.status === 'active';
+			if (isAvail && d.bloodGroup && counts[d.bloodGroup] !== undefined) {
+				counts[d.bloodGroup]++;
+			}
+		});
+		
+		return bloodGroupsList.map(bg => {
+			const count = counts[bg];
+			return {
+				bloodGroup: bg,
+				count,
+				isLow: count < 3
+			};
+		});
+	});
 </script>
 
 <div class="space-y-6 text-left">
@@ -333,6 +359,43 @@
 			<div class="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm text-center">
 				<span class="text-gray-400 text-[10px] font-bold uppercase tracking-wider block">Pending Requests</span>
 				<h4 class="text-3xl font-black text-amber-600 mt-2">{data.requests.filter(r => r.status === 'Pending').length} Pending</h4>
+			</div>
+		</div>
+
+		<!-- Blood Availability Dashboard -->
+		<div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm mt-6 text-left">
+			<div class="flex items-center justify-between mb-4 border-b border-slate-50 pb-2">
+				<div>
+					<h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+						📊 Live Blood Supply Analytics (Available Donors)
+					</h3>
+					<p class="text-xs text-slate-500">Inventory counts calculated dynamically from active, available donor records.</p>
+				</div>
+			</div>
+
+			<div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-4">
+				{#each availabilityAnalytics as item}
+					<div class="border rounded-2xl p-4 text-center hover:shadow-sm transition flex flex-col justify-between min-h-28
+						{item.isLow ? 'bg-red-50/30 border-red-150' : 'bg-slate-50/30 border-slate-100'}">
+						<span class="text-lg font-extrabold text-slate-800 block">{item.bloodGroup}</span>
+						<div class="my-2">
+							<span class="text-2xl font-black block
+								{item.isLow ? 'text-red-700' : 'text-slate-900'}">
+								{item.count}
+							</span>
+							<span class="text-[9px] text-slate-400 block font-semibold uppercase">Donors</span>
+						</div>
+						{#if item.isLow}
+							<span class="inline-block bg-red-100 text-red-700 text-[8px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-md animate-pulse">
+								Emergency Low
+							</span>
+						{:else}
+							<span class="inline-block bg-emerald-100 text-emerald-800 text-[8px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md">
+								Normal
+							</span>
+						{/if}
+					</div>
+				{/each}
 			</div>
 		</div>
 

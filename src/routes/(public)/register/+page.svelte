@@ -53,7 +53,7 @@
 	<!-- Glowing accents -->
 	<div class="absolute top-1/4 left-1/4 w-72 h-72 bg-red-400/5 rounded-full blur-3xl pointer-events-none"></div>
 
-	<div class="bg-white border border-slate-100 p-8 rounded-[32px] shadow-2xl w-full max-w-2xl space-y-8 relative z-10">
+	<div class="bg-white border border-slate-100 p-6 sm:p-8 rounded-[32px] shadow-2xl w-full max-w-2xl space-y-8 relative z-10">
 		<!-- Header -->
 		<div class="text-center space-y-2">
 			<a href="/" class="inline-flex items-center gap-2.5 mb-2">
