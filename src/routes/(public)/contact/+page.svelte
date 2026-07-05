@@ -158,13 +158,12 @@
 					>
 						<div class="flex gap-2">
 							<span>📍</span>
-							<span
-								>Department of MCA, Salem, Tamil Nadu, India.</span
+							<span>Salem, Tamil Nadu, India.</span
 							>
 						</div>
 						<div class="flex gap-2">
 							<span>✉️</span>
-							<span>support@lifelink.org</span>
+							<span>lifelink@gmail.com</span>
 						</div>
 						<div class="flex gap-2">
 							<span>⏰</span>

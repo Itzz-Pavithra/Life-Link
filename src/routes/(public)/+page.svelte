@@ -338,11 +338,11 @@
 						<div class="space-y-4 text-xs text-slate-650 leading-relaxed">
 							<div class="flex gap-3">
 								<span class="text-lg">📍</span>
-								<span>Department of MCA, Salem, Tamil Nadu, India.</span>
+								<span>Salem, Tamil Nadu, India.</span>
 							</div>
 							<div class="flex gap-3">
 								<span class="text-lg">✉️</span>
-								<span>support@lifelink.org</span>
+								<span>lifelink@gmail.com</span>
 							</div>
 							<div class="flex gap-3">
 								<span class="text-lg">⏰</span>

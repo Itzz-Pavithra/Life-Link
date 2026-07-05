@@ -10,9 +10,6 @@
 				<p class="text-sm max-w-sm">
 					Smart Blood Donation & Emergency Matching System. Connects donors, recipients, and blood banks to save lives when seconds count.
 				</p>
-				<p class="text-xs text-gray-500">
-					An MCA Mini Project. Built with Svelte 5 & Tailwind CSS v4.
-				</p>
 			</div>
 
 			<!-- Quick Links -->
@@ -36,7 +33,7 @@
 					</li>
 					<li class="flex items-center gap-2">
 						<span>✉️</span>
-						<span>emergency@lifelink.org</span>
+						<span>lifelink@gmail.com</span>
 					</li>
 					<li class="flex items-center gap-2">
 						<span>📍</span>
