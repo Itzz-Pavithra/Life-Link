@@ -1,13 +1,45 @@
 import { initializeApp, cert, getApps } from 'firebase-admin/app';
 import { getFirestore } from 'firebase-admin/firestore';
 import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
 
-dotenv.config();
+// Try loading env files in order of priority from root
+const rootDir = process.cwd();
+const envPaths = [
+	path.resolve(rootDir, '.env.development.local'),
+	path.resolve(rootDir, '.env.local'),
+	path.resolve(rootDir, '.env.development'),
+	path.resolve(rootDir, '.env')
+];
 
-const rawPrivateKey = process.env.FIREBASE_PRIVATE_KEY || process.env.FIREBASE_PRIVATEKEY;
+for (const p of envPaths) {
+	if (fs.existsSync(p)) {
+		dotenv.config({ path: p });
+	}
+}
 
-const hasProjectId = !!process.env.FIREBASE_PROJECT_ID;
-const hasClientEmail = !!process.env.FIREBASE_CLIENT_EMAIL;
+// Access process.env
+let projectId = process.env.FIREBASE_PROJECT_ID;
+let clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+let rawPrivateKey = process.env.FIREBASE_PRIVATE_KEY || process.env.FIREBASE_PRIVATEKEY;
+
+// Try SvelteKit virtual env module if process.env is empty
+if (!projectId || !clientEmail || !rawPrivateKey) {
+	try {
+		const svelteEnv = await import('$env/dynamic/private');
+		if (svelteEnv && svelteEnv.env) {
+			projectId = projectId || svelteEnv.env.FIREBASE_PROJECT_ID;
+			clientEmail = clientEmail || svelteEnv.env.FIREBASE_CLIENT_EMAIL;
+			rawPrivateKey = rawPrivateKey || svelteEnv.env.FIREBASE_PRIVATE_KEY || svelteEnv.env.FIREBASE_PRIVATEKEY;
+		}
+	} catch (err) {
+		// Not running in SvelteKit or virtual module not available (e.g. server.js)
+	}
+}
+
+const hasProjectId = !!projectId;
+const hasClientEmail = !!clientEmail;
 const hasPrivateKey = !!rawPrivateKey;
 
 console.log(`Firebase project id exists: ${hasProjectId}`);
@@ -19,8 +51,8 @@ const isBuild = process.env.npm_lifecycle_event === 'build' || !!process.env.SVE
 
 if (!isBuild || hasEnv) {
 	const missing = [];
-	if (!process.env.FIREBASE_PROJECT_ID) missing.push('FIREBASE_PROJECT_ID');
-	if (!process.env.FIREBASE_CLIENT_EMAIL) missing.push('FIREBASE_CLIENT_EMAIL');
+	if (!projectId) missing.push('FIREBASE_PROJECT_ID');
+	if (!clientEmail) missing.push('FIREBASE_CLIENT_EMAIL');
 	if (!rawPrivateKey) missing.push('FIREBASE_PRIVATE_KEY');
 
 	if (missing.length > 0) {
@@ -34,8 +66,8 @@ if (!isBuild || hasEnv) {
 	if (!getApps().length) {
 		initializeApp({
 			credential: cert({
-				projectId: process.env.FIREBASE_PROJECT_ID,
-				clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+				projectId,
+				clientEmail,
 				privateKey
 			})
 		});

@@ -1,7 +1,7 @@
 <script>
 	import { db } from '$lib/auth.svelte.js';
 
-	let { data } = $props();
+	let { data, sidebarOpen = $bindable(false) } = $props();
 
 	// Define all sidebar items for each role
 	const menuItems = {
@@ -34,28 +34,41 @@
 	const activeRoleItems = $derived(data?.user ? menuItems[data.user.role] : []);
 </script>
 
-<aside class="w-68 min-h-screen bg-slate-900 border-r border-slate-800 text-slate-405 text-slate-450 p-6 flex flex-col justify-between shrink-0">
+<aside
+	class="fixed md:sticky top-0 left-0 h-screen w-68 bg-slate-900 border-r border-slate-800 text-slate-400 p-6 flex flex-col justify-between shrink-0 z-40 transition-transform duration-300
+	{sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}"
+>
 	<div class="space-y-6">
 		<!-- Branding Header -->
-		<a href="/" class="flex items-center gap-3 group">
-			<img src="/logo.png" alt="LifeLink Logo" class="h-10 w-10 object-contain group-hover:scale-105 transition" />
-			<div class="flex flex-col">
-				<span class="text-lg font-black text-white tracking-tight">LifeLink</span>
-				<span class="text-[9px] text-red-500 font-bold uppercase tracking-widest leading-none mt-1">Donate Blood • Save Lives</span>
-			</div>
-		</a>
+		<div class="flex items-center justify-between">
+			<a href="/" class="flex items-center gap-3 group">
+				<img src="/logo.png" alt="LifeLink Logo" class="h-10 w-10 object-contain group-hover:scale-105 transition" />
+				<div class="flex flex-col">
+					<span class="text-lg font-black text-white tracking-tight">LifeLink</span>
+					<span class="text-[9px] text-red-500 font-bold uppercase tracking-widest leading-none mt-1">Donate Blood • Save Lives</span>
+				</div>
+			</a>
+			<!-- Close button for mobile -->
+			<button
+				onclick={() => sidebarOpen = false}
+				class="md:hidden text-slate-400 hover:text-white p-1 rounded-lg text-lg cursor-pointer"
+				aria-label="Close sidebar panel"
+			>
+				✕
+			</button>
+		</div>
 
 		<!-- Navigation Menu -->
-		<nav class="space-y-1 overflow-y-auto max-h-[80vh] pr-1">
+		<nav class="space-y-1 overflow-y-auto max-h-[70vh] pr-1">
 			{#each activeRoleItems as item}
 				<button
 					class="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-xs font-semibold transition-all duration-200 text-left cursor-pointer
 					{db.activeTab === item.id 
 						? 'bg-red-700 text-white shadow-lg shadow-red-700/20 font-bold' 
 						: 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}"
-					onclick={() => db.activeTab = item.id}
+					onclick={() => { db.activeTab = item.id; sidebarOpen = false; }}
 				>
-					<span class="text-base">{item.icon}</span>
+					<span class="text-base" aria-hidden="true">{item.icon}</span>
 					<span>{item.label}</span>
 				</button>
 			{/each}
@@ -68,7 +81,7 @@
 			type="submit"
 			class="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-xs font-bold text-slate-400 hover:bg-red-950/20 hover:text-red-400 border border-slate-800 hover:border-red-950/40 transition cursor-pointer text-left"
 		>
-			<span>🚪</span>
+			<span aria-hidden="true">🚪</span>
 			<span>Logout System</span>
 		</button>
 	</form>

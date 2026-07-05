@@ -70,68 +70,73 @@
 
 			<!-- Mobile Menu Button -->
 			<button
-				class="md:hidden p-2 rounded-xl hover:bg-gray-50 text-gray-500"
+				class="md:hidden p-2.5 rounded-xl hover:bg-rose-50 hover:text-red-700 text-gray-500 transition cursor-pointer"
 				onclick={() => mobileMenuOpen = !mobileMenuOpen}
+				aria-expanded={mobileMenuOpen}
+				aria-controls="mobile-menu"
+				aria-label="Toggle Navigation Menu"
 			>
-				<span class="text-2xl">{mobileMenuOpen ? '✕' : '☰'}</span>
+				<span class="text-2xl" aria-hidden="true">{mobileMenuOpen ? '✕' : '☰'}</span>
 			</button>
 		</div>
 	</div>
 
-	<!-- Mobile Menu Panel -->
-	{#if mobileMenuOpen}
-		<div class="md:hidden border-t border-gray-100 bg-white/95 backdrop-blur-md py-4 px-6 space-y-3 shadow-inner">
-			<a
-				href="/"
-				class="block text-sm font-semibold text-gray-700 hover:text-red-700 transition py-2"
-				onclick={() => mobileMenuOpen = false}
-			>Home</a>
-			<a
-				href="/about"
-				class="block text-sm font-semibold text-gray-700 hover:text-red-700 transition py-2"
-				onclick={() => mobileMenuOpen = false}
-			>About</a>
-			<a
-				href="/eligibility"
-				class="block text-sm font-semibold text-gray-700 hover:text-red-700 transition py-2"
-				onclick={() => mobileMenuOpen = false}
-			>Eligibility Checker</a>
-			<a
-				href="/contact"
-				class="block text-sm font-semibold text-gray-700 hover:text-red-700 transition py-2"
-				onclick={() => mobileMenuOpen = false}
-			>Contact</a>
-			
-			<hr class="border-gray-150 my-2" />
+	<!-- Mobile Menu Panel with smooth sliding and opacity animation -->
+	<div
+		id="mobile-menu"
+		class="md:hidden border-t border-gray-100 bg-white/95 backdrop-blur-md transition-all duration-300 ease-in-out overflow-hidden shadow-inner
+		{mobileMenuOpen ? 'max-h-[500px] opacity-100 py-4 px-6 space-y-3' : 'max-h-0 opacity-0 py-0 px-6 space-y-0 border-t-0 pointer-events-none'}"
+	>
+		<a
+			href="/"
+			class="block text-sm font-semibold text-gray-700 hover:text-red-750 hover:bg-rose-50/50 px-3 py-2 rounded-xl transition"
+			onclick={() => mobileMenuOpen = false}
+		>Home</a>
+		<a
+			href="/about"
+			class="block text-sm font-semibold text-gray-700 hover:text-red-750 hover:bg-rose-50/50 px-3 py-2 rounded-xl transition"
+			onclick={() => mobileMenuOpen = false}
+		>About</a>
+		<a
+			href="/eligibility"
+			class="block text-sm font-semibold text-gray-700 hover:text-red-750 hover:bg-rose-50/50 px-3 py-2 rounded-xl transition"
+			onclick={() => mobileMenuOpen = false}
+		>Eligibility Checker</a>
+		<a
+			href="/contact"
+			class="block text-sm font-semibold text-gray-700 hover:text-red-750 hover:bg-rose-50/50 px-3 py-2 rounded-xl transition"
+			onclick={() => mobileMenuOpen = false}
+		>Contact</a>
+		
+		<hr class="border-rose-100 my-2" />
 
-			{#if data?.user}
-				<a
-					href="/dashboard/{data.user.role}"
-					class="block text-sm font-bold text-red-700 bg-red-50 px-4 py-2.5 rounded-xl transition"
-					onclick={() => mobileMenuOpen = false}
-				>
-					💻 Dashboard
-				</a>
-				<button
-					onclick={(e) => { mobileMenuOpen = false; handleLogout(e); }}
-					class="block w-full text-left text-sm font-semibold text-gray-500 hover:text-red-650 transition py-2 cursor-pointer"
-				>
-					Logout
-				</button>
-			{:else}
-				<a
-					href="/login"
-					class="block text-sm font-semibold text-gray-700 hover:text-red-700 transition py-2"
-					onclick={() => mobileMenuOpen = false}
-				>Login</a>
-				<a
-					href="/register"
-					class="block text-center bg-red-700 text-white text-sm font-bold py-3 rounded-xl transition"
-					onclick={() => mobileMenuOpen = false}
-				>
-					Register
-				</a>
-			{/if}
-		</div>
-	{/if}
+		{#if data?.user}
+			<a
+				href="/dashboard/{data.user.role}"
+				class="block text-sm font-bold text-red-700 bg-red-50 hover:bg-red-100 px-4 py-3 rounded-xl transition"
+				onclick={() => mobileMenuOpen = false}
+			>
+				💻 Dashboard
+			</a>
+			<button
+				onclick={(e) => { mobileMenuOpen = false; handleLogout(e); }}
+				class="block w-full text-left text-sm font-semibold text-gray-500 hover:text-red-650 hover:bg-rose-50/50 px-3 py-2 rounded-xl transition cursor-pointer"
+			>
+				Logout
+			</button>
+		{:else}
+			<a
+				href="/login"
+				class="block text-sm font-semibold text-gray-700 hover:text-red-750 hover:bg-rose-50/50 px-3 py-2 rounded-xl transition"
+				onclick={() => mobileMenuOpen = false}
+			>Login</a>
+			<a
+				href="/register"
+				class="block text-center bg-red-700 hover:bg-red-800 text-white text-sm font-bold py-3.5 rounded-xl shadow-lg transition active:scale-95"
+				onclick={() => mobileMenuOpen = false}
+			>
+				Register
+			</a>
+		{/if}
+	</div>
 </nav>

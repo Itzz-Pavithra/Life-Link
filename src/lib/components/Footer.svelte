@@ -1,8 +1,8 @@
 <footer class="bg-gray-950 text-gray-400 border-t border-gray-900 mt-auto">
 	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-		<div class="grid md:grid-cols-4 gap-8">
+		<div class="grid sm:grid-cols-2 md:grid-cols-4 gap-8">
 			<!-- Branding -->
-			<div class="md:col-span-2 space-y-4">
+			<div class="sm:col-span-2 space-y-4">
 				<div class="flex items-center gap-3">
 					<img src="/logo.png" alt="LifeLink Logo" class="h-10 w-10 object-contain" />
 					<span class="text-xl font-bold text-white tracking-tight">LifeLink</span>
@@ -19,10 +19,10 @@
 			<div>
 				<h4 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Navigation</h4>
 				<ul class="space-y-2 text-sm">
-					<li><a href="/" class="hover:text-red-500 transition">Home</a></li>
-					<li><a href="/about" class="hover:text-red-500 transition">About</a></li>
-					<li><a href="/eligibility" class="hover:text-red-500 transition">Eligibility Checker</a></li>
-					<li><a href="/contact" class="hover:text-red-500 transition">Contact Support</a></li>
+					<li><a href="/" class="hover:text-red-500 focus-visible:outline-2 focus-visible:outline-red-500 rounded px-1 transition">Home</a></li>
+					<li><a href="/about" class="hover:text-red-500 focus-visible:outline-2 focus-visible:outline-red-500 rounded px-1 transition">About</a></li>
+					<li><a href="/eligibility" class="hover:text-red-500 focus-visible:outline-2 focus-visible:outline-red-500 rounded px-1 transition">Eligibility Checker</a></li>
+					<li><a href="/contact" class="hover:text-red-500 focus-visible:outline-2 focus-visible:outline-red-500 rounded px-1 transition">Contact Support</a></li>
 				</ul>
 			</div>
 
