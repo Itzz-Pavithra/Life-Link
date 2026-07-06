@@ -343,7 +343,7 @@
 		<div class="max-w-3xl mx-auto bg-white border border-slate-100 rounded-3xl p-8 shadow-lg">
 			<div class="text-center mb-6">
 				<span class="text-4xl block mb-2">🚨</span>
-				<h2 class="text-2xl font-bold text-slate-800">Create Emergency Blood Request</h2>
+				<h2 class="text-2xl font-bold text-slate-800">Create Blood Request</h2>
 				<p class="text-slate-400 text-xs mt-1">This matches you automatically with registered nearby donors.</p>
 			</div>
 
