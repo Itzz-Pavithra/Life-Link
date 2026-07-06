@@ -5,26 +5,68 @@
 	let email = $state("");
 	let subject = $state("");
 	let message = $state("");
-	let isSubmitted = $state(false);
+	let isSending = $state(false);
 
-	function handleSubmit(e) {
+	async function handleSubmit(e) {
 		e.preventDefault();
-		if (!name || !email || !message) {
-			db.addToast("Please fill in all required fields.", "error");
+		if (isSending) return;
+
+		// Validation
+		if (!name.trim()) {
+			db.addToast("Name is required.", "error");
 			return;
 		}
 
-		isSubmitted = true;
-		db.addToast(
-			"Thank you! Your feedback message has been sent successfully.",
-			"success",
-		);
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!email.trim() || !emailRegex.test(email)) {
+			db.addToast("Valid email required.", "error");
+			return;
+		}
 
-		// Reset form
-		name = "";
-		email = "";
-		subject = "";
-		message = "";
+		if (!subject.trim()) {
+			db.addToast("Subject is required.", "error");
+			return;
+		}
+
+		if (!message.trim()) {
+			db.addToast("Message is required.", "error");
+			return;
+		}
+
+		isSending = true;
+
+		try {
+			const res = await fetch("/api/contact", {
+				method: "POST",
+				headers: {
+					"Content-Type": "application/json"
+				},
+				body: JSON.stringify({
+					name: name.trim(),
+					email: email.trim(),
+					subject: subject.trim(),
+					message: message.trim()
+				})
+			});
+
+			const data = await res.json();
+
+			if (res.ok && data.success) {
+				db.addToast("Your message has been sent successfully.", "success");
+				// Reset form
+				name = "";
+				email = "";
+				subject = "";
+				message = "";
+			} else {
+				db.addToast(data.error || "Unable to send message. Please try again.", "error");
+			}
+		} catch (err) {
+			console.error("Contact query error:", err);
+			db.addToast("Unable to send message. Please try again.", "error");
+		} finally {
+			isSending = false;
+		}
 	}
 </script>
 
@@ -89,7 +131,7 @@
 					<div class="flex flex-col gap-1.5">
 						<label
 							class="text-xs font-bold text-slate-500 uppercase"
-							for="subject">Subject</label
+							for="subject">Subject *</label
 						>
 						<input
 							id="subject"
@@ -97,6 +139,7 @@
 							bind:value={subject}
 							placeholder="Enter subject"
 							class="border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none"
+							required
 						/>
 					</div>
 
@@ -117,9 +160,10 @@
 
 					<button
 						type="submit"
-						class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-red-700/25 transition transform active:scale-95"
+						disabled={isSending}
+						class="w-full bg-red-700 hover:bg-red-800 disabled:bg-red-400 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl shadow-lg shadow-red-700/25 transition transform active:scale-95"
 					>
-						Send Message
+						{isSending ? "Sending..." : "Send Message"}
 					</button>
 				</form>
 			</div>

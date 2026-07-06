@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 import dotenv from 'dotenv';
 import { db } from './src/lib/server/firebase.js';
+import { sendContactEmail } from './src/lib/server/email.js';
 
 dotenv.config();
 
@@ -334,6 +335,49 @@ app.get('/api/user/profile', authenticateToken, async (req, res) => {
 	} catch (err) {
 		console.error('Fetch profile failed:', err);
 		return res.status(500).json({ error: 'Internal server error.' });
+	}
+});
+
+app.post('/api/contact', async (req, res) => {
+	try {
+		const { name, email, subject, message } = req.body;
+
+		// Validation: Name, email, subject, message required
+		if (!name || !email || !subject || !message) {
+			return res.status(400).json({ error: 'Name, email, subject, and message are required.' });
+		}
+
+		// Valid email required (regex check)
+		const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+		if (!emailRegex.test(email)) {
+			return res.status(400).json({ error: 'Valid email required.' });
+		}
+
+		// Firebase Log: Save contact queries in Firebase collection `contactMessages`
+		const id = `MSG${Date.now()}`;
+		const contactMessage = {
+			name: name.trim(),
+			email: email.trim().toLowerCase(),
+			subject: subject.trim(),
+			message: message.trim(),
+			createdAt: new Date().toISOString()
+		};
+
+		// Save to Firestore directly
+		await db.collection('contactMessages').doc(id).set(contactMessage);
+
+		// Send Email using reusable sendContactEmail
+		await sendContactEmail({
+			name: contactMessage.name,
+			email: contactMessage.email,
+			subject: contactMessage.subject,
+			message: contactMessage.message
+		});
+
+		return res.status(200).json({ success: true, message: 'Your message has been sent successfully.' });
+	} catch (err) {
+		console.error('Error handling contact form submission on Express server:', err);
+		return res.status(500).json({ error: 'Unable to send message. Please try again.' });
 	}
 });
 
