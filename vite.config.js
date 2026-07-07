@@ -6,5 +6,6 @@ export default defineConfig({
 	plugins: [
 		tailwindcss(),
 		sveltekit()
-	]
+	],
+	envPrefix: ['VITE_', 'PUBLIC_']
 });

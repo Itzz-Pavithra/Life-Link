@@ -2,7 +2,7 @@
 	import axios from 'axios';
 	import { goto } from '$app/navigation';
 	import { db } from '$lib/auth.svelte.js';
-	import { getClientAuth } from '$lib/firebase.client.js';
+	import { auth } from '$lib/firebase.client.js';
 	import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 	let role = $state('');
@@ -59,7 +59,6 @@
 		}
 
 		try {
-			const auth = getClientAuth();
 			const provider = new GoogleAuthProvider();
 			const result = await signInWithPopup(auth, provider);
 			const user = result.user;

@@ -1,6 +1,17 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 
+// Temporary debug for production env values
+console.log({
+	authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+	projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID
+});
+
+// Check current domain
+if (typeof window !== 'undefined') {
+	console.log('Current window hostname:', window.location.hostname);
+}
+
 const firebaseConfig = {
 	apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
 	authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -11,7 +22,5 @@ const firebaseConfig = {
 	measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-export function getClientAuth() {
-	const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
-	return getAuth(app);
-}
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+export const auth = getAuth(app);
