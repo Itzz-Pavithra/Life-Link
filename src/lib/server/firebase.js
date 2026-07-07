@@ -59,7 +59,7 @@ if (!isBuild || hasEnv) {
 		throw new Error(`Missing ${missing.join(', ')}`);
 	}
 
-	const privateKey = rawPrivateKey
+	const privateKey = process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n') || rawPrivateKey
 		?.replace(/\\n/g, '\n')
 		?.replace(/^"|"$/g, "");
 
