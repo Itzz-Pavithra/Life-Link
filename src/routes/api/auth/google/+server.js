@@ -1,13 +1,36 @@
 import { json } from '@sveltejs/kit';
 import { getAuth } from 'firebase-admin/auth';
-import jwt from 'jsonwebtoken';
 import { getUserByEmail } from '$lib/server/db.js';
 import { db } from '$lib/server/firebase.js';
-import bcrypt from 'bcryptjs';
 import dotenv from 'dotenv';
+import crypto from 'crypto';
 
 dotenv.config();
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey123';
+
+function base64UrlEncode(str) {
+	return Buffer.from(str)
+		.toString('base64')
+		.replace(/=/g, '')
+		.replace(/\+/g, '-')
+		.replace(/\//g, '_');
+}
+
+function signJwt(payload, secret) {
+	const header = { alg: 'HS256', typ: 'JWT' };
+	const encodedHeader = base64UrlEncode(JSON.stringify(header));
+	const encodedPayload = base64UrlEncode(JSON.stringify(payload));
+	
+	const signature = crypto
+		.createHmac('sha256', secret)
+		.update(`${encodedHeader}.${encodedPayload}`)
+		.digest('base64')
+		.replace(/=/g, '')
+		.replace(/\+/g, '-')
+		.replace(/\//g, '_');
+		
+	return `${encodedHeader}.${encodedPayload}.${signature}`;
+}
 
 /** @type {import('./$types').RequestHandler} */
 export async function POST({ request, cookies }) {
@@ -27,18 +50,17 @@ export async function POST({ request, cookies }) {
 			return json({ success: false, error: 'Firebase ID Token is required.', message: 'Firebase ID Token is required.' }, { status: 400 });
 		}
 
-		// Verify Google ID token using Firebase Admin Auth
-		const adminAuth = getAuth();
-		const decodedToken = await adminAuth.verifyIdToken(idToken);
+		// Verify Google ID token using Firebase Admin Auth only
+		const decodedToken = await getAuth().verifyIdToken(idToken);
 
-		// Log Firebase uid, email, displayName, role
+		// Log Firebase details
 		console.log("GOOGLE AUTH - Firebase UID:", decodedToken.uid);
 		console.log("GOOGLE AUTH - Email:", decodedToken.email);
-		console.log("GOOGLE AUTH - Display Name:", decodedToken.name || decodedToken.displayName);
+		console.log("GOOGLE AUTH - Display Name:", decodedToken.name);
 		console.log("GOOGLE AUTH - Role:", role);
 
-		if (!decodedToken.email_verified) {
-			return json({ success: false, error: 'Google account email is not verified.', message: 'Google account email is not verified.' }, { status: 400 });
+		if (!decodedToken.email) {
+			return json({ success: false, error: 'Google account email is missing.', message: 'Google account email is missing.' }, { status: 400 });
 		}
 
 		const email = decodedToken.email.toLowerCase();
@@ -89,10 +111,10 @@ export async function POST({ request, cookies }) {
 			user = {
 				id: userId,
 				uid: decodedToken.uid,
-				name: decodedToken.name || decodedToken.displayName || 'Google User',
+				name: decodedToken.name || 'Google User',
 				email: email,
-				profileImage: decodedToken.picture || decodedToken.photoURL || '',
-				avatar: decodedToken.picture || decodedToken.photoURL || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(decodedToken.name || 'Google User')}`,
+				profileImage: decodedToken.picture || '',
+				avatar: decodedToken.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(decodedToken.name || 'Google User')}`,
 				authProvider: "google",
 				role: finalRole,
 				status: 'active',
@@ -120,7 +142,8 @@ export async function POST({ request, cookies }) {
 		}
 
 		// Handle missing/undefined fields safely in JWT and cookies
-		const token = jwt.sign(
+		// Sign session token using native signature helper
+		const token = signJwt(
 			{
 				id: user.id || user.uid,
 				email: user.email,
@@ -131,8 +154,7 @@ export async function POST({ request, cookies }) {
 				avatar: user.avatar || user.profileImage || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name || 'Google User')}`,
 				profileCompletion: user.profileCompletion || 50
 			},
-			JWT_SECRET,
-			{ expiresIn: '24h' }
+			JWT_SECRET
 		);
 
 		// Set cookies
