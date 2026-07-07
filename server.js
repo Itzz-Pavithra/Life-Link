@@ -302,6 +302,7 @@ app.post('/api/auth/logout', (req, res) => {
 		sameSite: 'strict',
 		secure: process.env.NODE_ENV === 'production'
 	});
+	res.clearCookie('lifelink_user');
 	return res.status(200).json({ success: true, message: 'Logged out successfully.' });
 });
 

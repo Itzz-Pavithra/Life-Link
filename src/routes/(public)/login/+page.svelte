@@ -1,6 +1,7 @@
 <script>
 	import axios from 'axios';
 	import { db } from '$lib/auth.svelte.js';
+	import { getClientAuth, GoogleAuthProvider, signInWithPopup } from '$lib/firebase.client.js';
 
 	let { data } = $props();
 
@@ -58,6 +59,45 @@
 			}
 		} catch (err) {
 			errorMessage = err.response?.data?.error || 'Failed to initialize system admin.';
+			db.addToast(errorMessage, 'error');
+		}
+	}
+
+	async function handleGoogleSignIn() {
+		errorMessage = '';
+		try {
+			const auth = getClientAuth();
+			if (!auth) {
+				db.addToast('Google Sign-In environment variables not set on client.', 'error');
+				errorMessage = 'Google Sign-In is not configured.';
+				return;
+			}
+			const provider = new GoogleAuthProvider();
+			const result = await signInWithPopup(auth, provider);
+			const user = result.user;
+
+			if (!user.emailVerified) {
+				db.addToast('Your Google account email is not verified.', 'error');
+				errorMessage = 'Email address not verified by Google.';
+				return;
+			}
+
+			const idToken = await user.getIdToken();
+			
+			db.addToast('Google verified. Syncing profile...', 'info');
+
+			const res = await axios.post('/api/auth/google', {
+				idToken,
+				role: selectedRole
+			});
+
+			if (res.data.success) {
+				db.addToast('Welcome! Logging you in...', 'success');
+				window.location.href = `/dashboard/${res.data.user.role}`;
+			}
+		} catch (err) {
+			console.error(err);
+			errorMessage = err.response?.data?.error || err.message || 'Google Sign-In failed.';
 			db.addToast(errorMessage, 'error');
 		}
 	}
@@ -257,6 +297,38 @@
 					Sign In
 				</button>
 			</form>
+
+			<div class="relative flex py-2 items-center">
+				<div class="flex-grow border-t border-slate-200"></div>
+				<span class="flex-shrink mx-4 text-slate-400 text-xs font-semibold uppercase">Or</span>
+				<div class="flex-grow border-t border-slate-200"></div>
+			</div>
+
+			<button
+				type="button"
+				onclick={handleGoogleSignIn}
+				class="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold py-3 rounded-xl flex items-center justify-center gap-2.5 transition active:scale-95 cursor-pointer text-sm"
+			>
+				<svg class="h-5 w-5" viewBox="0 0 24 24">
+					<path
+						fill="#EA4335"
+						d="M12 5.04c1.66 0 3.2.57 4.38 1.69l3.27-3.27C17.67 1.54 14.98 1 12 1 7.35 1 3.37 3.67 1.39 7.56l3.85 2.99c.92-2.76 3.5-4.51 6.76-4.51z"
+					/>
+					<path
+						fill="#4285F4"
+						d="M23.49 12.27c0-.81-.07-1.59-.2-2.34H12v4.43h6.48c-.28 1.48-1.12 2.73-2.38 3.58l3.7 2.87c2.16-1.99 3.69-4.92 3.69-8.54z"
+					/>
+					<path
+						fill="#FBBC05"
+						d="M5.24 14.54c-.24-.72-.38-1.49-.38-2.29s.14-1.57.38-2.29L1.39 6.97C.5 8.78 0 10.82 0 13s.5 4.22 1.39 6.03l3.85-2.99z"
+					/>
+					<path
+						fill="#34A853"
+						d="M12 23c3.24 0 5.97-1.07 7.96-2.91l-3.7-2.87c-1.03.69-2.35 1.11-3.96 1.11-3.26 0-5.84-2.15-6.76-4.51l-3.85 2.99C3.37 20.33 7.35 23 12 23z"
+					/>
+				</svg>
+				Continue with Google
+			</button>
 
 			<div class="text-center text-xs text-slate-400">
 				Don't have an account?

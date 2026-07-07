@@ -78,8 +78,10 @@ export async function handle({ event, resolve }) {
 
 		const segments = path.split('/');
 		const roleSegment = segments[2];
-		if (roleSegment && roleSegment !== event.locals.role) {
+		if (!roleSegment) {
 			throw redirect(303, `/dashboard/${event.locals.role}`);
+		} else if (roleSegment !== event.locals.role) {
+			throw redirect(303, '/login');
 		}
 	}
 

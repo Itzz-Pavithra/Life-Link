@@ -119,6 +119,12 @@ export const actions = {
 	},
 
 	logout: async ({ cookies }) => {
+		cookies.delete('lifelink_token', {
+			path: '/',
+			httpOnly: true,
+			sameSite: 'strict',
+			secure: process.env.NODE_ENV === 'production'
+		});
 		cookies.delete('lifelink_user', { path: '/' });
 		throw redirect(303, '/login');
 	}

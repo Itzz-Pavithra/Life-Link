@@ -58,10 +58,68 @@ LifeLink Contact Page`;
 }
 
 /**
- * Sends an emergency blood alert email (placeholder to keep it separate as requested).
- * @param {Object} alertData
+ * Sends an emergency blood alert email using the Resend API.
+ * @param {Object} params
  */
-export async function sendEmergencyBloodAlert(alertData) {
-	// Keep separate from sendContactEmail and do not modify existing emergency blood alert email features
-	console.log('sendEmergencyBloodAlert placeholder called with data:', alertData);
+export async function sendEmergencyBloodAlert({ donorEmails, bloodGroup, city, recipientName, contactPhone }) {
+	const apiKey = process.env.EMAIL_RESEND;
+	if (!apiKey) {
+		throw new Error('EMAIL_RESEND environment variable is not defined.');
+	}
+
+	const emailSubject = `🚨 EMERGENCY: Blood Needed (${bloodGroup}) in ${city}`;
+	const emailBody = `Hello,
+
+This is an emergency alert from LifeLink.
+
+A recipient has requested an emergency match for Blood Group: ${bloodGroup} in City: ${city}.
+
+Recipient Details:
+Name: ${recipientName}
+Contact Phone: ${contactPhone || 'Check dashboard for details'}
+
+Please log in to your LifeLink dashboard to accept this emergency request and save a life.
+
+Best regards,
+LifeLink Team`;
+
+	let response = await fetch('https://api.resend.com/emails', {
+		method: 'POST',
+		headers: {
+			'Authorization': `Bearer ${apiKey}`,
+			'Content-Type': 'application/json'
+		},
+		body: JSON.stringify({
+			from: 'LifeLink Alerts <onboarding@resend.dev>',
+			to: donorEmails.length > 0 ? donorEmails : ['lifelinklifelink2@gmail.com'],
+			subject: emailSubject,
+			text: emailBody
+		})
+	});
+
+	if (!response.ok) {
+		const errText = await response.text();
+		console.warn('Initial Resend call failed, trying sandbox fallback...', errText);
+		response = await fetch('https://api.resend.com/emails', {
+			method: 'POST',
+			headers: {
+				'Authorization': `Bearer ${apiKey}`,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				from: 'LifeLink Alerts <onboarding@resend.dev>',
+				to: ['lifelinklifelink2@gmail.com'],
+				subject: emailSubject + ' (Sandbox Fallback)',
+				text: emailBody
+			})
+		});
+	}
+
+	if (!response.ok) {
+		const errorText = await response.text();
+		console.error('Resend fallback API call failed:', errorText);
+		throw new Error(`Resend email dispatch failed: ${response.status} - ${response.statusText}`);
+	}
+
+	return await response.json();
 }

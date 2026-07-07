@@ -185,6 +185,7 @@
 					{/if}
 					<div class="text-left">
 						<h4 class="font-bold text-slate-800 text-base">{data.user?.name}</h4>
+						<p class="text-[10px] text-gray-550 text-slate-500">{data.user?.email}</p>
 						<p class="text-[10px] text-gray-500">Voluntary blood donor</p>
 					</div>
 				</div>
@@ -279,6 +280,10 @@
 
 								<div class="bg-slate-50/50 border border-slate-100 p-3 rounded-2xl text-[10px] text-slate-500 space-y-1">
 									<p><strong>Required Units:</strong> {req.units} units</p>
+									<p><strong>Contact Email:</strong> {req.submittedBy}</p>
+									{#if req.contact}
+										<p><strong>Contact Phone:</strong> {req.contact}</p>
+									{/if}
 									<p><strong>Current Status:</strong> <span class="font-bold text-red-750 text-red-700">{req.status}</span></p>
 								</div>
 							</div>

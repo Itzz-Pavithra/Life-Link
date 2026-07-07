@@ -1,11 +1,14 @@
 <script>
 	import axios from 'axios';
 	import { db } from '$lib/auth.svelte.js';
+	import { page } from '$app/stores';
 
 	let { data } = $props();
 	let mobileMenuOpen = $state(false);
 
 	axios.defaults.withCredentials = true;
+
+	const isPublicPage = $derived(['/', '/about', '/eligibility', '/contact'].includes($page.url.pathname));
 
 	async function handleLogout(e) {
 		if (e) e.preventDefault();
@@ -44,13 +47,15 @@
 				
 				<span class="h-5 w-[1px] bg-gray-200"></span>
 
-				{#if data?.user}
+				{#if data?.user && !isPublicPage}
 					<a
 						href="/dashboard/{data.user.role}"
 						class="text-sm font-bold text-red-700 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl transition"
 					>
 						💻 Dashboard
 					</a>
+				{/if}
+				{#if data?.user}
 					<button
 						onclick={handleLogout}
 						class="text-sm font-semibold text-gray-500 hover:text-red-650 transition cursor-pointer"
@@ -61,7 +66,7 @@
 					<a href="/login" class="text-sm font-semibold text-gray-700 hover:text-red-700 transition">Login</a>
 					<a
 						href="/register"
-						class="bg-red-700 hover:bg-red-800 text-white text-sm font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-red-700/25 transition transform active:scale-95"
+						class="bg-red-700 hover:bg-red-850 bg-red-700 hover:bg-red-800 text-white text-sm font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-red-700/25 transition transform active:scale-95"
 					>
 						Register
 					</a>
@@ -111,13 +116,15 @@
 		<hr class="border-rose-100 my-2" />
 
 		{#if data?.user}
-			<a
-				href="/dashboard/{data.user.role}"
-				class="block text-sm font-bold text-red-700 bg-red-50 hover:bg-red-100 px-4 py-3 rounded-xl transition"
-				onclick={() => mobileMenuOpen = false}
-			>
-				💻 Dashboard
-			</a>
+			{#if !isPublicPage}
+				<a
+					href="/dashboard/{data.user.role}"
+					class="block text-sm font-bold text-red-700 bg-red-50 hover:bg-red-100 px-4 py-3 rounded-xl transition"
+					onclick={() => mobileMenuOpen = false}
+				>
+					💻 Dashboard
+				</a>
+			{/if}
 			<button
 				onclick={(e) => { mobileMenuOpen = false; handleLogout(e); }}
 				class="block w-full text-left text-sm font-semibold text-gray-500 hover:text-red-650 hover:bg-rose-50/50 px-3 py-2 rounded-xl transition cursor-pointer"

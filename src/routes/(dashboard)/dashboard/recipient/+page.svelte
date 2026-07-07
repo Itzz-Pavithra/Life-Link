@@ -194,6 +194,36 @@
 			db.addToast(res.error || 'Failed to submit request', 'error');
 		}
 	}
+
+	let sendingAlert = $state(false);
+
+	async function sendEmergencyAlert() {
+		if (filteredDonors.length === 0) return;
+		sendingAlert = true;
+		try {
+			const res = await fetch('/api/requests/alert', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({
+					donorEmails: filteredDonors.map(d => d.email),
+					bloodGroup: searchBloodGroup,
+					city: searchCity,
+					recipientName: data.user?.name,
+					contactPhone: data.user?.phone
+				})
+			});
+			const result = await res.json();
+			if (result.success) {
+				db.addToast(`🚨 Emergency Alert sent successfully to ${filteredDonors.length} compatible donors!`, 'success');
+			} else {
+				db.addToast(result.error || 'Failed to send alert.', 'error');
+			}
+		} catch (err) {
+			db.addToast('Error sending emergency alert.', 'error');
+		} finally {
+			sendingAlert = false;
+		}
+	}
 </script>
 
 <div class="space-y-6">
@@ -211,8 +241,9 @@
 	{#if db.activeTab === 'dashboard'}
 		<div class="grid md:grid-cols-3 gap-6">
 			<!-- Welcome Info -->
-			<div class="md:col-span-2 bg-white border border-slate-100 p-8 rounded-3xl shadow-sm space-y-4">
+			<div class="md:col-span-3 bg-white border border-slate-100 p-8 rounded-3xl shadow-sm space-y-4">
 				<h2 class="text-2xl font-bold text-slate-800">Hello, {data.user?.name}!</h2>
+				<p class="text-[10px] text-gray-500 font-semibold">{data.user?.email}</p>
 				<p class="text-slate-500 text-sm leading-relaxed">
 					From your Recipient panel, you can submit emergency requests, track donor matching parameters, and locate nearby blood bank inventory stocks.
 				</p>
@@ -224,30 +255,6 @@
 						Request Blood Now
 					</button>
 				</div>
-			</div>
-
-			<!-- Profile Completion Card -->
-			<div class="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm space-y-4">
-				<h3 class="font-bold text-slate-850">Profile Completion</h3>
-				<div class="flex items-center justify-between text-xs font-bold text-slate-600">
-					<span>Verification Strength</span>
-					<span class="text-red-700">{data.user?.profileCompletion}%</span>
-				</div>
-				<!-- Progress bar -->
-				<div class="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
-					<div class="bg-red-700 h-full rounded-full transition-all duration-505" style="width: {data.user?.profileCompletion}%"></div>
-				</div>
-				<ul class="text-[10px] text-gray-500 space-y-1 bg-slate-50/50 p-3 border border-slate-100 rounded-xl">
-					<li class="flex items-center gap-1.5 text-emerald-600">✓ Phone Verified</li>
-					<li class="flex items-center gap-1.5 text-emerald-600">✓ Email Registered</li>
-					<li class="flex items-center gap-1.5 text-red-650">✕ Missing Hospital Admittance Code</li>
-				</ul>
-				<button
-					class="w-full bg-slate-900 hover:bg-black text-white text-xs font-bold py-2 rounded-xl transition cursor-pointer"
-					onclick={() => db.activeTab = 'profile'}
-				>
-					Complete Medical Profile
-				</button>
 			</div>
 		</div>
 
@@ -534,7 +541,18 @@
 
 			<!-- Donors Results List -->
 			<div class="space-y-4">
-				<h3 class="font-bold text-slate-800 text-sm">Matching Donors ({filteredDonors.length})</h3>
+				<div class="flex items-center justify-between">
+					<h3 class="font-bold text-slate-800 text-sm">Matching Donors ({filteredDonors.length})</h3>
+					{#if filteredDonors.length > 0}
+						<button
+							onclick={sendEmergencyAlert}
+							disabled={sendingAlert}
+							class="bg-red-700 hover:bg-red-800 text-white font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer disabled:opacity-50"
+						>
+							🚨 {sendingAlert ? 'Sending Alert...' : 'Send Emergency Alert'}
+						</button>
+					{/if}
+				</div>
 
 				{#if filteredDonors.length === 0}
 					<div class="text-center p-8 bg-slate-50 border border-slate-100 rounded-2xl">
@@ -572,14 +590,17 @@
 									</span>
 								</div>
 
-								{#if donor.phone}
-									<div class="mt-3 bg-red-50/50 border border-red-105 p-2.5 rounded-xl flex items-center justify-between text-xs text-red-700">
-										<span>📞 Contact: <strong>{donor.phone}</strong></span>
-										<a href="tel:{donor.phone}" class="bg-red-750 bg-red-700 hover:bg-red-800 text-white font-bold px-3 py-1 rounded-lg text-[10px] transition">
-											Call
-										</a>
-									</div>
-								{/if}
+								<div class="mt-3 bg-slate-50 border border-slate-100 p-2.5 rounded-xl space-y-1 text-xs text-slate-700">
+									<p class="flex items-center gap-1.5">✉️ Email: <strong>{donor.email}</strong></p>
+									{#if donor.phone}
+										<p class="flex items-center justify-between gap-1.5">
+											<span>📞 Phone: <strong>{donor.phone}</strong></span>
+											<a href="tel:{donor.phone}" class="bg-red-700 hover:bg-red-800 text-white font-bold px-3 py-0.5 rounded-lg text-[10px] transition">
+												Call
+											</a>
+										</p>
+									{/if}
+								</div>
 							</div>
 						{/each}
 					</div>
