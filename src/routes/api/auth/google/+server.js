@@ -13,6 +13,9 @@ const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey123';
 export async function POST({ request, cookies }) {
 	try {
 		const body = await request.json();
+		// TASK 2: Print request body
+		console.log("GOOGLE AUTH - REQUEST BODY:", body);
+
 		const { idToken, role } = body;
 
 		if (!idToken) {
@@ -23,12 +26,29 @@ export async function POST({ request, cookies }) {
 		const adminAuth = getAuth();
 		const decodedToken = await adminAuth.verifyIdToken(idToken);
 
+		// TASK 2: Print Firebase uid, email, displayName, role
+		console.log("GOOGLE AUTH - Firebase UID:", decodedToken.uid);
+		console.log("GOOGLE AUTH - Email:", decodedToken.email);
+		console.log("GOOGLE AUTH - Display Name:", decodedToken.name || decodedToken.displayName);
+		console.log("GOOGLE AUTH - Role:", role);
+
 		if (!decodedToken.email_verified) {
 			return json({ error: 'Google account email is not verified.' }, { status: 400 });
 		}
 
 		const email = decodedToken.email.toLowerCase();
+		
+		// TASK 6: Check existing user by uid/email.
 		let user = await getUserByEmail(email);
+		if (!user) {
+			const usersSnap = await db.collection('users')
+				.where('uid', '==', decodedToken.uid)
+				.limit(1)
+				.get();
+			if (!usersSnap.empty) {
+				user = usersSnap.docs[0].data();
+			}
+		}
 
 		if (user) {
 			// Account exists, log user in
@@ -56,19 +76,22 @@ export async function POST({ request, cookies }) {
 				}
 			}
 
-			const userId = `USR${Date.now()}`;
+			const userId = decodedToken.uid;
+			
+			// TASK 3 & 4: Map user profile fields safely. Do not require password, bloodGroup, phone, city, hospitalCode.
 			user = {
 				id: userId,
 				uid: decodedToken.uid,
-				name: decodedToken.name || 'Google User',
+				name: decodedToken.name || decodedToken.displayName || 'Google User',
 				email: email,
-				password: bcrypt.hashSync(Math.random().toString(36), 10), // secure random placeholder
-				phone: '',
-				location: 'Salem',
+				profileImage: decodedToken.picture || '',
+				avatar: decodedToken.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(decodedToken.name || 'Google User')}`,
+				authProvider: "google",
 				role: role,
 				status: 'active',
+				location: 'Salem',
+				phone: '',
 				bloodGroup: '',
-				avatar: decodedToken.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(decodedToken.name || 'Google User')}`,
 				profileCompletion: 50,
 				createdAt: new Date().toISOString()
 			};
@@ -86,17 +109,17 @@ export async function POST({ request, cookies }) {
 			});
 		}
 
-		// Issue JWT
+		// TASK 3: Handle missing/undefined fields safely in JWT and cookies
 		const token = jwt.sign(
 			{
-				id: user.id,
+				id: user.id || user.uid,
 				email: user.email,
 				role: user.role,
-				name: user.name,
-				location: user.location,
-				bloodGroup: user.bloodGroup,
-				avatar: user.avatar,
-				profileCompletion: user.profileCompletion
+				name: user.name || 'Google User',
+				location: user.location || '',
+				bloodGroup: user.bloodGroup || '',
+				avatar: user.avatar || user.profileImage || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name || 'Google User')}`,
+				profileCompletion: user.profileCompletion || 50
 			},
 			JWT_SECRET,
 			{ expiresIn: '24h' }
@@ -112,33 +135,34 @@ export async function POST({ request, cookies }) {
 		});
 
 		cookies.set('lifelink_user', JSON.stringify({
-			id: user.id,
-			name: user.name,
+			id: user.id || user.uid,
+			name: user.name || 'Google User',
 			email: user.email,
 			role: user.role,
-			location: user.location,
-			bloodGroup: user.bloodGroup,
-			avatar: user.avatar,
-			profileCompletion: user.profileCompletion
+			location: user.location || '',
+			bloodGroup: user.bloodGroup || '',
+			avatar: user.avatar || user.profileImage || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name || 'Google User')}`,
+			profileCompletion: user.profileCompletion || 50
 		}), {
 			path: '/',
 			httpOnly: false,
 			maxAge: 24 * 60 * 60 // 1 day
 		});
 
+		// TASK 7: Fix API response. Success format: { success: true, user: data }
 		return json({
 			success: true,
 			user: {
-				id: user.id,
-				name: user.name,
+				id: user.id || user.uid,
+				name: user.name || 'Google User',
 				email: user.email,
 				role: user.role,
-				location: user.location,
-				bloodGroup: user.bloodGroup
+				location: user.location || '',
+				bloodGroup: user.bloodGroup || ''
 			}
 		});
 	} catch (err) {
-		console.error('Google Auth verification failed:', err);
-		return json({ error: err.message || 'Verification of Google token failed.' }, { status: 400 });
+		console.error("SERVER ERROR IN GOOGLE AUTH:", err);
+		return json({ error: err.message || 'Verification of Google token failed.' }, { status: 500 });
 	}
 }
