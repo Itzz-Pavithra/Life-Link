@@ -1,17 +1,6 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 
-// Temporary debug for production env values
-console.log({
-	authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
-	projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID
-});
-
-// Check current domain
-if (typeof window !== 'undefined') {
-	console.log('Current window hostname:', window.location.hostname);
-}
-
 const firebaseConfig = {
 	apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
 	authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -22,5 +11,16 @@ const firebaseConfig = {
 	measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
-const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+// TASK 1: Add runtime debugging
+if (typeof window !== 'undefined') {
+	console.log("CURRENT WEBSITE DOMAIN:", window.location.hostname);
+}
+
+console.log("FIREBASE CONFIG:", {
+	authDomain: firebaseConfig.authDomain,
+	projectId: firebaseConfig.projectId
+});
+
+// TASK 5: Remove cached Firebase apps
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
 export const auth = getAuth(app);
