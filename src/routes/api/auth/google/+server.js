@@ -1,4 +1,5 @@
 import { json } from '@sveltejs/kit';
+import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getAuth } from 'firebase-admin/auth';
 import { getUserByEmail } from '$lib/server/db.js';
 import { db } from '$lib/server/firebase.js';
@@ -35,6 +36,34 @@ function signJwt(payload, secret) {
 /** @type {import('./$types').RequestHandler} */
 export async function POST({ request, cookies }) {
 	try {
+		// Initialize Firebase Admin SDK
+		let projectId = process.env.FIREBASE_PROJECT_ID;
+		let clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+		let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+		if (!projectId || !clientEmail || !privateKey) {
+			try {
+				const svelteEnv = await import('$env/dynamic/private');
+				if (svelteEnv && svelteEnv.env) {
+					projectId = projectId || svelteEnv.env.FIREBASE_PROJECT_ID;
+					clientEmail = clientEmail || svelteEnv.env.FIREBASE_CLIENT_EMAIL;
+					privateKey = privateKey || svelteEnv.env.FIREBASE_PRIVATE_KEY || svelteEnv.env.FIREBASE_PRIVATEKEY;
+				}
+			} catch (e) {
+				// Ignore
+			}
+		}
+
+		if (!getApps().length) {
+			initializeApp({
+				credential: cert({
+					projectId: projectId,
+					clientEmail: clientEmail,
+					privateKey: (privateKey || '').replace(/\\n/g, "\n")
+				})
+			});
+		}
+
 		let body;
 		try {
 			body = await request.json();
@@ -202,9 +231,15 @@ export async function POST({ request, cookies }) {
 				createdAt: user.createdAt
 			}
 		});
-	} catch (err) {
-		console.error("Google Sync Error:", err);
-		console.log("error.message:", err.message);
-		return json({ success: false, message: "Google profile sync failed" }, { status: 500 });
+	} catch (error) {
+		console.error("===== GOOGLE AUTH API ERROR =====");
+		console.error("MESSAGE:", error.message);
+		console.error("STACK:", error.stack);
+		console.error("FULL ERROR:", error);
+		
+		return json({
+			success: false,
+			error: error.message
+		}, { status: 500 });
 	}
 }
