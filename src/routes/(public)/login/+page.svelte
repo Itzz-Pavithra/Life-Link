@@ -1,7 +1,8 @@
 <script>
 	import axios from 'axios';
 	import { db } from '$lib/auth.svelte.js';
-	import { getClientAuth, GoogleAuthProvider, signInWithPopup } from '$lib/firebase.client.js';
+	import { getClientAuth } from '$lib/firebase.client.js';
+	import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
 	let { data } = $props();
 
@@ -67,11 +68,6 @@
 		errorMessage = '';
 		try {
 			const auth = getClientAuth();
-			if (!auth) {
-				db.addToast('Google Sign-In environment variables not set on client.', 'error');
-				errorMessage = 'Google Sign-In is not configured.';
-				return;
-			}
 			const provider = new GoogleAuthProvider();
 			const result = await signInWithPopup(auth, provider);
 			const user = result.user;

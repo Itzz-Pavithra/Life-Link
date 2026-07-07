@@ -1,20 +1,17 @@
 import { initializeApp, getApps, getApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { env } from '$env/dynamic/public';
+import { getAuth } from 'firebase/auth';
 
 const firebaseConfig = {
-	apiKey: env.PUBLIC_FIREBASE_API_KEY,
-	authDomain: env.PUBLIC_FIREBASE_AUTH_DOMAIN || `${env.PUBLIC_FIREBASE_PROJECT_ID}.firebaseapp.com`,
-	projectId: env.PUBLIC_FIREBASE_PROJECT_ID
+	apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+	authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+	projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+	storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+	messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+	appId: import.meta.env.VITE_FIREBASE_APP_ID,
+	measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 export function getClientAuth() {
-	if (!env.PUBLIC_FIREBASE_API_KEY || !env.PUBLIC_FIREBASE_PROJECT_ID) {
-		console.warn('Firebase client environment variables PUBLIC_FIREBASE_API_KEY or PUBLIC_FIREBASE_PROJECT_ID are not set.');
-		return null;
-	}
 	const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 	return getAuth(app);
 }
-
-export { GoogleAuthProvider, signInWithPopup };
