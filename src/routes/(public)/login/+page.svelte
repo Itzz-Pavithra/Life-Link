@@ -21,6 +21,64 @@
 	let showSetupPassword = $state(false);
 	let showPassword = $state(false);
 
+	let setupPasswordError = $derived(
+		setupPassword
+			? setupPassword.length < 8
+				? 'Password must be at least 8 characters long.'
+				: !/[A-Z]/.test(setupPassword)
+				? 'Password must contain at least one uppercase letter (A-Z).'
+				: !/[a-z]/.test(setupPassword)
+				? 'Password must contain at least one lowercase letter (a-z).'
+				: !/[0-9]/.test(setupPassword)
+				? 'Password must contain at least one number (0-9).'
+				: !/[!@#$%^&*()_+\-=\[\]{}|;:',.<>?\/~`]/.test(setupPassword)
+				? 'Password must contain at least one special character.'
+				: ''
+			: ''
+	);
+
+	function generateStrongPassword() {
+		const length = 12;
+		const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+		const lowercase = "abcdefghijklmnopqrstuvwxyz";
+		const numbers = "0123456789";
+		const specials = "!@#$%^&*()_+-=[]{}|;:,.<>?";
+		
+		let pwd = [];
+		pwd.push(uppercase[Math.floor(Math.random() * uppercase.length)]);
+		pwd.push(lowercase[Math.floor(Math.random() * lowercase.length)]);
+		pwd.push(numbers[Math.floor(Math.random() * numbers.length)]);
+		pwd.push(specials[Math.floor(Math.random() * specials.length)]);
+		
+		const allChars = uppercase + lowercase + numbers + specials;
+		for (let i = 4; i < length; i++) {
+			pwd.push(allChars[Math.floor(Math.random() * allChars.length)]);
+		}
+		
+		for (let i = pwd.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[pwd[i], pwd[j]] = [pwd[j], pwd[i]];
+		}
+		
+		return pwd.join('');
+	}
+
+	function suggestSetupPassword() {
+		const gen = generateStrongPassword();
+		setupPassword = gen;
+		showSetupPassword = true;
+		db.addToast('Generated and applied a strong password!', 'success');
+	}
+
+	function validatePassword(pwd) {
+		if (pwd.length < 8) return "Password must be at least 8 characters long.";
+		if (!/[A-Z]/.test(pwd)) return "Password must contain at least one uppercase letter (A-Z).";
+		if (!/[a-z]/.test(pwd)) return "Password must contain at least one lowercase letter (a-z).";
+		if (!/[0-9]/.test(pwd)) return "Password must contain at least one number (0-9).";
+		if (!/[!@#$%^&*()_+\-=\[\]{}|;:',.<>?\/~`]/.test(pwd)) return "Password must contain at least one special character.";
+		return null;
+	}
+
 	axios.defaults.withCredentials = true;
 
 	async function handleLogin(e) {
@@ -46,6 +104,14 @@
 	async function handleCreateAdmin(e) {
 		e.preventDefault();
 		errorMessage = '';
+
+		const pwdError = validatePassword(setupPassword);
+		if (pwdError) {
+			errorMessage = pwdError;
+			db.addToast(errorMessage, 'error');
+			return;
+		}
+
 		try {
 			const res = await axios.post('/api/auth/createAdmin', {
 				name: setupName,
@@ -174,14 +240,23 @@
 				</div>
 
 				<div class="flex flex-col gap-1">
-					<label class="text-[10px] font-bold text-slate-500 uppercase" for="admin-pass">Choose Password *</label>
+					<div class="flex justify-between items-center mb-1">
+						<label class="text-[10px] font-bold text-slate-500 uppercase" for="admin-pass">Choose Password *</label>
+						<button
+							type="button"
+							class="text-[10px] font-bold text-red-700 hover:text-red-850 hover:underline cursor-pointer"
+							onclick={suggestSetupPassword}
+						>
+							Suggest Strong Password
+						</button>
+					</div>
 					<div class="relative w-full">
 						<input
 							id="admin-pass"
 							type={showSetupPassword ? "text" : "password"}
 							bind:value={setupPassword}
 							placeholder="••••••••"
-							class="w-full border border-slate-200 p-3 pr-10 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm transition-all"
+							class="w-full border {setupPasswordError ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 focus:ring-red-500'} p-3 pr-10 rounded-xl focus:ring-2 focus:outline-none text-sm transition-all"
 							required
 						/>
 						<button
@@ -202,13 +277,16 @@
 							{/if}
 						</button>
 					</div>
+					{#if setupPasswordError}
+						<p class="text-xs text-red-650 mt-1">⚠️ {setupPasswordError}</p>
+					{/if}
 				</div>
 
 				<button
 					type="submit"
 					class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-red-700/25 transition transform active:scale-95 cursor-pointer"
 				>
-					Initialize System Node
+					Initialize Administrator Account
 				</button>
 			</form>
 		{:else}

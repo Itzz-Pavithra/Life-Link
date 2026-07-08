@@ -21,6 +21,22 @@ export async function POST({ request, cookies }) {
 			return json({ error: 'All fields are required.' }, { status: 400 });
 		}
 
+		if (password.length < 8) {
+			return json({ error: 'Password must be at least 8 characters long.' }, { status: 400 });
+		}
+		if (!/[A-Z]/.test(password)) {
+			return json({ error: 'Password must contain at least one uppercase letter (A-Z).' }, { status: 400 });
+		}
+		if (!/[a-z]/.test(password)) {
+			return json({ error: 'Password must contain at least one lowercase letter (a-z).' }, { status: 400 });
+		}
+		if (!/[0-9]/.test(password)) {
+			return json({ error: 'Password must contain at least one number (0-9).' }, { status: 400 });
+		}
+		if (!/[!@#$%^&*()_+\-=\[\]{}|;:\',.<>?\/~`]/.test(password)) {
+			return json({ error: 'Password must contain at least one special character.' }, { status: 400 });
+		}
+
 		const newAdmin = await createUser({
 			name,
 			email,

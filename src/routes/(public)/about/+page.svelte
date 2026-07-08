@@ -3,13 +3,13 @@
 		<!-- Header -->
 		<div class="text-center space-y-4">
 			<span class="text-xs font-bold text-red-700 uppercase tracking-widest bg-red-50 border border-red-200 px-3 py-1 rounded-full">
-				ABOUT THE PROJECT
+				ABOUT LIFELINK
 			</span>
 			<h1 class="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight">
 				Bridging the Gap in Emergency Matching
 			</h1>
 			<p class="text-slate-500 max-w-xl mx-auto text-sm leading-relaxed">
-				LifeLink is an MCA Mini Project designed to simulate a modern Healthcare SaaS dashboard for voluntary blood donation coordination.
+				LifeLink is a smart blood donation and emergency matching platform connecting donors, recipients, and blood banks.
 			</p>
 		</div>
 
@@ -25,9 +25,9 @@
 
 			<div class="bg-white border border-slate-100 p-8 rounded-3xl shadow-sm space-y-4">
 				<div class="text-3xl">🚀</div>
-				<h3 class="text-xl font-bold text-slate-900">MCA Mini Project</h3>
+				<h3 class="text-xl font-bold text-slate-900">Emergency Matching</h3>
 				<p class="text-slate-500 text-sm leading-relaxed">
-					Built exclusively on the client side using Svelte 5 and Tailwind CSS v4. Simulates all SaaS dashboards, analytics charts, timeline progress bars, and inventory controls without any database footprint.
+					Operating on real-time availability filters, dynamic regional inventory controls, and immediate notification routing to ensure blood reaches patients without latency.
 				</p>
 			</div>
 		</div>
@@ -46,8 +46,8 @@
 				</div>
 				<div class="space-y-2">
 					<strong class="text-red-500 text-lg">02.</strong>
-					<h4 class="font-bold text-white">Svelte 5 Runes</h4>
-					<p class="text-gray-400 text-xs">Utilizes reactive states ($state, $derived, $effect) to sync mock inventories instantly.</p>
+					<h4 class="font-bold text-white">Real-time Coordination</h4>
+					<p class="text-gray-400 text-xs">Instantly syncs donor availability lists, medical needs, and hospital emergency requests.</p>
 				</div>
 				<div class="space-y-2">
 					<strong class="text-red-500 text-lg">03.</strong>

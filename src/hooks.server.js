@@ -30,42 +30,20 @@ export async function handle({ event, resolve }) {
 				event.locals.role = user.role || null;
 			} else {
 				event.cookies.delete('lifelink_token', { path: '/' });
-				event.locals.user = null;
-				event.locals.role = null;
-			}
-		} catch (err) {
-			event.cookies.delete('lifelink_token', { path: '/' });
-			event.locals.user = null;
-			event.locals.role = null;
-		}
-	} else if (userCookie) {
-		try {
-			const parsed = JSON.parse(userCookie);
-			const user = await getUserByEmail(parsed.email);
-
-			if (user && user.status === 'active') {
-				event.locals.user = {
-					id: user.id,
-					name: user.name,
-					email: user.email,
-					role: user.role,
-					location: user.location,
-					bloodGroup: user.bloodGroup,
-					avatar: user.avatar,
-					profileCompletion: user.profileCompletion
-				};
-				event.locals.role = user.role || null;
-			} else {
 				event.cookies.delete('lifelink_user', { path: '/' });
 				event.locals.user = null;
 				event.locals.role = null;
 			}
 		} catch (err) {
+			event.cookies.delete('lifelink_token', { path: '/' });
 			event.cookies.delete('lifelink_user', { path: '/' });
 			event.locals.user = null;
 			event.locals.role = null;
 		}
 	} else {
+		if (event.cookies.get('lifelink_user')) {
+			event.cookies.delete('lifelink_user', { path: '/' });
+		}
 		event.locals.user = null;
 		event.locals.role = null;
 	}

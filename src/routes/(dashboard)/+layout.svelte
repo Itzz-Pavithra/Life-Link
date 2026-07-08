@@ -47,7 +47,7 @@
 
 					<div>
 						<h2 class="text-sm font-bold text-slate-800 uppercase tracking-widest leading-none">
-							LifeLink System Node
+							LifeLink Dashboard
 						</h2>
 						<span class="text-[10px] text-gray-500 font-medium mt-1 block">Location: {data.user.location} (Active)</span>
 					</div>

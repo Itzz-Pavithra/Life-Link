@@ -18,11 +18,78 @@
 	let showPassword = $state(false);
 	let showConfirmPassword = $state(false);
 
+	let passwordError = $derived(
+		password
+			? password.length < 8
+				? 'Password must be at least 8 characters long.'
+				: !/[A-Z]/.test(password)
+				? 'Password must contain at least one uppercase letter (A-Z).'
+				: !/[a-z]/.test(password)
+				? 'Password must contain at least one lowercase letter (a-z).'
+				: !/[0-9]/.test(password)
+				? 'Password must contain at least one number (0-9).'
+				: !/[!@#$%^&*()_+\-=\[\]{}|;:',.<>?\/~`]/.test(password)
+				? 'Password must contain at least one special character.'
+				: ''
+			: ''
+	);
+
+	function generateStrongPassword() {
+		const length = 12;
+		const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+		const lowercase = "abcdefghijklmnopqrstuvwxyz";
+		const numbers = "0123456789";
+		const specials = "!@#$%^&*()_+-=[]{}|;:,.<>?";
+		
+		let pwd = [];
+		pwd.push(uppercase[Math.floor(Math.random() * uppercase.length)]);
+		pwd.push(lowercase[Math.floor(Math.random() * lowercase.length)]);
+		pwd.push(numbers[Math.floor(Math.random() * numbers.length)]);
+		pwd.push(specials[Math.floor(Math.random() * specials.length)]);
+		
+		const allChars = uppercase + lowercase + numbers + specials;
+		for (let i = 4; i < length; i++) {
+			pwd.push(allChars[Math.floor(Math.random() * allChars.length)]);
+		}
+		
+		for (let i = pwd.length - 1; i > 0; i--) {
+			const j = Math.floor(Math.random() * (i + 1));
+			[pwd[i], pwd[j]] = [pwd[j], pwd[i]];
+		}
+		
+		return pwd.join('');
+	}
+
+	function suggestPassword() {
+		const gen = generateStrongPassword();
+		password = gen;
+		confirmPassword = gen;
+		showPassword = true;
+		showConfirmPassword = true;
+		db.addToast('Generated and applied a strong password!', 'success');
+	}
+
+	function validatePassword(pwd) {
+		if (pwd.length < 8) return "Password must be at least 8 characters long.";
+		if (!/[A-Z]/.test(pwd)) return "Password must contain at least one uppercase letter (A-Z).";
+		if (!/[a-z]/.test(pwd)) return "Password must contain at least one lowercase letter (a-z).";
+		if (!/[0-9]/.test(pwd)) return "Password must contain at least one number (0-9).";
+		if (!/[!@#$%^&*()_+\-=\[\]{}|;:',.<>?\/~`]/.test(pwd)) return "Password must contain at least one special character.";
+		return null;
+	}
+
 	axios.defaults.withCredentials = true;
 
 	async function handleRegister(e) {
 		e.preventDefault();
 		errorMessage = '';
+
+		const pwdError = validatePassword(password);
+		if (pwdError) {
+			errorMessage = pwdError;
+			db.addToast(errorMessage, 'error');
+			return;
+		}
 
 		if (password !== confirmPassword) {
 			errorMessage = 'Passwords do not match.';
@@ -208,14 +275,23 @@
 			<div class="grid sm:grid-cols-2 gap-4">
 				<!-- Choose Password -->
 				<div class="flex flex-col gap-1">
-					<label class="text-[10px] font-bold text-slate-500 uppercase" for="password">Choose Password *</label>
+					<div class="flex justify-between items-center mb-1">
+						<label class="text-[10px] font-bold text-slate-500 uppercase" for="password">Choose Password *</label>
+						<button
+							type="button"
+							class="text-[10px] font-bold text-red-700 hover:text-red-850 hover:underline cursor-pointer"
+							onclick={suggestPassword}
+						>
+							Suggest Strong Password
+						</button>
+					</div>
 					<div class="relative w-full">
 						<input
 							id="password"
 							type={showPassword ? "text" : "password"}
 							bind:value={password}
 							placeholder="••••••••"
-							class="w-full border border-slate-200 p-3 pr-10 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm transition-all"
+							class="w-full border {passwordError ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 focus:ring-red-500'} p-3 pr-10 rounded-xl focus:ring-2 focus:outline-none text-sm transition-all"
 							required
 						/>
 						<button
@@ -236,6 +312,9 @@
 							{/if}
 						</button>
 					</div>
+					{#if passwordError}
+						<p class="text-xs text-red-650 mt-1">⚠️ {passwordError}</p>
+					{/if}
 				</div>
 
 				<!-- Confirm Password -->

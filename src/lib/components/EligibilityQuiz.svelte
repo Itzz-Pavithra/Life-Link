@@ -34,6 +34,33 @@
 	let chronicDisease = $state('no');
 	let chronicDetails = $state('');
 
+	let ageError = $derived(
+		age !== '' && (parseInt(age) <= 0 || parseInt(age) > 120)
+			? 'Please enter a valid age between 1 and 120.'
+			: ''
+	);
+	let weightError = $derived(
+		weight !== '' && (parseFloat(weight) <= 0 || parseFloat(weight) > 300)
+			? 'Please enter a valid weight between 1 and 300 kg.'
+			: ''
+	);
+
+	let isStep1Valid = $derived(
+		name && email && phone && location && age && weight && !ageError && !weightError
+	);
+
+	let isEligible = $derived(parseInt(age) >= 18 && parseFloat(weight) >= 45);
+	let eligibilityReasons = $derived.by(() => {
+		const reasons = [];
+		if (parseInt(age) < 18) {
+			reasons.push("Minimum age required is 18 years.");
+		}
+		if (parseFloat(weight) < 45) {
+			reasons.push("Minimum weight required is 45kg.");
+		}
+		return reasons;
+	});
+
 	function resetQuiz() {
 		step = 0;
 		errorMsg = '';
@@ -69,9 +96,14 @@
 		errorMsg = '';
 		successMsg = '';
 
-		if (!name || !email || !phone || !location || !age || !weight) {
-			errorMsg = 'Please complete all required fields on the first step.';
+		if (!isStep1Valid) {
+			errorMsg = 'Please complete all required fields with valid values on the first step.';
 			step = 1;
+			return;
+		}
+
+		if (!isEligible) {
+			step = 6;
 			return;
 		}
 
@@ -204,8 +236,11 @@
 						type="number"
 						bind:value={age}
 						placeholder="Min 18 - Max 65"
-						class="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
+						class="border {ageError ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-red-500'} p-3 rounded-xl focus:ring-2 focus:outline-none text-sm"
 					/>
+					{#if ageError}
+						<span class="text-xs text-red-650 mt-1">⚠️ {ageError}</span>
+					{/if}
 				</div>
 
 				<div class="flex flex-col gap-1">
@@ -213,9 +248,12 @@
 					<input
 						type="number"
 						bind:value={weight}
-						placeholder="Min 50 kg"
-						class="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
+						placeholder="Min 45 kg"
+						class="border {weightError ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-red-500'} p-3 rounded-xl focus:ring-2 focus:outline-none text-sm"
 					/>
+					{#if weightError}
+						<span class="text-xs text-red-650 mt-1">⚠️ {weightError}</span>
+					{/if}
 				</div>
 
 				<div class="flex flex-col gap-1">
@@ -235,7 +273,7 @@
 				<button class="text-gray-500 font-semibold px-4 py-2" onclick={() => step = 0}>Cancel</button>
 				<button
 					class="bg-red-700 hover:bg-red-800 text-white font-bold px-6 py-2.5 rounded-xl disabled:opacity-50 cursor-pointer"
-					disabled={!name || !email || !phone || !location || !age || !weight}
+					disabled={!isStep1Valid}
 					onclick={() => step = 2}
 				>
 					Next Step
@@ -517,22 +555,40 @@
 	{:else if step === 6}
 		<!-- Results Pending View -->
 		<div class="text-center py-6 space-y-4">
-			<div class="text-6xl mb-4 animate-bounce">⏳</div>
-			<h3 class="text-3xl font-extrabold text-slate-900">
-				Submission Pending Review
-			</h3>
-			<p class="text-gray-600 text-sm max-w-md mx-auto leading-relaxed">
-				Your clinical questionnaire has been successfully logged. Svelte system nodes require administrator review to authorize new blood donors.
-			</p>
-			
-			<div class="bg-red-50 border border-red-100 p-4 rounded-2xl text-xs max-w-sm mx-auto space-y-2 text-slate-800 font-semibold">
-				<p>📧 <strong>Email Checked:</strong> {email.toLowerCase()}</p>
-				<p>🛡️ <strong>Authorization Status:</strong> Pending Verification</p>
-			</div>
+			{#if isEligible}
+				<div class="text-6xl mb-4 animate-bounce">✅</div>
+				<h3 class="text-3xl font-extrabold text-slate-900">
+					Eligible
+				</h3>
+				<p class="text-emerald-700 bg-emerald-50 border border-emerald-200 p-4 rounded-2xl text-sm font-semibold max-w-md mx-auto">
+					You meet the basic eligibility requirements for blood donation.
+				</p>
+				<p class="text-gray-600 text-sm max-w-md mx-auto leading-relaxed">
+					Your clinical questionnaire has been successfully logged. LifeLink system records require administrator review to authorize new blood donors.
+				</p>
+				
+				<div class="bg-red-50 border border-red-100 p-4 rounded-2xl text-xs max-w-sm mx-auto space-y-2 text-slate-800 font-semibold">
+					<p>📧 <strong>Email Checked:</strong> {email.toLowerCase()}</p>
+					<p>🛡️ <strong>Authorization Status:</strong> Pending Verification</p>
+				</div>
 
-			<p class="text-xs text-gray-500 max-w-xs mx-auto">
-				Once approved, you will be permitted to register a new donor profile using this email address.
-			</p>
+				<p class="text-xs text-gray-500 max-w-xs mx-auto">
+					Once approved, you will be permitted to register a new donor profile using this email address.
+				</p>
+			{:else}
+				<div class="text-6xl mb-4 animate-bounce">❌</div>
+				<h3 class="text-3xl font-extrabold text-slate-900">
+					Not Eligible
+				</h3>
+				<div class="bg-red-50 border border-red-200 p-4 rounded-2xl text-sm font-semibold max-w-md mx-auto text-red-700 space-y-2">
+					{#each eligibilityReasons as reason}
+						<p>⚠️ {reason}</p>
+					{/each}
+				</div>
+				<p class="text-gray-600 text-sm max-w-md mx-auto leading-relaxed">
+					Unfortunately, you do not meet the safety criteria for blood donation at this time.
+				</p>
+			{/if}
 
 			<div class="pt-4 flex justify-center gap-3">
 				<a href="/" class="bg-slate-900 hover:bg-black text-white font-bold px-6 py-3 rounded-xl transition text-sm">

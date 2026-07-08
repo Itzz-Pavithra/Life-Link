@@ -1,5 +1,10 @@
 import { fail, redirect } from '@sveltejs/kit';
 import { createUser, hasAdmin, getUserByEmail, verifyPassword } from '$lib/server/db.js';
+import jwt from 'jsonwebtoken';
+import dotenv from 'dotenv';
+
+dotenv.config();
+const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey123';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ locals }) {
@@ -45,7 +50,31 @@ export const actions = {
 			return fail(400, { success: false, error: 'Invalid email or password.' });
 		}
 
-		// Set cookie
+		// Issue JWT
+		const token = jwt.sign(
+			{
+				id: user.id,
+				email: user.email,
+				role: user.role,
+				name: user.name,
+				location: user.location,
+				bloodGroup: user.bloodGroup,
+				avatar: user.avatar,
+				profileCompletion: user.profileCompletion
+			},
+			JWT_SECRET,
+			{ expiresIn: '24h' }
+		);
+
+		// Set cookies
+		cookies.set('lifelink_token', token, {
+			path: '/',
+			httpOnly: true,
+			secure: process.env.NODE_ENV === 'production',
+			sameSite: 'strict',
+			maxAge: 24 * 60 * 60 // 1 day
+		});
+
 		cookies.set('lifelink_user', JSON.stringify({
 			id: user.id,
 			name: user.name,
@@ -91,6 +120,21 @@ export const actions = {
 				password: String(password),
 				role: 'admin',
 				bloodGroup: ''
+			});
+
+			// Issue JWT
+			const token = jwt.sign(
+				{ id: adminUser.id, email: adminUser.email, role: adminUser.role, name: adminUser.name },
+				JWT_SECRET,
+				{ expiresIn: '24h' }
+			);
+
+			cookies.set('lifelink_token', token, {
+				path: '/',
+				httpOnly: true,
+				secure: process.env.NODE_ENV === 'production',
+				sameSite: 'strict',
+				maxAge: 24 * 60 * 60 // 1 day
 			});
 
 			// Automatically log in the admin

@@ -65,6 +65,7 @@ function authenticateToken(req, res, next) {
 		next();
 	} catch (err) {
 		res.clearCookie('lifelink_token');
+		res.clearCookie('lifelink_user');
 		return res.status(401).json({ error: 'Session expired or invalid.' });
 	}
 }
@@ -101,6 +102,22 @@ app.post('/api/auth/createAdmin', async (req, res) => {
 		const { name, email, phone, location, password } = req.body;
 		if (!name || !email || !phone || !location || !password) {
 			return res.status(400).json({ error: 'All fields are required.' });
+		}
+
+		if (password.length < 8) {
+			return res.status(400).json({ error: 'Password must be at least 8 characters long.' });
+		}
+		if (!/[A-Z]/.test(password)) {
+			return res.status(400).json({ error: 'Password must contain at least one uppercase letter (A-Z).' });
+		}
+		if (!/[a-z]/.test(password)) {
+			return res.status(400).json({ error: 'Password must contain at least one lowercase letter (a-z).' });
+		}
+		if (!/[0-9]/.test(password)) {
+			return res.status(400).json({ error: 'Password must contain at least one number (0-9).' });
+		}
+		if (!/[!@#$%^&*()_+\-=\[\]{}|;:\',.<>?\/~`]/.test(password)) {
+			return res.status(400).json({ error: 'Password must contain at least one special character.' });
 		}
 
 		const emailLower = email.toLowerCase();

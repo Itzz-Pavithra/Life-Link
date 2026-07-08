@@ -265,6 +265,8 @@ export async function submitEligibilityQuiz(email, name, phone, location, answer
 	const lowercaseEmail = email.toLowerCase();
 	const eligReqs = await getCollection('eligibility_requests');
 	const existing = eligReqs.find(r => r.email.toLowerCase() === lowercaseEmail);
+	const isEligible = answers.age >= 18 && answers.weight >= 45;
+	const newStatus = isEligible ? 'Pending' : 'Rejected';
 
 	if (existing) {
 		if (existing.status === 'Approved') {
@@ -274,7 +276,7 @@ export async function submitEligibilityQuiz(email, name, phone, location, answer
 		} else {
 			// If rejected, allow re-submission
 			await updateDocument('eligibility_requests', existing.id, {
-				status: 'Pending',
+				status: newStatus,
 				answers,
 				name,
 				phone,
@@ -291,7 +293,7 @@ export async function submitEligibilityQuiz(email, name, phone, location, answer
 			phone,
 			location,
 			answers,
-			status: 'Pending',
+			status: newStatus,
 			submittedAt: new Date().toISOString()
 		};
 		await createDocument('eligibility_requests', id, newRequest);

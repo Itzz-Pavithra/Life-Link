@@ -333,7 +333,7 @@
 			<p class="text-slate-500 text-xs mt-1">Configure parameters, verify questionnaires, manage repositories, and audit logs.</p>
 		</div>
 		<span class="text-xs font-bold text-red-700 bg-red-50 border border-red-200 px-3 py-1.5 rounded-full uppercase tracking-wider">
-			Node operator: {data.user.email}
+			Admin operator: {data.user.email}
 		</span>
 	</div>
 
@@ -419,7 +419,7 @@
 						<thead>
 							<tr class="border-b border-slate-100 text-slate-400 text-[10px] font-bold uppercase">
 								<th class="py-3 px-4">Log ID</th>
-								<th class="py-3 px-4">Operator Node</th>
+								<th class="py-3 px-4">Operator Email</th>
 								<th class="py-3 px-4">Activity Summary</th>
 								<th class="py-3 px-4">Timestamp</th>
 							</tr>
@@ -528,7 +528,7 @@
 												Delete
 											</button>
 										{:else}
-											<span class="text-[9px] text-gray-400 italic">Protected System Node</span>
+											<span class="text-[9px] text-gray-400 italic">System Administrator</span>
 										{/if}
 									</td>
 								</tr>
@@ -1235,7 +1235,7 @@
 
 			<div class="bg-purple-50 border border-purple-200 p-5 rounded-3xl text-purple-900 text-xs space-y-2 font-semibold">
 				<p>🚨 <strong>Admin account is locked:</strong> There must be ONLY ONE admin account. Creation of secondary administrators is strictly blocked at the database API model layer.</p>
-				<p>⚙️ <strong>Configuration Node ID:</strong> lifelink_system_server_node_v1</p>
+				<p>⚙️ <strong>Configuration Instance ID:</strong> lifelink_system_server_instance_v1</p>
 			</div>
 
 			<div class="space-y-4 max-w-md">

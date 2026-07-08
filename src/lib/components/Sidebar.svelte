@@ -83,7 +83,7 @@
 			class="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-xs font-bold text-slate-400 hover:bg-red-950/20 hover:text-red-400 border border-slate-800 hover:border-red-950/40 transition cursor-pointer text-left"
 		>
 			<span aria-hidden="true">🚪</span>
-			<span>Logout System</span>
+			<span>Sign Out</span>
 		</button>
 	</form>
 </aside>
