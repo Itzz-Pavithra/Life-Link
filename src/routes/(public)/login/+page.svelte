@@ -82,43 +82,53 @@
 
 	axios.defaults.withCredentials = true;
 
+	async function handleLoginSuccess(userData, firebaseUser) {
+		db.addToast('Welcome back! Logging you in...', 'success');
+		
+		db.user = {
+			uid: firebaseUser.uid || firebaseUser.id || userData.uid || userData.id,
+			email: userData.email,
+			role: userData.role,
+			name: userData.name,
+			location: userData.location || userData.city || '',
+			avatar: userData.avatar || userData.profileImage || '',
+			bloodGroup: userData.bloodGroup || '',
+			profileCompletion: userData.profileCompletion || 50
+		};
+		db.authLoading = false;
+
+		window.location.href = `/dashboard/${userData.role}`;
+	}
+
 	async function handleLogin(e) {
 		e.preventDefault();
 		errorMessage = '';
 		try {
+			// 1. Authenticate with Firebase Client Auth first
+			const userCredential = await signInWithEmailAndPassword(auth, email, password);
+			const firebaseUser = userCredential.user;
+
+			// 2. Call backend login API to establish SvelteKit server session cookies
 			const res = await axios.post('/api/auth/login', {
 				email,
 				password,
 				role: selectedRole
 			});
-			if (res.data.success) {
-				db.addToast('Welcome back! Logging you in...', 'success');
-				
-				// Sync auth store immediately before navigating
-				const userData = res.data.user;
-				db.user = {
-					uid: userData.uid || userData.id,
-					email: userData.email,
-					role: userData.role,
-					name: userData.name,
-					location: userData.location || userData.city || '',
-					avatar: userData.avatar || userData.profileImage || '',
-					bloodGroup: userData.bloodGroup || '',
-					profileCompletion: userData.profileCompletion || 50
-				};
-				db.authLoading = false;
 
-				// Sign in to Firebase client-side to sync auth state
-				try {
-					await signInWithEmailAndPassword(auth, email, password);
-				} catch (fbErr) {
-					console.warn('Firebase Client Auth signin failed/skipped:', fbErr);
-				}
-				// Full navigation refresh so SvelteKit hooks parse the cookie
-				window.location.href = `/dashboard/${userData.role}`;
+			if (res.data.success) {
+				await handleLoginSuccess(res.data.user, firebaseUser);
 			}
 		} catch (err) {
-			errorMessage = err.response?.data?.error || 'Failed to login. Please check details.';
+			console.error('Login error details:', err);
+			let errorMsg = 'Failed to login. Please check details.';
+			if (err.code === 'auth/user-not-found') {
+				errorMsg = 'Account does not exist';
+			} else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+				errorMsg = 'Invalid email or password';
+			} else {
+				errorMsg = err.response?.data?.error || err.message || errorMsg;
+			}
+			errorMessage = errorMsg;
 			db.addToast(errorMessage, 'error');
 		}
 	}
@@ -145,26 +155,16 @@
 			if (res.data.success) {
 				db.addToast('System initialized! Welcome Admin.', 'success');
 				
-				// Sync auth store immediately before navigating
-				db.user = {
-					uid: res.data.user.id || res.data.user.uid || '',
-					email: res.data.user.email,
-					role: 'admin',
-					name: res.data.user.name,
-					location: setupLocation,
-					avatar: '',
-					bloodGroup: '',
-					profileCompletion: 100
-				};
-				db.authLoading = false;
-
 				// Sign in to Firebase client-side to sync auth state
+				let firebaseUser;
 				try {
-					await signInWithEmailAndPassword(auth, setupEmail, setupPassword);
+					const userCredential = await signInWithEmailAndPassword(auth, setupEmail, setupPassword);
+					firebaseUser = userCredential.user;
 				} catch (fbErr) {
 					console.warn('Firebase Client Auth admin signin failed/skipped:', fbErr);
+					firebaseUser = { uid: res.data.user.id || res.data.user.uid || '' };
 				}
-				window.location.href = '/dashboard/admin';
+				await handleLoginSuccess(res.data.user, firebaseUser);
 			}
 		} catch (err) {
 			errorMessage = err.response?.data?.error || 'Failed to initialize system admin.';
@@ -195,23 +195,7 @@
 			});
 
 			if (res.data.success) {
-				db.addToast('Welcome! Logging you in...', 'success');
-				
-				// Sync auth store immediately before navigating
-				const userData = res.data.user;
-				db.user = {
-					uid: userData.uid || userData.id,
-					email: userData.email,
-					role: userData.role,
-					name: userData.name,
-					location: userData.location || userData.city || '',
-					avatar: userData.avatar || userData.profileImage || '',
-					bloodGroup: userData.bloodGroup || '',
-					profileCompletion: userData.profileCompletion || 50
-				};
-				db.authLoading = false;
-
-				window.location.href = `/dashboard/${userData.role}`;
+				await handleLoginSuccess(res.data.user, user);
 			}
 		} catch (err) {
 			console.error(err);
