@@ -1,7 +1,11 @@
-// Client-side UI state store (Toasts and active dashboard tab only)
+// Client-side UI state store (Toasts, active dashboard tab, and user auth state)
 class LifeLinkClientState {
 	activeTab = $state('dashboard');
 	toasts = $state([]);
+	
+	// Centralized Auth states using Svelte 5 runes
+	user = $state(null);
+	authLoading = $state(true);
 
 	addToast(message, type = 'info') {
 		const id = Date.now();

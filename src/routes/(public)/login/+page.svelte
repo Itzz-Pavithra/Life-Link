@@ -93,6 +93,21 @@
 			});
 			if (res.data.success) {
 				db.addToast('Welcome back! Logging you in...', 'success');
+				
+				// Sync auth store immediately before navigating
+				const userData = res.data.user;
+				db.user = {
+					uid: userData.uid || userData.id,
+					email: userData.email,
+					role: userData.role,
+					name: userData.name,
+					location: userData.location || userData.city || '',
+					avatar: userData.avatar || userData.profileImage || '',
+					bloodGroup: userData.bloodGroup || '',
+					profileCompletion: userData.profileCompletion || 50
+				};
+				db.authLoading = false;
+
 				// Sign in to Firebase client-side to sync auth state
 				try {
 					await signInWithEmailAndPassword(auth, email, password);
@@ -100,7 +115,7 @@
 					console.warn('Firebase Client Auth signin failed/skipped:', fbErr);
 				}
 				// Full navigation refresh so SvelteKit hooks parse the cookie
-				window.location.href = `/dashboard/${res.data.user.role}`;
+				window.location.href = `/dashboard/${userData.role}`;
 			}
 		} catch (err) {
 			errorMessage = err.response?.data?.error || 'Failed to login. Please check details.';
@@ -129,6 +144,20 @@
 			});
 			if (res.data.success) {
 				db.addToast('System initialized! Welcome Admin.', 'success');
+				
+				// Sync auth store immediately before navigating
+				db.user = {
+					uid: res.data.user.id || res.data.user.uid || '',
+					email: res.data.user.email,
+					role: 'admin',
+					name: res.data.user.name,
+					location: setupLocation,
+					avatar: '',
+					bloodGroup: '',
+					profileCompletion: 100
+				};
+				db.authLoading = false;
+
 				// Sign in to Firebase client-side to sync auth state
 				try {
 					await signInWithEmailAndPassword(auth, setupEmail, setupPassword);
@@ -167,7 +196,22 @@
 
 			if (res.data.success) {
 				db.addToast('Welcome! Logging you in...', 'success');
-				window.location.href = `/dashboard/${res.data.user.role}`;
+				
+				// Sync auth store immediately before navigating
+				const userData = res.data.user;
+				db.user = {
+					uid: userData.uid || userData.id,
+					email: userData.email,
+					role: userData.role,
+					name: userData.name,
+					location: userData.location || userData.city || '',
+					avatar: userData.avatar || userData.profileImage || '',
+					bloodGroup: userData.bloodGroup || '',
+					profileCompletion: userData.profileCompletion || 50
+				};
+				db.authLoading = false;
+
+				window.location.href = `/dashboard/${userData.role}`;
 			}
 		} catch (err) {
 			console.error(err);
@@ -176,30 +220,10 @@
 		}
 	}
 
-	onMount(() => {
-		const unsubscribe = onAuthStateChanged(auth, async (user) => {
-			if (!user) {
-				// Clear stale SvelteKit cookies if Firebase says we are not logged in
-				try {
-					await axios.post('/api/auth/logout');
-				} catch (err) {
-					// Ignore
-				}
-			} else {
-				// Firebase user is active! If we already have server session data, redirect to dashboard.
-				try {
-					const res = await axios.get('/api/user/profile');
-					if (res.data && res.data.success && res.data.profile) {
-						window.location.href = `/dashboard/${res.data.profile.role}`;
-					}
-				} catch (profileErr) {
-					// Stale session, force logout
-					await axios.post('/api/auth/logout');
-					await auth.signOut();
-				}
-			}
-		});
-		return unsubscribe;
+	$effect(() => {
+		if (!db.authLoading && db.user) {
+			window.location.href = `/dashboard/${db.user.role}`;
+		}
 	});
 </script>
 

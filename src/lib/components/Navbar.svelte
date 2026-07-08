@@ -3,26 +3,14 @@
 	import { db } from '$lib/auth.svelte.js';
 	import { page } from '$app/stores';
 	import { auth } from '$lib/firebase.client.js';
-	import { signOut, onAuthStateChanged } from 'firebase/auth';
-	import { onMount } from 'svelte';
+	import { signOut } from 'firebase/auth';
 
 	let { data } = $props();
 	let mobileMenuOpen = $state(false);
 
-	let firebaseUser = $state(null);
-	let authLoading = $state(true);
-
 	axios.defaults.withCredentials = true;
 
 	const isPublicPage = $derived(['/', '/about', '/eligibility', '/contact'].includes($page.url.pathname));
-
-	onMount(() => {
-		const unsubscribe = onAuthStateChanged(auth, (user) => {
-			firebaseUser = user;
-			authLoading = false;
-		});
-		return unsubscribe;
-	});
 
 	async function handleLogout(e) {
 		if (e) e.preventDefault();
@@ -65,12 +53,12 @@
 				
 				<span class="h-5 w-[1px] bg-gray-200"></span>
 
-				{#if authLoading}
+				{#if db.authLoading}
 					<div class="w-5 h-5 border-2 border-red-200 border-t-red-700 rounded-full animate-spin" aria-label="Authenticating session"></div>
-				{:else if firebaseUser && data?.user}
+				{:else if db.user}
 					{#if !isPublicPage}
 						<a
-							href="/dashboard/{data.user.role}"
+							href="/dashboard/{db.user.role}"
 							class="text-sm font-bold text-red-700 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl transition"
 						>
 							💻 Dashboard
@@ -135,14 +123,14 @@
 		
 		<hr class="border-rose-100 my-2" />
 
-		{#if authLoading}
+		{#if db.authLoading}
 			<div class="py-2 flex justify-center">
 				<div class="w-5 h-5 border-2 border-red-200 border-t-red-700 rounded-full animate-spin" aria-label="Authenticating session"></div>
 			</div>
-		{:else if firebaseUser && data?.user}
+		{:else if db.user}
 			{#if !isPublicPage}
 				<a
-					href="/dashboard/{data.user.role}"
+					href="/dashboard/{db.user.role}"
 					class="block text-sm font-bold text-red-700 bg-red-50 hover:bg-red-100 px-4 py-3 rounded-xl transition"
 					onclick={() => mobileMenuOpen = false}
 				>

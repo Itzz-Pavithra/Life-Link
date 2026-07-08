@@ -147,7 +147,22 @@
 
 			if (res.data.success) {
 				db.addToast('Welcome! Logging you in...', 'success');
-				window.location.href = `/dashboard/${res.data.user.role}`;
+				
+				// Sync auth store immediately before navigating
+				const userData = res.data.user;
+				db.user = {
+					uid: userData.uid || userData.id,
+					email: userData.email,
+					role: userData.role,
+					name: userData.name,
+					location: userData.location || userData.city || '',
+					avatar: userData.avatar || userData.profileImage || '',
+					bloodGroup: userData.bloodGroup || '',
+					profileCompletion: userData.profileCompletion || 50
+				};
+				db.authLoading = false;
+
+				window.location.href = `/dashboard/${userData.role}`;
 			}
 		} catch (err) {
 			console.error(err);
