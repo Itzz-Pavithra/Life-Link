@@ -82,7 +82,7 @@
 
 	axios.defaults.withCredentials = true;
 
-	async function handleLoginSuccess(userData, firebaseUser) {
+	async function handleAuthSuccess(userData, firebaseUser) {
 		db.addToast('Welcome back! Logging you in...', 'success');
 		
 		db.user = {
@@ -104,11 +104,33 @@
 		e.preventDefault();
 		errorMessage = '';
 		try {
-			// 1. Authenticate with Firebase Client Auth first
-			const userCredential = await signInWithEmailAndPassword(auth, email, password);
-			const firebaseUser = userCredential.user;
+			let firebaseUser;
+			try {
+				const userCredential = await signInWithEmailAndPassword(auth, email, password);
+				firebaseUser = userCredential.user;
+			} catch (err) {
+				console.log(err.code);
+				console.log(err.message);
+				
+				// Handle legacy users not yet in Firebase Auth
+				if (err.code === 'auth/user-not-found') {
+					const res = await axios.post('/api/auth/login', {
+						email,
+						password,
+						role: selectedRole
+					});
+					if (res.data.success) {
+						// Retry signing in now that they are synced by the backend
+						const userCredential = await signInWithEmailAndPassword(auth, email, password);
+						firebaseUser = userCredential.user;
+						await handleAuthSuccess(res.data.user, firebaseUser);
+						return;
+					}
+				}
+				throw err;
+			}
 
-			// 2. Call backend login API to establish SvelteKit server session cookies
+			// If client signin succeeded on the first try, run backend login to establish server session cookies
 			const res = await axios.post('/api/auth/login', {
 				email,
 				password,
@@ -116,10 +138,11 @@
 			});
 
 			if (res.data.success) {
-				await handleLoginSuccess(res.data.user, firebaseUser);
+				await handleAuthSuccess(res.data.user, firebaseUser);
 			}
 		} catch (err) {
-			console.error('Login error details:', err);
+			console.log(err.code);
+			console.log(err.message);
 			let errorMsg = 'Failed to login. Please check details.';
 			if (err.code === 'auth/user-not-found') {
 				errorMsg = 'Account does not exist';
@@ -161,12 +184,15 @@
 					const userCredential = await signInWithEmailAndPassword(auth, setupEmail, setupPassword);
 					firebaseUser = userCredential.user;
 				} catch (fbErr) {
-					console.warn('Firebase Client Auth admin signin failed/skipped:', fbErr);
+					console.log(fbErr.code);
+					console.log(fbErr.message);
 					firebaseUser = { uid: res.data.user.id || res.data.user.uid || '' };
 				}
-				await handleLoginSuccess(res.data.user, firebaseUser);
+				await handleAuthSuccess(res.data.user, firebaseUser);
 			}
 		} catch (err) {
+			console.log(err.code);
+			console.log(err.message);
 			errorMessage = err.response?.data?.error || 'Failed to initialize system admin.';
 			db.addToast(errorMessage, 'error');
 		}
@@ -195,10 +221,11 @@
 			});
 
 			if (res.data.success) {
-				await handleLoginSuccess(res.data.user, user);
+				await handleAuthSuccess(res.data.user, user);
 			}
 		} catch (err) {
-			console.error(err);
+			console.log(err.code);
+			console.log(err.message);
 			errorMessage = err.response?.data?.error || err.message || 'Google Sign-In failed.';
 			db.addToast(errorMessage, 'error');
 		}
