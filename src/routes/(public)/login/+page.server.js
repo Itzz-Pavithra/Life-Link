@@ -8,11 +8,6 @@ const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey123';
 
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ locals }) {
-	// If already logged in, redirect to dashboard
-	if (locals.user) {
-		throw redirect(303, `/dashboard/${locals.user.role}`);
-	}
-
 	return {
 		hasAdminAccount: await hasAdmin()
 	};
@@ -48,6 +43,25 @@ export const actions = {
 		const passwordMatch = verifyPassword(String(password), user.password);
 		if (!passwordMatch) {
 			return fail(400, { success: false, error: 'Invalid email or password.' });
+		}
+
+		// Sync with Firebase Auth dynamically on login
+		try {
+			const { getAuth } = await import('firebase-admin/auth');
+			try {
+				await getAuth().getUserByEmail(String(email));
+			} catch (err) {
+				if (err.code === 'auth/user-not-found') {
+					await getAuth().createUser({
+						uid: user.id,
+						email: String(email).toLowerCase(),
+						password: String(password),
+						displayName: user.name
+					});
+				}
+			}
+		} catch (fbErr) {
+			console.warn('Firebase Auth user sync during action login failed:', fbErr);
 		}
 
 		// Issue JWT
@@ -121,6 +135,19 @@ export const actions = {
 				role: 'admin',
 				bloodGroup: ''
 			});
+
+			// Sync with Firebase Auth
+			try {
+				const { getAuth } = await import('firebase-admin/auth');
+				await getAuth().createUser({
+					uid: adminUser.id,
+					email: String(email).toLowerCase(),
+					password: String(password),
+					displayName: String(name)
+				});
+			} catch (fbErr) {
+				console.warn('Firebase Auth admin sync during action creation failed:', fbErr);
+			}
 
 			// Issue JWT
 			const token = jwt.sign(

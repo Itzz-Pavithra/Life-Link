@@ -47,6 +47,19 @@ export async function POST({ request, cookies }) {
 			bloodGroup: ''
 		});
 
+		// Sync with Firebase Auth
+		try {
+			const { getAuth } = await import('firebase-admin/auth');
+			await getAuth().createUser({
+				uid: newAdmin.id,
+				email: email.toLowerCase(),
+				password: password,
+				displayName: name
+			});
+		} catch (fbErr) {
+			console.warn('Firebase Auth admin sync failed:', fbErr);
+		}
+
 		// Issue JWT
 		const token = jwt.sign(
 			{ id: newAdmin.id, email: newAdmin.email, role: newAdmin.role, name: newAdmin.name },

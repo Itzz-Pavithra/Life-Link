@@ -1,15 +1,20 @@
 <script>
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
+	import { auth } from '$lib/firebase.client.js';
+	import { onAuthStateChanged } from 'firebase/auth';
 
 	let { data } = $props();
 
 	onMount(() => {
-		if (data?.user) {
-			goto(`/dashboard/${data.user.role}`);
-		} else {
-			goto('/login');
-		}
+		const unsubscribe = onAuthStateChanged(auth, (user) => {
+			if (user && data?.user) {
+				goto(`/dashboard/${data.user.role}`);
+			} else {
+				goto('/login');
+			}
+		});
+		return unsubscribe;
 	});
 </script>
 

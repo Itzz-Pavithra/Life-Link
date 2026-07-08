@@ -49,7 +49,7 @@ export async function POST({ request }) {
 			}
 		}
 
-		await createUser({
+		const newUser = await createUser({
 			name: fullName,
 			email: email.toLowerCase(),
 			password,
@@ -58,6 +58,19 @@ export async function POST({ request }) {
 			role,
 			bloodGroup
 		});
+
+		// Sync with Firebase Auth
+		try {
+			const { getAuth } = await import('firebase-admin/auth');
+			await getAuth().createUser({
+				uid: newUser.id,
+				email: email.toLowerCase(),
+				password: password,
+				displayName: fullName
+			});
+		} catch (fbErr) {
+			console.warn('Firebase Auth user sync during registration failed:', fbErr);
+		}
 
 		return json({ success: true, message: 'Registration completed successfully.' }, { status: 201 });
 	} catch (err) {

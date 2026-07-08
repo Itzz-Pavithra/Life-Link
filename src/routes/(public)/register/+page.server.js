@@ -3,9 +3,6 @@ import { createUser } from '$lib/server/db.js';
 
 /** @type {import('./$types').PageServerLoad} */
 export function load({ locals }) {
-	if (locals.user) {
-		throw redirect(303, `/dashboard/${locals.user.role}`);
-	}
 	return {};
 }
 
@@ -44,6 +41,19 @@ export const actions = {
 				role: String(role),
 				bloodGroup: bloodGroup ? String(bloodGroup) : ''
 			});
+
+			// Sync with Firebase Auth
+			try {
+				const { getAuth } = await import('firebase-admin/auth');
+				await getAuth().createUser({
+					uid: user.id,
+					email: String(email).toLowerCase(),
+					password: String(password),
+					displayName: String(name)
+				});
+			} catch (fbErr) {
+				console.warn('Firebase Auth user sync during action registration failed:', fbErr);
+			}
 
 			// Save session cookie
 			cookies.set('lifelink_user', JSON.stringify({

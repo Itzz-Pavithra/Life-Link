@@ -35,6 +35,26 @@ export async function POST({ request, cookies }) {
 			return json({ error: 'Invalid email or password.' }, { status: 400 });
 		}
 
+		// Sync with Firebase Auth dynamically on login
+		try {
+			const { getAuth } = await import('firebase-admin/auth');
+			try {
+				await getAuth().getUserByEmail(email);
+			} catch (err) {
+				if (err.code === 'auth/user-not-found') {
+					// Create the user in Firebase Auth using their plaintext password
+					await getAuth().createUser({
+						uid: user.id,
+						email: email.toLowerCase(),
+						password: password,
+						displayName: user.name
+					});
+				}
+			}
+		} catch (fbErr) {
+			console.warn('Firebase Auth user sync during API login failed:', fbErr);
+		}
+
 		// Issue JWT
 		const token = jwt.sign(
 			{

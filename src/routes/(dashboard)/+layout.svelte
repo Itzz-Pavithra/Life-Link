@@ -3,19 +3,35 @@
 	import { goto } from '$app/navigation';
 	import { onMount } from 'svelte';
 	import Sidebar from '$lib/components/Sidebar.svelte';
+	import { auth } from '$lib/firebase.client.js';
+	import { onAuthStateChanged } from 'firebase/auth';
+	import axios from 'axios';
 
 	let { children, data } = $props();
 	let sidebarOpen = $state(false);
 
+	let authChecked = $state(false);
+
 	onMount(() => {
-		if (!data?.user) {
-			goto('/login');
-		}
+		const unsubscribe = onAuthStateChanged(auth, async (user) => {
+			if (!user) {
+				// Clear server cookies as well if Firebase Auth says we are logged out
+				try {
+					await axios.post('/api/auth/logout');
+				} catch (err) {
+					// Ignore
+				}
+				goto('/login');
+			} else {
+				authChecked = true;
+			}
+		});
+		return unsubscribe;
 	});
 </script>
 
 <div class="flex bg-baby-pink min-h-screen relative">
-	{#if data?.user}
+	{#if data?.user && authChecked}
 		<!-- Sidebar navigation -->
 		<Sidebar {data} bind:sidebarOpen={sidebarOpen} />
 

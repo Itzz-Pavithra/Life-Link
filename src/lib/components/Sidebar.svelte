@@ -1,7 +1,27 @@
 <script>
 	import { db } from '$lib/auth.svelte.js';
+	import { auth } from '$lib/firebase.client.js';
+	import { signOut } from 'firebase/auth';
+	import axios from 'axios';
 
 	let { data, sidebarOpen = $bindable(false) } = $props();
+
+	axios.defaults.withCredentials = true;
+
+	async function handleLogout(e) {
+		if (e) e.preventDefault();
+		try {
+			await signOut(auth);
+			localStorage.removeItem('lifelink_user');
+			localStorage.removeItem('user');
+			sessionStorage.clear();
+			await axios.post('/api/auth/logout');
+			db.addToast('Logged out successfully.', 'info');
+			window.location.href = '/';
+		} catch (err) {
+			db.addToast('Failed to logout. Please try again.', 'error');
+		}
+	}
 
 	// Define all sidebar items for each role
 	const menuItems = {
@@ -77,13 +97,13 @@
 	</div>
 
 	<!-- Logout Footer Button -->
-	<form action="/login?/logout" method="POST" class="w-full pt-4">
+	<div class="w-full pt-4">
 		<button
-			type="submit"
+			onclick={handleLogout}
 			class="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-xs font-bold text-slate-400 hover:bg-red-950/20 hover:text-red-400 border border-slate-800 hover:border-red-950/40 transition cursor-pointer text-left"
 		>
 			<span aria-hidden="true">🚪</span>
 			<span>Sign Out</span>
 		</button>
-	</form>
+	</div>
 </aside>

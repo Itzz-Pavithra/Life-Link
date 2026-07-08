@@ -2,7 +2,8 @@
 	import axios from 'axios';
 	import { db } from '$lib/auth.svelte.js';
 	import { auth } from '$lib/firebase.client.js';
-	import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+	import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
+	import { onMount } from 'svelte';
 
 	let { data } = $props();
 
@@ -92,6 +93,12 @@
 			});
 			if (res.data.success) {
 				db.addToast('Welcome back! Logging you in...', 'success');
+				// Sign in to Firebase client-side to sync auth state
+				try {
+					await signInWithEmailAndPassword(auth, email, password);
+				} catch (fbErr) {
+					console.warn('Firebase Client Auth signin failed/skipped:', fbErr);
+				}
 				// Full navigation refresh so SvelteKit hooks parse the cookie
 				window.location.href = `/dashboard/${res.data.user.role}`;
 			}
@@ -122,6 +129,12 @@
 			});
 			if (res.data.success) {
 				db.addToast('System initialized! Welcome Admin.', 'success');
+				// Sign in to Firebase client-side to sync auth state
+				try {
+					await signInWithEmailAndPassword(auth, setupEmail, setupPassword);
+				} catch (fbErr) {
+					console.warn('Firebase Client Auth admin signin failed/skipped:', fbErr);
+				}
 				window.location.href = '/dashboard/admin';
 			}
 		} catch (err) {
@@ -162,6 +175,32 @@
 			db.addToast(errorMessage, 'error');
 		}
 	}
+
+	onMount(() => {
+		const unsubscribe = onAuthStateChanged(auth, async (user) => {
+			if (!user) {
+				// Clear stale SvelteKit cookies if Firebase says we are not logged in
+				try {
+					await axios.post('/api/auth/logout');
+				} catch (err) {
+					// Ignore
+				}
+			} else {
+				// Firebase user is active! If we already have server session data, redirect to dashboard.
+				try {
+					const res = await axios.get('/api/user/profile');
+					if (res.data && res.data.success && res.data.profile) {
+						window.location.href = `/dashboard/${res.data.profile.role}`;
+					}
+				} catch (profileErr) {
+					// Stale session, force logout
+					await axios.post('/api/auth/logout');
+					await auth.signOut();
+				}
+			}
+		});
+		return unsubscribe;
+	});
 </script>
 
 <div class="min-h-screen bg-baby-pink flex items-center justify-center p-6 relative">
