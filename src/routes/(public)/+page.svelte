@@ -259,7 +259,7 @@
 							</div>
 							<div class="flex gap-3">
 								<span class="text-lg">✉️</span>
-								<span>lifelink@gmail.com</span>
+								<span>lifelinklifelink2@gmail.com</span>
 							</div>
 							<div class="flex gap-3">
 								<span class="text-lg">⏰</span>
