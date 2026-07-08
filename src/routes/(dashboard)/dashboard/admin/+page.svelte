@@ -2,6 +2,7 @@
 	import { invalidateAll } from '$app/navigation';
 	import { db } from '$lib/auth.svelte.js';
 	import AnalyticsCharts from '$lib/components/AnalyticsCharts.svelte';
+	import { onMount } from 'svelte';
 
 	let { data, form } = $props();
 
@@ -320,6 +321,121 @@
 				isLow: count < 3
 			};
 		});
+	});
+
+	// Polling for live updates when viewing Reports/Overview dashboard
+	onMount(() => {
+		const interval = setInterval(() => {
+			if (db.activeTab === 'reports' || db.activeTab === 'dashboard') {
+				invalidateAll();
+			}
+		}, 10000); // 10s auto-refresh
+		return () => clearInterval(interval);
+	});
+
+	// Helper for monthly stats calculations from database collections
+	function getLast6MonthsStats(requests, donations) {
+		const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+		const result = [];
+		const now = new Date();
+		for (let i = 5; i >= 0; i--) {
+			const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+			const monthIndex = d.getMonth();
+			const year = d.getFullYear();
+			const monthStr = String(monthIndex + 1).padStart(2, '0');
+			const yearMonth = `${year}-${monthStr}`;
+			
+			const monthReqs = (requests || []).filter(r => r.date && r.date.startsWith(yearMonth)).length;
+			const monthDons = (donations || []).filter(don => don.date && don.date.startsWith(yearMonth)).length;
+			
+			result.push({
+				month: `${monthNames[monthIndex]} ${year}`,
+				requests: monthReqs,
+				donations: monthDons
+			});
+		}
+		return result;
+	}
+
+	// Derived calculations for all 8 report requirements
+	const reportStats = $derived.by(() => {
+		const totalRegisteredDonors = (data.users || []).filter(u => u.role === 'donor').length;
+		const totalRecipients = (data.users || []).filter(u => u.role === 'recipient').length;
+		const totalRequestsCreated = (data.requests || []).length;
+		const completedRequests = (data.requests || []).filter(r => r.status === 'Completed').length;
+		const pendingRequests = (data.requests || []).filter(r => r.status === 'Pending').length;
+		const emergencyRequests = (data.requests || []).filter(r => r.urgency === 'Emergency' || r.urgency === 'Urgent').length;
+
+		// Available donors by blood group
+		const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+		const availableDonorsByGroup = {};
+		bloodGroups.forEach(bg => {
+			availableDonorsByGroup[bg] = 0;
+		});
+		(data.donors || []).forEach(d => {
+			if (d.status === 'active' && d.isAvailable !== false && d.bloodGroup) {
+				const bg = d.bloodGroup;
+				if (availableDonorsByGroup[bg] !== undefined) {
+					availableDonorsByGroup[bg]++;
+				}
+			}
+		});
+
+		// City/location wise donor availability
+		const cityAvailability = {};
+		(data.donors || []).forEach(d => {
+			if (d.status === 'active' && d.isAvailable !== false && d.location) {
+				const city = d.location.trim();
+				cityAvailability[city] = (cityAvailability[city] || 0) + 1;
+			}
+		});
+
+		return {
+			totalRegisteredDonors,
+			totalRecipients,
+			totalRequestsCreated,
+			completedRequests,
+			pendingRequests,
+			emergencyRequests,
+			availableDonorsByGroup,
+			cityAvailability
+		};
+	});
+
+	const reportAnalytics = $derived.by(() => {
+		const donors = (data.users || []).filter(u => u.role === 'donor');
+		const totalDonors = donors.length;
+		const requests = data.requests || [];
+		const donations = data.donations || [];
+
+		// Monthly activity
+		const monthlyActivity = getLast6MonthsStats(requests, donations);
+
+		// Blood group distribution among all donors
+		const colors = {
+			'O+': '#b91c1c', 'A+': '#dc2626', 'B+': '#ef4444', 'AB+': '#f87171',
+			'O-': '#fca5a5', 'A-': '#fecaca', 'B-': '#fee2e2', 'AB-': '#fef2f2'
+		};
+		const distribution = [];
+		if (totalDonors > 0) {
+			const bloodGroups = ['O+', 'A+', 'B+', 'AB+', 'O-', 'A-', 'B-', 'AB-'];
+			bloodGroups.forEach(bg => {
+				const count = donors.filter(u => u.bloodGroup === bg).length;
+				if (count > 0) {
+					const pct = Math.round((count / totalDonors) * 100);
+					distribution.push({
+						group: bg,
+						value: pct,
+						color: colors[bg] || '#ef4444'
+					});
+				}
+			});
+		}
+
+		return {
+			monthlyActivity,
+			distribution
+		};
 	});
 </script>
 
@@ -1193,8 +1309,9 @@
 
 	<!-- TAB 9: SYSTEM REPORTS -->
 	{:else if db.activeTab === 'reports'}
-		<div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-6">
-			<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-50 pb-4">
+		<div class="space-y-6">
+			<!-- Header Block -->
+			<div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
 				<div>
 					<h3 class="text-lg font-bold text-slate-900">System Analytical Reports</h3>
 					<p class="text-[10px] text-slate-500">Inspect compatible vectors, charts, and export CSV tables.</p>
@@ -1222,9 +1339,133 @@
 				</div>
 			</div>
 
+			<!-- 1-5: Grid of Cards (Registered Donors, Recipients, Blood Requests, Completed, Pending, Emergency) -->
+			<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+				<div class="bg-white border border-slate-100 p-5 rounded-2xl shadow-sm text-center">
+					<span class="text-slate-400 text-[9px] font-bold uppercase tracking-wider block">Registered Donors</span>
+					{#if reportStats.totalRegisteredDonors > 0}
+						<h4 class="text-2xl font-black text-red-700 mt-1">{reportStats.totalRegisteredDonors}</h4>
+					{:else}
+						<span class="text-xs text-slate-400 block font-semibold mt-2">No data available</span>
+					{/if}
+				</div>
+
+				<div class="bg-white border border-slate-100 p-5 rounded-2xl shadow-sm text-center">
+					<span class="text-slate-400 text-[9px] font-bold uppercase tracking-wider block">Recipients</span>
+					{#if reportStats.totalRecipients > 0}
+						<h4 class="text-2xl font-black text-blue-600 mt-1">{reportStats.totalRecipients}</h4>
+					{:else}
+						<span class="text-xs text-slate-400 block font-semibold mt-2">No data available</span>
+					{/if}
+				</div>
+
+				<div class="bg-white border border-slate-100 p-5 rounded-2xl shadow-sm text-center">
+					<span class="text-slate-400 text-[9px] font-bold uppercase tracking-wider block">Requests Created</span>
+					{#if reportStats.totalRequestsCreated > 0}
+						<h4 class="text-2xl font-black text-slate-900 mt-1">{reportStats.totalRequestsCreated}</h4>
+					{:else}
+						<span class="text-xs text-slate-400 block font-semibold mt-2">No data available</span>
+					{/if}
+				</div>
+
+				<div class="bg-white border border-slate-100 p-5 rounded-2xl shadow-sm text-center">
+					<span class="text-slate-400 text-[9px] font-bold uppercase tracking-wider block">Completed Requests</span>
+					{#if reportStats.completedRequests > 0}
+						<h4 class="text-2xl font-black text-emerald-600 mt-1">{reportStats.completedRequests}</h4>
+					{:else}
+						<span class="text-xs text-slate-400 block font-semibold mt-2">No data available</span>
+					{/if}
+				</div>
+
+				<div class="bg-white border border-slate-100 p-5 rounded-2xl shadow-sm text-center">
+					<span class="text-slate-400 text-[9px] font-bold uppercase tracking-wider block">Pending Requests</span>
+					{#if reportStats.pendingRequests > 0}
+						<h4 class="text-2xl font-black text-amber-600 mt-1">{reportStats.pendingRequests}</h4>
+					{:else}
+						<span class="text-xs text-slate-400 block font-semibold mt-2">No data available</span>
+					{/if}
+				</div>
+
+				<div class="bg-white border border-slate-100 p-5 rounded-2xl shadow-sm text-center">
+					<span class="text-slate-400 text-[9px] font-bold uppercase tracking-wider block">Emergency Requests</span>
+					{#if reportStats.emergencyRequests > 0}
+						<h4 class="text-2xl font-black text-red-650 text-red-600 mt-1">{reportStats.emergencyRequests}</h4>
+					{:else}
+						<span class="text-xs text-slate-400 block font-semibold mt-2">No data available</span>
+					{/if}
+				</div>
+			</div>
+
 			<!-- Dynamic Visual Charts wrapper -->
-			<div>
-				<AnalyticsCharts analytics={data.analytics} />
+			<div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+				<AnalyticsCharts chartData={reportAnalytics} />
+			</div>
+
+			<!-- 6 Available Donors by Blood Group -->
+			<div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+				<h4 class="text-sm font-bold text-slate-900 mb-2">Available Donors by Blood Group</h4>
+				<p class="text-[10px] text-slate-500 mb-4">Total number of active available donors for each blood group.</p>
+				<div class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-4">
+					{#each Object.entries(reportStats.availableDonorsByGroup) as [bg, count]}
+						<div class="border border-slate-100 rounded-2xl p-4 text-center bg-slate-50/50">
+							<span class="text-sm font-bold text-slate-800 block">{bg}</span>
+							{#if count > 0}
+								<span class="text-xl font-black text-red-700 block mt-1">{count}</span>
+							{:else}
+								<span class="text-[10px] text-slate-400 block mt-2 font-medium">None</span>
+							{/if}
+						</div>
+					{/each}
+				</div>
+			</div>
+
+			<!-- 7 City/Location Wise Donor Availability -->
+			<div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+				<h4 class="text-sm font-bold text-slate-900 mb-2">City/Location wise Donor Availability</h4>
+				<p class="text-[10px] text-slate-500 mb-4">Distribution of active available donors by city.</p>
+				{#if Object.keys(reportStats.cityAvailability).length === 0}
+					<span class="text-xs text-slate-400 font-semibold block">No data available</span>
+				{:else}
+					<div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+						{#each Object.entries(reportStats.cityAvailability) as [city, count]}
+							<div class="bg-slate-50/50 border border-slate-100 rounded-2xl p-4 text-center">
+								<span class="text-xs font-bold text-slate-500 block uppercase tracking-wider">{city}</span>
+								<span class="text-xl font-black text-red-700 mt-1 block">{count} Donors</span>
+							</div>
+						{/each}
+					</div>
+				{/if}
+			</div>
+
+			<!-- 8 Recent User Activity -->
+			<div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
+				<h4 class="text-sm font-bold text-slate-900 mb-4">Recent User Activity Logs</h4>
+				{#if data.systemLogs.length === 0}
+					<span class="text-xs text-slate-400 font-semibold block">No data available</span>
+				{:else}
+					<div class="overflow-x-auto">
+						<table class="w-full border-collapse text-left text-sm">
+							<thead>
+								<tr class="border-b border-slate-100 text-slate-400 text-[10px] font-bold uppercase">
+									<th class="py-3 px-4">Log ID</th>
+									<th class="py-3 px-4">User</th>
+									<th class="py-3 px-4">Activity</th>
+									<th class="py-3 px-4">Timestamp</th>
+								</tr>
+							</thead>
+							<tbody class="divide-y divide-slate-50">
+								{#each data.systemLogs.slice(0, 10) as log}
+									<tr class="hover:bg-slate-50/30 transition text-xs">
+										<td class="py-3 px-4 font-mono font-bold text-slate-500">{log.id}</td>
+										<td class="py-3 px-4 font-semibold text-slate-900">{log.user}</td>
+										<td class="py-3 px-4 text-slate-600">{log.activity}</td>
+										<td class="py-3 px-4 text-slate-400">{log.timestamp}</td>
+									</tr>
+								{/each}
+							</tbody>
+						</table>
+					</div>
+				{/if}
 			</div>
 		</div>
 

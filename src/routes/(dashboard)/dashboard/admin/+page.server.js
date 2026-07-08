@@ -14,6 +14,30 @@ export async function load({ locals }) {
 	const eligibilityRequests = await database.getEligibilityRequests();
 	const logs = await database.getSystemLogs();
 
+	// Helper function for last 6 months stats
+	const getLast6MonthsStats = (requests, donations) => {
+		const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+		const result = [];
+		const now = new Date();
+		for (let i = 5; i >= 0; i--) {
+			const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+			const monthIndex = d.getMonth();
+			const year = d.getFullYear();
+			const monthStr = String(monthIndex + 1).padStart(2, '0');
+			const yearMonth = `${year}-${monthStr}`;
+			
+			const monthReqs = requests.filter(r => r.date && r.date.startsWith(yearMonth)).length;
+			const monthDons = donations.filter(don => don.date && don.date.startsWith(yearMonth)).length;
+			
+			result.push({
+				month: `${monthNames[monthIndex]} ${year}`,
+				requests: monthReqs,
+				donations: monthDons
+			});
+		}
+		return result;
+	};
+
 	// Calculate counts
 	const donorsList = users.filter(u => u.role === 'donor');
 	const totalDonors = donorsList.length;
@@ -29,32 +53,28 @@ export async function load({ locals }) {
 	};
 
 	// Generate blood distribution metrics dynamically based on actual database contents
-	const bloodGroupCounts = {};
-	donorsList.forEach(u => {
-		if (u.bloodGroup) {
-			bloodGroupCounts[u.bloodGroup] = (bloodGroupCounts[u.bloodGroup] || 0) + 1;
-		}
-	});
-
-	const distribution = Object.entries(bloodGroupCounts).map(([group, val]) => ({
-		group,
-		value: val,
-		color: group.startsWith('O') ? '#b91c1c' : (group.startsWith('A') ? '#dc2626' : '#ef4444')
-	}));
-
-	if (distribution.length === 0) {
-		distribution.push({ group: 'No Donors', value: 0, color: '#6b7280' });
+	const distribution = [];
+	if (totalDonors > 0) {
+		const colors = {
+			'O+': '#b91c1c', 'A+': '#dc2626', 'B+': '#ef4444', 'AB+': '#f87171',
+			'O-': '#fca5a5', 'A-': '#fecaca', 'B-': '#fee2e2', 'AB-': '#fef2f2'
+		};
+		const bloodGroups = ['O+', 'A+', 'B+', 'AB+', 'O-', 'A-', 'B-', 'AB-'];
+		bloodGroups.forEach(bg => {
+			const count = donorsList.filter(u => u.bloodGroup === bg).length;
+			if (count > 0) {
+				const pct = Math.round((count / totalDonors) * 100);
+				distribution.push({
+					group: bg,
+					value: pct,
+					color: colors[bg] || '#ef4444'
+				});
+			}
+		});
 	}
 
 	const analytics = {
-		monthlyActivity: [
-			{ month: 'Jan', requests: 0, donations: 0 },
-			{ month: 'Feb', requests: 0, donations: 0 },
-			{ month: 'Mar', requests: 0, donations: 0 },
-			{ month: 'Apr', requests: 0, donations: 0 },
-			{ month: 'May', requests: 0, donations: 0 },
-			{ month: 'Jun', requests: bloodRequests.length, donations: donations.length }
-		],
+		monthlyActivity: getLast6MonthsStats(bloodRequests, donations),
 		distribution
 	};
 
