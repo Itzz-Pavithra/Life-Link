@@ -22,10 +22,14 @@ export async function handle({ event, resolve }) {
 					name: user.name,
 					email: user.email,
 					role: user.role,
-					location: user.location,
-					bloodGroup: user.bloodGroup,
-					avatar: user.avatar,
-					profileCompletion: user.profileCompletion
+					phone: user.phone || '',
+					location: user.location || '',
+					address: user.address || '',
+					isAvailable: user.isAvailable !== false,
+					bloodGroup: user.bloodGroup || '',
+					avatar: user.avatar || '',
+					profileCompletion: user.profileCompletion || 0,
+					createdAt: user.createdAt
 				};
 				event.locals.role = user.role || null;
 			} else {

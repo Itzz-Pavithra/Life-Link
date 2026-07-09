@@ -10,6 +10,7 @@
 	let email = $state('');
 	let phone = $state('');
 	let location = $state('');
+	let bloodGroup = $state('O+');
 
 	// Assessment questions
 	let age = $state('');
@@ -112,6 +113,7 @@
 			email,
 			phone,
 			location,
+			bloodGroup,
 			answers: {
 				age: parseInt(age),
 				weight: parseFloat(weight),
@@ -228,6 +230,23 @@
 						placeholder="Salem"
 						class="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
 					/>
+				</div>
+
+				<div class="flex flex-col gap-1">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Blood Group *</label>
+					<select
+						bind:value={bloodGroup}
+						class="border border-gray-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm bg-white"
+					>
+						<option value="A+">A+</option>
+						<option value="A-">A-</option>
+						<option value="B+">B+</option>
+						<option value="B-">B-</option>
+						<option value="AB+">AB+</option>
+						<option value="AB-">AB-</option>
+						<option value="O+">O+</option>
+						<option value="O-">O-</option>
+					</select>
 				</div>
 
 				<div class="flex flex-col gap-1">

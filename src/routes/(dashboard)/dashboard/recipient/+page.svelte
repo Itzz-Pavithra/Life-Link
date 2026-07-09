@@ -199,13 +199,16 @@
 
 	async function sendEmergencyAlert() {
 		if (filteredDonors.length === 0) return;
+		if (searchBloodGroup === 'all') {
+			db.addToast('Please select a specific blood type filter before dispatching alerts.', 'error');
+			return;
+		}
 		sendingAlert = true;
 		try {
 			const res = await fetch('/api/requests/alert', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({
-					donorEmails: filteredDonors.map(d => d.email),
 					bloodGroup: searchBloodGroup,
 					city: searchCity,
 					recipientName: data.user?.name,
@@ -214,7 +217,7 @@
 			});
 			const result = await res.json();
 			if (result.success) {
-				db.addToast(result.message || `Emergency alert processed successfully for ${filteredDonors.length} matching donors`, 'success');
+				db.addToast(result.message || `Emergency alert processed successfully.`, 'success');
 			} else {
 				db.addToast(result.error || 'Failed to send alert.', 'error');
 			}

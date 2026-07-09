@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { deleteUser, suspendUser, database } from '$lib/server/db.js';
+import { sendEmail } from '$lib/server/email.js';
 
 /** @type {import('./$types').RequestHandler} */
 export async function GET({ locals }) {
@@ -19,14 +20,30 @@ export async function POST({ request, locals }) {
 
 	try {
 		const body = await request.json();
-		const { userId } = body;
+		const { userId, reason } = body;
 
 		if (!userId) {
 			return json({ success: false, error: 'Missing userId parameter.' }, { status: 400 });
 		}
 
-		const updatedUser = await suspendUser(userId, locals.user.email);
+		const updatedUser = await suspendUser(userId, locals.user.email, reason);
 		if (updatedUser) {
+			if (updatedUser.status === 'suspended') {
+				try {
+					await sendEmail({
+						to: updatedUser.email,
+						subject: "LifeLink Account Suspended",
+						html: `
+							<p>Your account has been suspended.</p>
+							<p><strong>Reason:</strong> ${reason || 'No reason provided'}</p>
+							<p>Please contact support if you think this is incorrect.</p>
+						`,
+						type: 'Account Suspension'
+					});
+				} catch (emailErr) {
+					console.error('Failed to send suspension email:', emailErr);
+				}
+			}
 			return json({ success: true, user: updatedUser });
 		} else {
 			return json({ success: false, error: 'User not found.' }, { status: 404 });

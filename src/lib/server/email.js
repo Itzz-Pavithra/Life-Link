@@ -1,67 +1,76 @@
 import dotenv from 'dotenv';
 import { env as dynamicEnv } from '$env/dynamic/private';
 import { database } from './db.js';
-import { Resend } from 'resend';
+import nodemailer from 'nodemailer';
 
 dotenv.config();
 
-const emailWrapper = {
-	send({ to, subject, html }) {
-		const finalRecipient = process.env.RESEND_TEST_EMAIL || to;
+/**
+ * Reusable email service using Gmail SMTP Nodemailer.
+ * @param {Object} params
+ * @param {string} params.to - Recipient email
+ * @param {string} params.subject - Email subject
+ * @param {string} params.html - Email body (HTML)
+ * @param {string} [params.type] - Email type for logs
+ */
+export async function sendEmail({ to, subject, html, type = 'General' }) {
+	const user = dynamicEnv.GMAIL_USER || process.env.GMAIL_USER;
+	const pass = dynamicEnv.GMAIL_APP_PASSWORD || process.env.GMAIL_APP_PASSWORD;
 
-		console.log("====== FINAL RESEND WRAPPER ======");
-		console.log("ORIGINAL RECEIVER:", to);
-		console.log("TEST EMAIL:", process.env.RESEND_TEST_EMAIL);
-		console.log("ACTUAL RESEND TO:", finalRecipient);
+	if (!user || !pass) {
+		throw new Error('GMAIL_USER or GMAIL_APP_PASSWORD environment variables are not defined.');
+	}
 
-		const resend = new Resend(dynamicEnv.EMAIL_RESEND || process.env.EMAIL_RESEND);
-		return resend.emails.send({
-			from: "LifeLink <onboarding@resend.dev>",
-			to: finalRecipient,
+	const transporter = nodemailer.createTransport({
+		service: 'gmail',
+		auth: { user, pass }
+	});
+
+	let status = 'SUCCESS';
+	let res;
+
+	try {
+		res = await transporter.sendMail({
+			from: `"LifeLink" <${user}>`,
+			to,
 			subject,
 			html
 		});
+	} catch (err) {
+		status = `FAILED: ${err.message}`;
+		throw err;
+	} finally {
+		console.log(`EMAIL TYPE: ${type}`);
+		console.log(`RECEIVER: ${to}`);
+		console.log(`STATUS: ${status}`);
 	}
-};
+
+	return res;
+}
 
 /**
- * Sends a contact query email using the Resend API.
+ * Sends a contact query email using Nodemailer.
  * @param {Object} params
- * @param {string} params.name - Full name of the user
- * @param {string} params.email - Email address of the user
- * @param {string} params.subject - Message subject
- * @param {string} params.message - Message body
  */
 export async function sendContactEmail({ name, email: userEmail, subject, message }) {
-	const apiKey = dynamicEnv.EMAIL_RESEND || process.env.EMAIL_RESEND;
-	if (!apiKey) {
-		throw new Error('EMAIL_RESEND environment variable is not defined.');
-	}
-
 	const emailSubject = `New LifeLink Contact Query - ${subject}`;
 	const emailBody = `New user message received:\n\nName:\n${name}\n\nEmail:\n${userEmail}\n\nSubject:\n${subject}\n\nMessage:\n${message}\n\nSent from:\nLifeLink Contact Page`;
 
 	const emailHtml = emailBody.replace(/\n/g, '<br/>');
 
-	const response = await emailWrapper.send({
+	return await sendEmail({
 		to: 'lifelinklifelink2@gmail.com',
 		subject: emailSubject,
-		html: `<div style="font-family: sans-serif; line-height: 1.6;">${emailHtml}</div>`
+		html: `<div style="font-family: sans-serif; line-height: 1.6;">${emailHtml}</div>`,
+		type: 'Contact Query'
 	});
-
-	return response;
 }
 
 /**
- * Sends an emergency blood alert email using the Resend API.
+ * Sends an emergency blood alert email using Nodemailer.
  * @param {Object} params
  */
 export async function sendEmergencyBloodAlert({ donorEmails, bloodGroup, city, recipientName, contactPhone }) {
-	const apiKey = dynamicEnv.EMAIL_RESEND || process.env.EMAIL_RESEND;
-	if (!apiKey) {
-		throw new Error('EMAIL_RESEND environment variable is not defined.');
-	}
-
 	// Fetch all matching donor profiles to obtain Name, Blood Group, Phone, and Location
 	let matchedDonors = [];
 	try {
@@ -83,28 +92,41 @@ export async function sendEmergencyBloodAlert({ donorEmails, bloodGroup, city, r
 	let lastResult = null;
 
 	for (const donor of donorsToProcess) {
-		console.log("====== RESEND DEBUG START ======");
-		console.log("ENV TEST EMAIL:", process.env.RESEND_TEST_EMAIL);
-		console.log("ORIGINAL DONOR EMAIL:", donor.email);
-
-		const finalRecipient = process.env.RESEND_TEST_EMAIL 
-			? process.env.RESEND_TEST_EMAIL 
-			: donor.email;
-
-		console.log("FINAL RESEND TO:", finalRecipient);
-
-		lastResult = await emailWrapper.send({
-			to: finalRecipient,
-			subject: "🚨 Emergency Blood Alert",
+		lastResult = await sendEmail({
+			to: donor.email,
+			subject: "🚨 Emergency Blood Request Alert",
 			html: `
-				<h2>Emergency Blood Alert</h2>
-
-				<p>Donor Name: ${donor.name}</p>
-				<p>Original Email: ${donor.email}</p>
-				<p>Blood Group: ${donor.bloodGroup}</p>
-				<p>Phone: ${donor.phone}</p>
-				<p>Location: ${donor.location}</p>
-			`
+				<div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #f1f5f9; border-radius: 16px;">
+					<h2 style="color: #b91c1c; margin-bottom: 20px;">🚨 Emergency Blood Request</h2>
+					<p>Dear ${donor.name},</p>
+					<p>An emergency blood request has been posted on LifeLink. Please respond quickly as a life is at stake!</p>
+					
+					<h3 style="color: #1e293b; margin-top: 24px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">Request Details:</h3>
+					<table style="width: 100%; text-align: left; font-size: 14px; border-collapse: collapse;">
+						<tr>
+							<th style="padding: 6px 0; color: #64748b; width: 180px;">Required Blood Group:</th>
+							<td style="padding: 6px 0; color: #b91c1c; font-weight: bold;">${bloodGroup}</td>
+						</tr>
+						<tr>
+							<th style="padding: 6px 0; color: #64748b;">Recipient Name:</th>
+							<td style="padding: 6px 0; color: #0f172a; font-weight: bold;">${recipientName}</td>
+						</tr>
+						<tr>
+							<th style="padding: 6px 0; color: #64748b;">Contact Number:</th>
+							<td style="padding: 6px 0; color: #0f172a; font-weight: bold;">${contactPhone || 'Check dashboard'}</td>
+						</tr>
+						<tr>
+							<th style="padding: 6px 0; color: #64748b;">Location:</th>
+							<td style="padding: 6px 0; color: #0f172a; font-weight: bold;">${city}</td>
+						</tr>
+					</table>
+					
+					<p style="margin-top: 30px; font-size: 12px; color: #94a3b8; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 15px;">
+						LifeLink Emergency matching system. Thank you for your fast action.
+					</p>
+				</div>
+			`,
+			type: 'Emergency Alert'
 		});
 	}
 

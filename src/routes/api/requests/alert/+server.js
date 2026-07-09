@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { db } from '$lib/server/firebase.js';
+import { database } from '$lib/server/db.js';
 import { sendEmergencyBloodAlert } from '$lib/server/email.js';
 
 /** @type {import('./$types').RequestHandler} */
@@ -10,15 +11,33 @@ export async function POST({ request, locals }) {
 
 	try {
 		const body = await request.json();
-		const { donorEmails, bloodGroup, city, recipientName, contactPhone } = body;
+		const { bloodGroup, city, recipientName, contactPhone } = body;
 
-		if (!donorEmails || !Array.isArray(donorEmails)) {
-			return json({ success: false, error: 'donorEmails must be an array.' }, { status: 400 });
+		if (!bloodGroup) {
+			return json({ success: false, error: 'bloodGroup is required.' }, { status: 400 });
+		}
+
+		// Fetch matched donors dynamically from database
+		const allUsers = await database.getUsers();
+		const matchedDonors = allUsers.filter(u => 
+			u.role === 'donor' &&
+			u.status === 'active' &&
+			u.isAvailable !== false &&
+			u.bloodGroup === bloodGroup
+		);
+		const dynamicDonorEmails = matchedDonors.map(d => d.email);
+
+		if (dynamicDonorEmails.length === 0) {
+			return json({ 
+				success: true, 
+				message: 'No matching active available donors found.',
+				count: 0
+			});
 		}
 
 		await sendEmergencyBloodAlert({
-			donorEmails,
-			bloodGroup: bloodGroup || 'Compatible Blood Type',
+			donorEmails: dynamicDonorEmails,
+			bloodGroup: bloodGroup,
 			city: city || 'Requested Location',
 			recipientName: recipientName || locals.user.name,
 			contactPhone: contactPhone || locals.user.phone
@@ -29,8 +48,8 @@ export async function POST({ request, locals }) {
 		await db.collection('emergency_alerts').doc(alertId).set({
 			id: alertId,
 			recipientEmail: locals.user.email,
-			donorEmails: donorEmails,
-			bloodGroup: bloodGroup || 'Compatible Blood Type',
+			donorEmails: dynamicDonorEmails,
+			bloodGroup: bloodGroup,
 			city: city || 'Requested Location',
 			timestamp: new Date().toISOString()
 		});
@@ -40,13 +59,13 @@ export async function POST({ request, locals }) {
 		await db.collection('logs').doc(logId).set({
 			id: logId,
 			user: locals.user.email,
-			activity: `Emergency alert processed for ${donorEmails.length} matching donors (Blood: ${bloodGroup || 'N/A'}, City: ${city || 'N/A'})`,
+			activity: `Emergency alert processed for ${dynamicDonorEmails.length} matching donors (Blood: ${bloodGroup}, City: ${city || 'N/A'})`,
 			timestamp: new Date().toISOString().replace('T', ' ').slice(0, 16)
 		});
 
 		return json({ 
 			success: true, 
-			message: `Emergency alert processed successfully for ${donorEmails.length} matching donors` 
+			message: `Emergency alert processed successfully for ${dynamicDonorEmails.length} matching donors` 
 		});
 	} catch (err) {
 		console.error('Failed to send emergency alert:', err);

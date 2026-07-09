@@ -245,7 +245,7 @@ export async function deleteUser(userId, operatorEmail) {
 	return true;
 }
 
-export async function suspendUser(userId, operatorEmail) {
+export async function suspendUser(userId, operatorEmail, reason = '') {
 	const user = await getUserById(userId);
 	if (!user) return false;
 
@@ -254,14 +254,21 @@ export async function suspendUser(userId, operatorEmail) {
 	}
 
 	const newStatus = user.status === 'suspended' ? 'active' : 'suspended';
-	await updateDocument('users', userId, { status: newStatus });
+	const updates = { status: newStatus };
+	if (newStatus === 'suspended') {
+		updates.suspensionReason = reason || 'No reason provided';
+	} else {
+		updates.suspensionReason = '';
+	}
+
+	await updateDocument('users', userId, updates);
 
 	await addLog(operatorEmail, `User status toggled to ${newStatus} for ${user.email}`);
-	return { ...user, status: newStatus };
+	return { ...user, ...updates };
 }
 
 // Eligibility Questionnaire Actions
-export async function submitEligibilityQuiz(email, name, phone, location, answers) {
+export async function submitEligibilityQuiz(email, name, phone, location, bloodGroup, answers) {
 	const lowercaseEmail = email.toLowerCase();
 	const eligReqs = await getCollection('eligibility_requests');
 	const existing = eligReqs.find(r => r.email.toLowerCase() === lowercaseEmail);
@@ -281,6 +288,7 @@ export async function submitEligibilityQuiz(email, name, phone, location, answer
 				name,
 				phone,
 				location,
+				bloodGroup: bloodGroup || 'O+',
 				submittedAt: new Date().toISOString()
 			});
 		}
@@ -292,6 +300,7 @@ export async function submitEligibilityQuiz(email, name, phone, location, answer
 			email: lowercaseEmail,
 			phone,
 			location,
+			bloodGroup: bloodGroup || 'O+',
 			answers,
 			status: newStatus,
 			submittedAt: new Date().toISOString()
@@ -307,10 +316,21 @@ export async function reviewEligibility(requestId, status, reviewerEmail) {
 	const req = await getDocument('eligibility_requests', requestId);
 	if (!req) return false;
 
+	const formattedStatus = status === 'Approved' ? 'Approved' : 'Rejected';
+
 	await updateDocument('eligibility_requests', requestId, {
-		status,
+		status: formattedStatus,
+		eligibilityStatus: status.toLowerCase(),
 		reviewedAt: new Date().toISOString()
 	});
+
+	// If the user already registered, update their user record as well
+	const user = await getUserByEmail(req.email);
+	if (user) {
+		await updateDocument('users', user.id, {
+			eligibilityStatus: status.toLowerCase()
+		});
+	}
 
 	await addLog(reviewerEmail, `Eligibility request for ${req.email} ${status.toUpperCase()}`);
 	return true;

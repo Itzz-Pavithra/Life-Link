@@ -68,12 +68,22 @@
 
 
 
-	async function handleUserSuspend(userId, name) {
+	async function handleUserSuspend(userId, name, currentStatus) {
+		let reason = '';
+		if (currentStatus === 'active') {
+			reason = prompt("Enter suspension reason");
+			if (reason === null) return;
+			if (!reason.trim()) {
+				db.addToast('Suspension reason is required.', 'error');
+				return;
+			}
+		}
+
 		try {
 			const res = await fetch('/api/users', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ userId })
+				body: JSON.stringify({ userId, reason })
 			});
 			const result = await res.json();
 			if (result.success) {
@@ -630,7 +640,7 @@
 										{#if user.role !== 'admin'}
 											<button
 												class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded-lg transition cursor-pointer text-[10px]"
-												onclick={() => handleUserSuspend(user.id, user.name)}
+												onclick={() => handleUserSuspend(user.id, user.name, user.status)}
 											>
 												{user.status === 'active' ? 'Suspend' : 'Unsuspend'}
 											</button>
