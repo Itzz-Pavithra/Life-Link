@@ -4,6 +4,32 @@ import { database } from './db.js';
 
 dotenv.config();
 
+const resend = {
+	emails: {
+		async send({ from, to, subject, html }) {
+			const apiKey = dynamicEnv.EMAIL_RESEND || process.env.EMAIL_RESEND;
+			const response = await fetch('https://api.resend.com/emails', {
+				method: 'POST',
+				headers: {
+					'Authorization': `Bearer ${apiKey}`,
+					'Content-Type': 'application/json'
+				},
+				body: JSON.stringify({
+					from,
+					to,
+					subject,
+					html
+				})
+			});
+			if (!response.ok) {
+				const errorText = await response.text();
+				throw new Error(`Resend email dispatch failed: Status ${response.status} - ${errorText}`);
+			}
+			return await response.json();
+		}
+	}
+};
+
 /**
  * Sends a contact query email using the Resend API.
  * @param {Object} params
@@ -97,79 +123,30 @@ export async function sendEmergencyBloodAlert({ donorEmails, bloodGroup, city, r
 	let lastResult = null;
 
 	for (const donor of donorsToProcess) {
-		const finalRecipient = testEmail || donor.email;
+		console.log("====== RESEND DEBUG START ======");
+		console.log("ENV TEST EMAIL:", process.env.RESEND_TEST_EMAIL);
+		console.log("ORIGINAL DONOR EMAIL:", donor.email);
 
-		console.log("RESEND TEST EMAIL:", process.env.RESEND_TEST_EMAIL);
-		console.log("FINAL EMAIL RECEIVER:", finalRecipient);
+		const finalRecipient = process.env.RESEND_TEST_EMAIL 
+			? process.env.RESEND_TEST_EMAIL 
+			: donor.email;
 
-		const emailTemplate = `
-			<div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #f1f5f9; border-radius: 16px;">
-				<h2 style="color: #b91c1c; margin-bottom: 20px;">🚨 Emergency Blood Request Alert</h2>
-				<p>An emergency matching alert has been triggered on LifeLink.</p>
-				
-				<h3 style="color: #1e293b; margin-top: 24px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">Matched Donor Details:</h3>
-				<table style="width: 100%; text-align: left; font-size: 14px; border-collapse: collapse;">
-					<tr>
-						<th style="padding: 6px 0; color: #64748b; width: 160px;">Name:</th>
-						<td style="padding: 6px 0; color: #0f172a; font-weight: bold;">${donor.name}</td>
-					</tr>
-					<tr>
-						<th style="padding: 6px 0; color: #64748b;">Original Donor Email:</th>
-						<td style="padding: 6px 0; color: #0f172a; font-weight: bold;">${donor.email}</td>
-					</tr>
-					<tr>
-						<th style="padding: 6px 0; color: #64748b;">Blood Group:</th>
-						<td style="padding: 6px 0; color: #0f172a; font-weight: bold;">${donor.bloodGroup || bloodGroup}</td>
-					</tr>
-					<tr>
-						<th style="padding: 6px 0; color: #64748b;">Phone:</th>
-						<td style="padding: 6px 0; color: #0f172a; font-weight: bold;">${donor.phone || 'N/A'}</td>
-					</tr>
-					<tr>
-						<th style="padding: 6px 0; color: #64748b;">Location:</th>
-						<td style="padding: 6px 0; color: #0f172a; font-weight: bold;">${donor.location || city}</td>
-					</tr>
-				</table>
+		console.log("FINAL RESEND TO:", finalRecipient);
 
-				<h3 style="color: #1e293b; margin-top: 24px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">Recipient Information:</h3>
-				<table style="width: 100%; text-align: left; font-size: 14px; border-collapse: collapse;">
-					<tr>
-						<th style="padding: 6px 0; color: #64748b; width: 160px;">Patient Coordinator:</th>
-						<td style="padding: 6px 0; color: #0f172a;">${recipientName}</td>
-					</tr>
-					<tr>
-						<th style="padding: 6px 0; color: #64748b;">Coordinator Phone:</th>
-						<td style="padding: 6px 0; color: #0f172a;">${contactPhone || 'N/A'}</td>
-					</tr>
-				</table>
-				
-				<p style="margin-top: 30px; font-size: 12px; color: #94a3b8; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 15px;">
-					LifeLink Emergency Dispatch System. Please check your recipient dashboard for more details.
-				</p>
-			</div>
-		`;
+		lastResult = await resend.emails.send({
+			from: "LifeLink <onboarding@resend.dev>",
+			to: finalRecipient,
+			subject: "🚨 Emergency Blood Alert",
+			html: `
+				<h2>Emergency Blood Alert</h2>
 
-		const response = await fetch('https://api.resend.com/emails', {
-			method: 'POST',
-			headers: {
-				'Authorization': `Bearer ${apiKey}`,
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({
-				from: "LifeLink <onboarding@resend.dev>",
-				to: finalRecipient,
-				subject: "🚨 Emergency Blood Request Alert",
-				html: emailTemplate
-			})
+				<p>Donor Name: ${donor.name}</p>
+				<p>Original Email: ${donor.email}</p>
+				<p>Blood Group: ${donor.bloodGroup}</p>
+				<p>Phone: ${donor.phone}</p>
+				<p>Location: ${donor.location}</p>
+			`
 		});
-
-		if (!response.ok) {
-			const errorText = await response.text();
-			console.error(`[Resend Send Alert Failure Details]: Status ${response.status}`, errorText);
-			throw new Error(`Resend email dispatch failed: Status ${response.status} - ${errorText}`);
-		}
-
-		lastResult = await response.json();
 	}
 
 	return lastResult || { success: true, message: 'Processed successfully.' };
