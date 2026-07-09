@@ -35,6 +35,11 @@ export async function POST({ request, cookies }) {
 			return json({ error: 'Invalid email or password.' }, { status: 400 });
 		}
 
+		// Check email verification status
+		if (user.emailVerified === false) {
+			return json({ error: 'Please verify your email before logging in.' }, { status: 400 });
+		}
+
 		// Sync with Firebase Auth dynamically on login
 		try {
 			const { getAuth } = await import('firebase-admin/auth');

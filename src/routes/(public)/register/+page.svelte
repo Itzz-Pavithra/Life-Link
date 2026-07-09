@@ -5,6 +5,10 @@
 	import { auth } from '$lib/firebase.client.js';
 	import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 	import BloodWaveBackground from '$lib/components/BloodWaveBackground.svelte';
+	import OtpVerification from '$lib/components/OtpVerification.svelte';
+
+	let showOtp = $state(false);
+	let registeredEmail = $state('');
 
 	let role = $state('');
 	let name = $state('');
@@ -109,8 +113,9 @@
 				bloodGroup: (role === 'donor' || role === 'recipient') ? bloodGroup : ''
 			});
 			if (res.data.success) {
-				db.addToast('Registration successful! Please login.', 'success');
-				goto('/login');
+				db.addToast('Registration completed successfully! Please verify your email.', 'success');
+				registeredEmail = email;
+				showOtp = true;
 			}
 		} catch (err) {
 			errorMessage = err.response?.data?.error || 'Registration failed. Please try again.';
@@ -413,3 +418,7 @@
 		</div>
 	</div>
 </div>
+
+{#if showOtp}
+	<OtpVerification email={registeredEmail} onVerified={() => goto('/login')} />
+{/if}

@@ -195,7 +195,8 @@ export async function createUser(userData) {
 		phone: userData.phone,
 		location: userData.location,
 		role: userData.role, // 'admin', 'donor', 'receiver'
-		status: 'active', // 'active', 'suspended'
+		status: userData.status || 'active', // 'active', 'suspended', 'pending'
+		emailVerified: userData.emailVerified !== undefined ? userData.emailVerified : true,
 		bloodGroup: userData.bloodGroup || '',
 		avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(userData.name)}`,
 		profileCompletion: 100,

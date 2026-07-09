@@ -147,6 +147,7 @@ export async function POST({ request, cookies }) {
 				authProvider: "google",
 				role: finalRole,
 				status: 'active',
+				emailVerified: true,
 				phone: '',
 				city: '',
 				location: '',

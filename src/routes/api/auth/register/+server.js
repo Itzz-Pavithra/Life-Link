@@ -56,8 +56,49 @@ export async function POST({ request }) {
 			phone,
 			location,
 			role,
-			bloodGroup
+			bloodGroup,
+			status: 'pending',
+			emailVerified: false
 		});
+
+		// Generate secure verification OTP
+		try {
+			const { default: crypto } = await import('crypto');
+			const { default: bcrypt } = await import('bcryptjs');
+			const { sendEmail } = await import('$lib/server/email.js');
+
+			const otp = crypto.randomInt(100000, 999999).toString();
+			const hashedOtp = await bcrypt.hash(otp, 10);
+
+			await db.collection('otp_verifications').doc(email.toLowerCase()).set({
+				email: email.toLowerCase(),
+				otp: hashedOtp,
+				attempts: 0,
+				expiresAt: Date.now() + 10 * 60 * 1000
+			});
+
+			await sendEmail({
+				to: email.toLowerCase(),
+				subject: 'LifeLink Email Verification OTP',
+				html: `
+					<div style="font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; border: 1px solid #f1f5f9; border-radius: 16px;">
+						<h2 style="color: #dc2626; margin-bottom: 20px; text-align: center;">Welcome to LifeLink ❤️</h2>
+						<p>Hello ${fullName},</p>
+						<p>Thank you for signing up. Please verify your email address to activate your account using the code below:</p>
+						<div style="text-align: center; margin: 30px 0;">
+							<span style="font-size: 32px; font-weight: 800; color: #dc2626; letter-spacing: 4px; padding: 10px 20px; background-color: #fff5f6; border-radius: 12px; border: 1px solid #fee2e2;">${otp}</span>
+						</div>
+						<p style="font-size: 13px; color: #6b7280;">This OTP is valid for 10 minutes. Only 5 verification attempts are allowed.</p>
+						<p style="font-size: 13px; color: #6b7280;">Verify your account to continue saving lives.</p>
+						<br/>
+						<p style="margin-top: 10px; font-weight: bold; color: #1e3a5f;">- LifeLink Team</p>
+					</div>
+				`,
+				type: 'OTP Verification'
+			});
+		} catch (otpErr) {
+			console.error('Initial verification OTP generation failed:', otpErr);
+		}
 
 		// Sync with Firebase Auth
 		try {
