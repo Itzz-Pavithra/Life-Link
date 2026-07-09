@@ -19,6 +19,6 @@ class LifeLinkClientState {
 export const db = new LifeLinkClientState();
 
 export function setAuthenticatedUser(userProfile) {
-	db.user = userProfile;
+	db.user = userProfile || null;
 	db.authLoading = false;
 }

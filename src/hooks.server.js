@@ -1,6 +1,6 @@
-import { redirect } from '@sveltejs/kit';
+import { json } from '@sveltejs/kit';
 import jwt from 'jsonwebtoken';
-import { getUserById, getUserByEmail } from '$lib/server/db.js';
+import { getUserById } from '$lib/server/db.js';
 import dotenv from 'dotenv';
 
 dotenv.config();
@@ -9,14 +9,14 @@ const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey123';
 /** @type {import('@sveltejs/kit').Handle} */
 export async function handle({ event, resolve }) {
 	const token = event.cookies.get('lifelink_token');
-	const userCookie = event.cookies.get('lifelink_user');
 
 	if (token) {
 		try {
 			const decoded = jwt.verify(token, JWT_SECRET);
 			const user = await getUserById(decoded.id);
 
-			if (user && user.status === 'active') {
+			// Accept both 'active' and 'admin' status; also accept pending users who are verified
+			if (user && (user.status === 'active' || user.role === 'admin')) {
 				event.locals.user = {
 					id: user.id,
 					name: user.name,
@@ -32,13 +32,21 @@ export async function handle({ event, resolve }) {
 					createdAt: user.createdAt
 				};
 				event.locals.role = user.role || null;
+			} else if (user && user.status === 'suspended') {
+				// Suspended: clear session
+				event.cookies.delete('lifelink_token', { path: '/' });
+				event.cookies.delete('lifelink_user', { path: '/' });
+				event.locals.user = null;
+				event.locals.role = null;
 			} else {
+				// User not found or invalid — clear cookies
 				event.cookies.delete('lifelink_token', { path: '/' });
 				event.cookies.delete('lifelink_user', { path: '/' });
 				event.locals.user = null;
 				event.locals.role = null;
 			}
 		} catch (err) {
+			// JWT invalid/expired — clear cookies
 			event.cookies.delete('lifelink_token', { path: '/' });
 			event.cookies.delete('lifelink_user', { path: '/' });
 			event.locals.user = null;

@@ -7,17 +7,24 @@
 	let sidebarOpen = $state(false);
 
 	$effect(() => {
-		if (!db.authLoading) {
-			if (!db.user) {
-				goto("/login");
-			} else {
+		// Only act when auth loading is fully complete
+		if (db.authLoading) return;
+
+		if (!db.user) {
+			// No session — redirect to login
+			goto("/login");
+		} else {
+			// Check the URL role segment matches the user's actual role
+			if (typeof window !== 'undefined') {
 				const path = window.location.pathname;
 				const segments = path.split("/");
+				// segments: ['', 'dashboard', 'donor|recipient|admin']
 				const roleSegment = segments[2];
 				if (!roleSegment) {
 					goto(`/dashboard/${db.user.role}`);
 				} else if (roleSegment !== db.user.role) {
-					goto("/login");
+					// Role mismatch — send to correct dashboard
+					goto(`/dashboard/${db.user.role}`);
 				}
 			}
 		}
@@ -25,7 +32,15 @@
 </script>
 
 <div class="flex bg-baby-pink min-h-screen relative">
-	{#if !db.authLoading && db.user}
+	{#if db.authLoading}
+		<!-- Loading skeleton while session is being verified -->
+		<div class="flex-grow flex items-center justify-center min-h-screen w-full">
+			<div class="flex flex-col items-center gap-4 text-center">
+				<div class="w-12 h-12 rounded-full border-4 border-red-200 border-t-red-700 animate-spin"></div>
+				<p class="text-sm font-semibold text-slate-600">Verifying session context...</p>
+			</div>
+		</div>
+	{:else if db.user}
 		<!-- Sidebar navigation -->
 		<Sidebar data={{ user: db.user }} bind:sidebarOpen />
 
@@ -41,13 +56,9 @@
 		{/if}
 
 		<!-- Main content wrapper -->
-		<div
-			class="flex-grow flex flex-col min-h-screen overflow-x-hidden w-full"
-		>
+		<div class="flex-grow flex flex-col min-h-screen overflow-x-hidden w-full">
 			<!-- Header panel inside dashboard -->
-			<header
-				class="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between shadow-sm sticky top-0 z-30"
-			>
+			<header class="bg-white border-b border-slate-100 px-6 py-4 flex items-center justify-between shadow-sm sticky top-0 z-30">
 				<div class="flex items-center gap-3">
 					<!-- Hamburger button (visible on mobile only) -->
 					<button
@@ -60,13 +71,10 @@
 					</button>
 
 					<div>
-						<h2
-							class="text-sm font-bold text-slate-800 uppercase tracking-widest leading-none"
-						>
+						<h2 class="text-sm font-bold text-slate-800 uppercase tracking-widest leading-none">
 							LifeLink Dashboard
 						</h2>
-						<span
-							class="text-[10px] text-gray-500 font-medium mt-1 block"
+						<span class="text-[10px] text-gray-500 font-medium mt-1 block"
 							>Location: {db.user.location} (Active)</span
 						>
 					</div>
@@ -82,13 +90,10 @@
 							class="w-9 h-9 rounded-full border border-slate-200 object-cover"
 						/>
 						<div class="hidden sm:block text-left">
-							<p
-								class="text-xs font-bold text-slate-900 leading-none"
-							>
+							<p class="text-xs font-bold text-slate-900 leading-none">
 								{db.user.name}
 							</p>
-							<span
-								class="text-[10px] text-red-700 font-bold uppercase tracking-widest mt-0.5 block"
+							<span class="text-[10px] text-red-700 font-bold uppercase tracking-widest mt-0.5 block"
 								>{db.user.role}</span
 							>
 						</div>
@@ -102,17 +107,11 @@
 			</main>
 		</div>
 	{:else}
-		<!-- Simple loading skeleton while redirecting -->
-		<div
-			class="flex-grow flex items-center justify-center min-h-screen w-full"
-		>
+		<!-- Auth resolved but no user — redirect will happen via $effect -->
+		<div class="flex-grow flex items-center justify-center min-h-screen w-full">
 			<div class="flex flex-col items-center gap-4 text-center">
-				<div
-					class="w-12 h-12 rounded-full border-4 border-red-200 border-t-red-700 animate-spin"
-				></div>
-				<p class="text-sm font-semibold text-slate-600">
-					Verifying session context...
-				</p>
+				<div class="w-12 h-12 rounded-full border-4 border-red-200 border-t-red-700 animate-spin"></div>
+				<p class="text-sm font-semibold text-slate-600">Redirecting to login...</p>
 			</div>
 		</div>
 	{/if}
