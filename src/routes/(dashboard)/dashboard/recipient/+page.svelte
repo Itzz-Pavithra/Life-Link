@@ -8,6 +8,55 @@
 	let showCropper = $state(false);
 	let rawImageSrc = $state('');
 
+	// Request Blood form states
+	let patientName = $state('');
+	let bloodGroup = $state('O+');
+	let units = $state(1);
+	let hospital = $state('');
+	let city = $state('');
+	let contact = $state('');
+	let urgency = $state('Normal');
+
+	async function handleAddRequest(e) {
+		e.preventDefault();
+		if (!patientName || !hospital || !city || !contact) {
+			db.addToast('Please fill in all blood request fields.', 'error');
+			return;
+		}
+
+		const response = await fetch('/api/requests', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				patientName,
+				bloodGroup,
+				units,
+				hospital,
+				city,
+				contact,
+				urgency
+			})
+		});
+
+		const res = await response.json();
+		if (res.success) {
+			db.addToast(`🚨 Emergency Blood Request submitted for ${patientName}! Matching donors are being calculated.`, 'success');
+			
+			// Reset inputs
+			patientName = '';
+			hospital = '';
+			city = '';
+			contact = '';
+			urgency = 'Normal';
+			
+			// Force loader reload
+			await invalidateAll();
+			db.activeTab = 'dashboard';
+		} else {
+			db.addToast(res.error || 'Failed to submit request', 'error');
+		}
+	}
+
 	// Edit Profile States
 	let isEditing = $state(false);
 	let profileName = $state(data.user?.name || '');
@@ -245,8 +294,115 @@
 			</div>
 		</div>
 
+	<!-- TAB 2: REQUEST BLOOD -->
+	{:else if db.activeTab === 'request-blood'}
+		<div class="max-w-3xl mx-auto bg-white border border-slate-100 rounded-3xl p-8 shadow-lg">
+			<div class="text-center mb-6">
+				<span class="text-4xl block mb-2">🚨</span>
+				<h2 class="text-2xl font-bold text-slate-800">Create Blood Request</h2>
+				<p class="text-slate-400 text-xs mt-1">This matches you automatically with registered nearby donors.</p>
+			</div>
 
-	
+			<form onsubmit={handleAddRequest} class="grid md:grid-cols-2 gap-6 text-left">
+				<div class="flex flex-col gap-1.5">
+					<label class="text-xs font-bold text-slate-500 uppercase" for="patname">Patient Full Name *</label>
+					<input
+						id="patname"
+						type="text"
+						bind:value={patientName}
+						placeholder="Enter patient name"
+						class="border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
+						required
+					/>
+				</div>
+
+				<div class="flex flex-col gap-1.5">
+					<label class="text-xs font-bold text-slate-500 uppercase">Blood Group Required *</label>
+					<select
+						bind:value={bloodGroup}
+						class="border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm bg-white"
+					>
+						<option>A+</option>
+						<option>A-</option>
+						<option>B+</option>
+						<option>B-</option>
+						<option>AB+</option>
+						<option>AB-</option>
+						<option>O+</option>
+						<option>O-</option>
+					</select>
+				</div>
+
+				<div class="flex flex-col gap-1.5">
+					<label class="text-xs font-bold text-slate-500 uppercase" for="runits">Required Units (in bags) *</label>
+					<input
+						id="runits"
+						type="number"
+						min="1"
+						max="10"
+						bind:value={units}
+						class="border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
+						required
+					/>
+				</div>
+
+				<div class="flex flex-col gap-1.5">
+					<label class="text-xs font-bold text-slate-500 uppercase" for="rhosp">Hospital Name *</label>
+					<input
+						id="rhosp"
+						type="text"
+						bind:value={hospital}
+						placeholder="e.g. Apollo Hospital"
+						class="border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
+						required
+					/>
+				</div>
+
+				<div class="flex flex-col gap-1.5">
+					<label class="text-xs font-bold text-slate-500 uppercase" for="rcity">City *</label>
+					<input
+						id="rcity"
+						type="text"
+						bind:value={city}
+						placeholder="e.g. Salem"
+						class="border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
+						required
+					/>
+				</div>
+
+				<div class="flex flex-col gap-1.5">
+					<label class="text-xs font-bold text-slate-500 uppercase" for="rcont">Contact Number *</label>
+					<input
+						id="rcont"
+						type="tel"
+						bind:value={contact}
+						placeholder="e.g. 9876543210"
+						class="border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
+						required
+					/>
+				</div>
+
+				<div class="md:col-span-2 flex flex-col gap-1.5">
+					<label class="text-xs font-bold text-slate-500 uppercase">Urgency Level</label>
+					<select
+						bind:value={urgency}
+						class="border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm bg-white"
+					>
+						<option>Normal</option>
+						<option>Urgent</option>
+						<option>Critical</option>
+					</select>
+				</div>
+
+				<button
+					type="submit"
+					class="md:col-span-2 bg-red-700 hover:bg-red-800 text-white font-bold py-3.5 rounded-xl shadow-lg transition cursor-pointer"
+				>
+					Publish Blood Request
+				</button>
+			</form>
+		</div>
+
 	<!-- TAB: SEARCH DONORS -->
 	{:else if db.activeTab === 'search-donors'}
 		<div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-6 text-left">

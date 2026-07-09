@@ -253,20 +253,20 @@
 			<div class="flex items-center gap-3 mb-4">
 				<span class="text-2xl">🚨</span>
 				<div>
-					<h3 class="font-bold text-lg text-slate-900">Active Emergency Requests</h3>
-					<p class="text-xs text-slate-500">These patients require urgent compatibility matches.</p>
+					<h3 class="font-bold text-lg text-slate-900">🚨 Emergency Blood Requests</h3>
+					<p class="text-xs text-slate-500">Pending requests matching your blood group type.</p>
 				</div>
 			</div>
 
-			{#if data.requests.filter(r => r.urgency === 'Critical' || r.urgency === 'Urgent').length === 0}
+			{#if data.requests.length === 0}
 				<div class="border border-slate-100 p-8 rounded-3xl text-center bg-slate-50/50">
 					<span class="text-3xl block mb-2">📋</span>
 					<p class="text-slate-550 font-bold text-slate-600">No emergency requests found</p>
-					<p class="text-slate-400 text-xs mt-1">There are no critical or urgent blood requests at this moment.</p>
+					<p class="text-slate-400 text-xs mt-1">There are no pending blood requests for your blood type at this moment.</p>
 				</div>
 			{:else}
 				<div class="grid sm:grid-cols-2 gap-6">
-					{#each data.requests.filter(r => r.urgency === 'Critical' || r.urgency === 'Urgent') as req}
+					{#each data.requests as req}
 						<div class="bg-white border border-slate-150 rounded-3xl p-6 shadow-md relative overflow-hidden group hover:shadow-xl transition flex flex-col justify-between min-h-60">
 							<div class="absolute top-4 right-4 bg-red-100 text-red-700 border border-red-200 px-3 py-1 rounded-xl text-xs font-bold uppercase tracking-wider animate-pulse">
 								{req.urgency}

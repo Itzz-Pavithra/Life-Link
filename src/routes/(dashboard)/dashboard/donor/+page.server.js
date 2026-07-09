@@ -21,9 +21,9 @@ export async function load({ locals }) {
 		d => d.donorId === locals.user.id || d.donorName.toLowerCase() === locals.user.name.toLowerCase()
 	);
 
-	// Load approved/pending requests that match donor's blood type compatibility
+	// Load pending blood requests that match donor's blood group
 	const requests = bloodRequests.filter(
-		r => r.status === 'Approved' || r.status === 'Pending'
+		r => r.status === 'Pending' && r.bloodGroup === locals.user.bloodGroup
 	);
 
 	const donationsCount = history.length;
