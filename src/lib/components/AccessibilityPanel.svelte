@@ -76,7 +76,7 @@
 <svelte:window onkeydown={handleKeydown} />
 
 <!-- Accessibility Widget Container -->
-<div class="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-3 font-sans">
+<div class="fixed bottom-4 right-4 md:bottom-6 md:right-6 z-50 flex flex-col items-end gap-3 font-sans">
 	{#if isOpen}
 		<!-- Options Panel -->
 		<div

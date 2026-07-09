@@ -178,7 +178,7 @@
 	}
 </script>
 
-<div class="min-h-screen flex items-center justify-center p-6 relative">
+<div class="min-h-screen flex items-center justify-center p-4 sm:p-6 relative">
 	<BloodWaveBackground />
 	<!-- Glowing accents -->
 	<div class="absolute top-1/4 left-1/4 w-72 h-72 bg-red-400/5 rounded-full blur-3xl pointer-events-none"></div>

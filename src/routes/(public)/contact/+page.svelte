@@ -70,7 +70,7 @@
 	}
 </script>
 
-<div class="min-h-screen bg-baby-pink py-16 px-6">
+<div class="min-h-screen bg-baby-pink py-12 sm:py-16 px-4 sm:px-6">
 	<div class="max-w-5xl mx-auto space-y-12">
 		<!-- Header -->
 		<div class="text-center space-y-3">
