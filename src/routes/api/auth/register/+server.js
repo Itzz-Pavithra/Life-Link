@@ -34,7 +34,12 @@ export async function POST({ request }) {
 
 		const existingUser = await getUserByEmail(email);
 		if (existingUser) {
-			return json({ error: 'Email address is already registered.' }, { status: 400 });
+			return json({ error: 'An account already exists with this email. One email can only have one LifeLink role. Please delete your existing account before creating a new one.' }, { status: 400 });
+		}
+
+		// Block admin role creation
+		if (role === 'admin') {
+			return json({ error: 'Admin accounts cannot be created through registration.' }, { status: 403 });
 		}
 
 		// Verify clinical eligibility for donors

@@ -59,22 +59,30 @@
 
 				{#if db.authLoading}
 					<div class="w-5 h-5 border-2 border-red-200 border-t-red-700 rounded-full animate-spin" aria-label="Authenticating session"></div>
-				{:else if db.user}
-					{#if !isPublicPage}
-						<a
-							href="/dashboard/{db.user.role}"
-							class="text-sm font-bold text-red-700 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl transition"
-						>
-							💻 Dashboard
-						</a>
-					{/if}
+				{:else if db.user && !isPublicPage}
+					<!-- Authenticated user INSIDE dashboard pages: show Dashboard link + Logout -->
+					<a
+						href="/dashboard/{db.user.role}"
+						class="text-sm font-bold text-red-700 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl transition"
+					>
+						💻 Dashboard
+					</a>
 					<button
 						onclick={handleLogout}
 						class="text-sm font-semibold text-gray-500 hover:text-red-650 transition cursor-pointer font-bold bg-transparent border-none text-slate-500 hover:text-red-650"
 					>
 						Logout
 					</button>
+				{:else if db.user && isPublicPage}
+					<!-- Authenticated user on PUBLIC pages: just show Dashboard link, no Logout -->
+					<a
+						href="/dashboard/{db.user.role}"
+						class="text-sm font-bold text-red-700 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl transition"
+					>
+						💻 Dashboard
+					</a>
 				{:else}
+					<!-- Not logged in: show Login + Register -->
 					<a href="/login" class="text-sm font-semibold text-gray-700 hover:text-red-700 transition">Login</a>
 					<a
 						href="/register"
@@ -131,22 +139,30 @@
 			<div class="py-2 flex justify-center">
 				<div class="w-5 h-5 border-2 border-red-200 border-t-red-700 rounded-full animate-spin" aria-label="Authenticating session"></div>
 			</div>
-		{:else if db.user}
-			{#if !isPublicPage}
-				<a
-					href="/dashboard/{db.user.role}"
-					class="block text-sm font-bold text-red-700 bg-red-50 hover:bg-red-100 px-4 py-3 rounded-xl transition"
-					onclick={() => mobileMenuOpen = false}
-				>
-					💻 Dashboard
-				</a>
-			{/if}
+		{:else if db.user && !isPublicPage}
+			<!-- Authenticated user inside dashboard pages -->
+			<a
+				href="/dashboard/{db.user.role}"
+				class="block text-sm font-bold text-red-700 bg-red-50 hover:bg-red-100 px-4 py-3 rounded-xl transition"
+				onclick={() => mobileMenuOpen = false}
+			>
+				💻 Dashboard
+			</a>
 			<button
 				onclick={(e) => { mobileMenuOpen = false; handleLogout(e); }}
 				class="block w-full text-left text-sm font-semibold text-gray-500 hover:text-red-650 hover:bg-rose-50/50 px-3 py-2 rounded-xl transition cursor-pointer"
 			>
 				Logout
 			</button>
+		{:else if db.user && isPublicPage}
+			<!-- Authenticated user on public pages: just Dashboard link -->
+			<a
+				href="/dashboard/{db.user.role}"
+				class="block text-sm font-bold text-red-700 bg-red-50 hover:bg-red-100 px-4 py-3 rounded-xl transition"
+				onclick={() => mobileMenuOpen = false}
+			>
+				💻 Dashboard
+			</a>
 		{:else}
 			<a
 				href="/login"

@@ -116,11 +116,20 @@ export async function POST({ request, cookies }) {
 			if (user.status === 'suspended') {
 				return json({ success: false, error: 'This account has been suspended by the administrator.', message: 'This account has been suspended by the administrator.' }, { status: 400 });
 			}
+			// Block role switching: same email cannot be used for a different role
+			if (role && role !== user.role && user.role !== 'admin') {
+				return json({
+					success: false,
+					error: `An account already exists with this email as a ${user.role}. One email can only have one LifeLink role. Please delete your existing account before creating a new one.`,
+					message: `An account already exists with this email as a ${user.role}. One email can only have one LifeLink role. Please delete your existing account before creating a new one.`
+				}, { status: 400 });
+			}
 		} else {
 			// New user, create profile
-			const finalRole = role || 'donor';
-			if (finalRole !== 'donor' && finalRole !== 'recipient') {
-				return json({ success: false, error: 'Invalid role selected.', message: 'Invalid role selected.' }, { status: 400 });
+			// Block admin creation via Google signup entirely
+			const finalRole = role === 'admin' ? null : (role || 'recipient');
+			if (!finalRole || (finalRole !== 'donor' && finalRole !== 'recipient')) {
+				return json({ success: false, error: 'Invalid role selected. Only Donor or Recipient accounts can be created.', message: 'Invalid role selected. Only Donor or Recipient accounts can be created.' }, { status: 400 });
 			}
 
 			// Validate eligibility if registering as a donor

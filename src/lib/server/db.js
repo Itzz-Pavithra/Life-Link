@@ -172,7 +172,7 @@ export async function createUser(userData) {
 	// Prevent duplicates
 	const existingUser = await getUserByEmail(userData.email);
 	if (existingUser) {
-		throw new Error('Email address is already registered.');
+		throw new Error('An account already exists with this email. One email can only have one LifeLink role. Please delete your existing account before creating a new one.');
 	}
 
 	// If donor, check approved eligibility

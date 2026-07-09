@@ -157,6 +157,38 @@
 			}
 		}
 	}
+
+	// Delete account state
+	let showDeleteConfirm = $state(false);
+	let deletingAccount = $state(false);
+
+	async function handleDeleteAccount() {
+		deletingAccount = true;
+		try {
+			const res = await fetch('/api/user/delete', { method: 'DELETE' });
+			const result = await res.json();
+			if (result.success) {
+				db.user = null;
+				db.addToast('Your account has been permanently deleted.', 'success');
+				try {
+					const { auth: firebaseAuth } = await import('$lib/firebase.client.js');
+					const { signOut } = await import('firebase/auth');
+					await signOut(firebaseAuth);
+				} catch (e) { /* ignore */ }
+				localStorage.clear();
+				sessionStorage.clear();
+				window.location.href = '/';
+			} else {
+				db.addToast(result.error || 'Failed to delete account.', 'error');
+				deletingAccount = false;
+				showDeleteConfirm = false;
+			}
+		} catch (err) {
+			db.addToast('Network error. Please try again.', 'error');
+			deletingAccount = false;
+			showDeleteConfirm = false;
+		}
+	}
 </script>
 
 <div class="space-y-6">
@@ -545,6 +577,22 @@
 			</form>
 		</div>
 	{/if}
+
+	<!-- Danger Zone: Delete Account -->
+	<div class="bg-white border border-red-100 rounded-3xl p-6 shadow-sm">
+		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+			<div>
+				<h3 class="text-base font-bold text-red-700 flex items-center gap-2">⚠️ Danger Zone</h3>
+				<p class="text-xs text-slate-500 mt-1">Permanently delete your LifeLink account and all associated data.</p>
+			</div>
+			<button
+				onclick={() => showDeleteConfirm = true}
+				class="bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 font-bold px-5 py-2.5 rounded-xl transition text-sm cursor-pointer whitespace-nowrap"
+			>
+				🗑️ Delete My Account
+			</button>
+		</div>
+	</div>
 </div>
 
 {#if showCropper}
@@ -558,4 +606,35 @@
 			showCropper = false;
 		}}
 	/>
+{/if}
+
+{#if showDeleteConfirm}
+	<!-- Delete Account Confirmation Modal -->
+	<div class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+		<div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6">
+			<div class="text-center">
+				<span class="text-5xl block mb-4">⚠️</span>
+				<h3 class="text-xl font-extrabold text-slate-900 mb-2">Delete Account</h3>
+				<p class="text-sm text-slate-500 leading-relaxed">
+					Are you sure you want to permanently delete your LifeLink account? All your data will be removed. This action <strong>cannot be undone</strong>.
+				</p>
+			</div>
+			<div class="grid grid-cols-2 gap-4">
+				<button
+					onclick={() => showDeleteConfirm = false}
+					disabled={deletingAccount}
+					class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 rounded-xl transition cursor-pointer disabled:opacity-50"
+				>
+					Cancel
+				</button>
+				<button
+					onclick={handleDeleteAccount}
+					disabled={deletingAccount}
+					class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 rounded-xl transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+				>
+					{deletingAccount ? 'Deleting...' : 'Delete Permanently'}
+				</button>
+			</div>
+		</div>
+	</div>
 {/if}
