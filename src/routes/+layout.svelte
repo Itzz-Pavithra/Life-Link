@@ -7,7 +7,7 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { auth } from '$lib/firebase.client.js';
 	import { onAuthStateChanged } from 'firebase/auth';
-	import { db } from '$lib/auth.svelte.js';
+	import { db, setAuthenticatedUser } from '$lib/auth.svelte.js';
 	import { onMount } from 'svelte';
 	import axios from 'axios';
 	import { invalidateAll } from '$app/navigation';
@@ -24,32 +24,51 @@
 					const idToken = await firebaseUser.getIdToken();
 					const res = await axios.post('/api/auth/session', { idToken });
 					if (res.data && res.data.success && res.data.user) {
-						db.user = {
+						setAuthenticatedUser({
 							uid: firebaseUser.uid,
 							email: firebaseUser.email,
 							...res.data.user
-						};
+						});
 						await invalidateAll();
 					} else {
-						db.user = null;
+						setAuthenticatedUser(null);
 					}
 				} catch (err) {
-					console.error("Error restoring session on auth change:", err);
-					db.user = null;
+					console.error("Error restoring Google session:", err);
+					setAuthenticatedUser(null);
 				}
 			} else {
-				db.user = null;
-				if (typeof window !== 'undefined') {
-					localStorage.clear();
-					sessionStorage.clear();
-				}
+				// No Firebase user logged in (might be a manual login user or guest)
 				try {
-					await axios.post('/api/auth/logout');
+					const res = await axios.get('/api/user/profile');
+					if (res.data && res.data.success && res.data.profile) {
+						setAuthenticatedUser(res.data.profile);
+						await invalidateAll();
+					} else {
+						setAuthenticatedUser(null);
+						if (typeof window !== 'undefined') {
+							localStorage.clear();
+							sessionStorage.clear();
+						}
+						try {
+							await axios.post('/api/auth/logout');
+						} catch (err) {
+							// Ignore
+						}
+					}
 				} catch (err) {
-					// Ignore
+					setAuthenticatedUser(null);
+					if (typeof window !== 'undefined') {
+						localStorage.clear();
+						sessionStorage.clear();
+					}
+					try {
+						await axios.post('/api/auth/logout');
+					} catch (err) {
+						// Ignore
+					}
 				}
 			}
-			db.authLoading = false;
 		});
 		return unsubscribe;
 	});

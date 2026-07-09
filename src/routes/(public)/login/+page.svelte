@@ -1,8 +1,8 @@
 <script>
 	import axios from 'axios';
-	import { db } from '$lib/auth.svelte.js';
+	import { db, setAuthenticatedUser } from '$lib/auth.svelte.js';
 	import { auth } from '$lib/firebase.client.js';
-	import { GoogleAuthProvider, signInWithPopup, signInWithEmailAndPassword, onAuthStateChanged } from 'firebase/auth';
+	import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'firebase/auth';
 	import { onMount } from 'svelte';
 
 	let { data } = $props();
@@ -85,8 +85,10 @@
 	async function handleAuthSuccess(userData, firebaseUser) {
 		db.addToast('Welcome back! Logging you in...', 'success');
 		
-		db.user = {
-			uid: firebaseUser.uid || firebaseUser.id || userData.uid || userData.id,
+		const uid = firebaseUser ? (firebaseUser.uid || firebaseUser.id) : (userData.uid || userData.id);
+		
+		setAuthenticatedUser({
+			uid,
 			email: userData.email,
 			role: userData.role,
 			name: userData.name,
@@ -94,8 +96,7 @@
 			avatar: userData.avatar || userData.profileImage || '',
 			bloodGroup: userData.bloodGroup || '',
 			profileCompletion: userData.profileCompletion || 50
-		};
-		db.authLoading = false;
+		});
 
 		window.location.href = `/dashboard/${userData.role}`;
 	}
@@ -104,57 +105,21 @@
 		e.preventDefault();
 		errorMessage = '';
 		try {
-			let firebaseUser;
-			try {
-				const userCredential = await signInWithEmailAndPassword(auth, email, password);
-				firebaseUser = userCredential.user;
-			} catch (err) {
-				console.log(err.code);
-				console.log(err.message);
-				
-				// Handle legacy users not yet in Firebase Auth (enumeration protection makes code invalid-credential)
-				if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
-					const res = await axios.post('/api/auth/login', {
-						email,
-						password,
-						role: selectedRole
-					});
-					if (res.data.success) {
-						// Retry signing in now that they are synced by the backend
-						const userCredential = await signInWithEmailAndPassword(auth, email, password);
-						firebaseUser = userCredential.user;
-					} else {
-						throw new Error(res.data.error || 'Invalid email or password');
-					}
-				} else {
-					throw err;
-				}
-			}
-
-			// Verify ID token and fetch profile to establish session
-			const idToken = await firebaseUser.getIdToken();
-			const res = await axios.post('/api/auth/session', { idToken });
+			// Restore manual login logic by querying the Firestore database via custom API
+			const res = await axios.post('/api/auth/login', {
+				email,
+				password,
+				role: selectedRole
+			});
 
 			if (res.data.success) {
-				if (res.data.user.role !== selectedRole) {
-					await signOut(auth);
-					throw new Error('The selected role does not match this account.');
-				}
-				await handleAuthSuccess(res.data.user, firebaseUser);
+				await handleAuthSuccess(res.data.user, null);
 			} else {
-				throw new Error(res.data.error || 'Failed to establish session.');
+				throw new Error(res.data.error || 'Invalid email or password');
 			}
 		} catch (err) {
-			console.log(err.code);
-			console.log(err.message);
-			let errorMsg = 'Failed to login. Please check details.';
-			if (err.code === 'auth/user-not-found') {
-				errorMsg = 'Account does not exist';
-			} else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-				errorMsg = 'Invalid email or password';
-			} else {
-				errorMsg = err.response?.data?.error || err.message || errorMsg;
-			}
+			console.error(err);
+			const errorMsg = err.response?.data?.error || err.message || 'Invalid email or password';
 			errorMessage = errorMsg;
 			db.addToast(errorMessage, 'error');
 		}
@@ -181,22 +146,10 @@
 			});
 			if (res.data.success) {
 				db.addToast('System initialized! Welcome Admin.', 'success');
-				
-				// Sign in to Firebase client-side to sync auth state
-				let firebaseUser;
-				try {
-					const userCredential = await signInWithEmailAndPassword(auth, setupEmail, setupPassword);
-					firebaseUser = userCredential.user;
-				} catch (fbErr) {
-					console.log(fbErr.code);
-					console.log(fbErr.message);
-					firebaseUser = { uid: res.data.user.id || res.data.user.uid || '' };
-				}
-				await handleAuthSuccess(res.data.user, firebaseUser);
+				await handleAuthSuccess(res.data.user, null);
 			}
 		} catch (err) {
-			console.log(err.code);
-			console.log(err.message);
+			console.error(err);
 			errorMessage = err.response?.data?.error || 'Failed to initialize system admin.';
 			db.addToast(errorMessage, 'error');
 		}

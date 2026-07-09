@@ -59,7 +59,7 @@
 
 				{#if db.authLoading}
 					<div class="w-5 h-5 border-2 border-red-200 border-t-red-700 rounded-full animate-spin" aria-label="Authenticating session"></div>
-				{:else if auth?.currentUser && db.user}
+				{:else if db.user}
 					{#if !isPublicPage}
 						<a
 							href="/dashboard/{db.user.role}"
@@ -131,7 +131,7 @@
 			<div class="py-2 flex justify-center">
 				<div class="w-5 h-5 border-2 border-red-200 border-t-red-700 rounded-full animate-spin" aria-label="Authenticating session"></div>
 			</div>
-		{:else if auth?.currentUser && db.user}
+		{:else if db.user}
 			{#if !isPublicPage}
 				<a
 					href="/dashboard/{db.user.role}"
