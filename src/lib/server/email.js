@@ -1,32 +1,26 @@
 import dotenv from 'dotenv';
 import { env as dynamicEnv } from '$env/dynamic/private';
 import { database } from './db.js';
+import { Resend } from 'resend';
 
 dotenv.config();
 
-const resend = {
-	emails: {
-		async send({ from, to, subject, html }) {
-			const apiKey = dynamicEnv.EMAIL_RESEND || process.env.EMAIL_RESEND;
-			const response = await fetch('https://api.resend.com/emails', {
-				method: 'POST',
-				headers: {
-					'Authorization': `Bearer ${apiKey}`,
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify({
-					from,
-					to,
-					subject,
-					html
-				})
-			});
-			if (!response.ok) {
-				const errorText = await response.text();
-				throw new Error(`Resend email dispatch failed: Status ${response.status} - ${errorText}`);
-			}
-			return await response.json();
-		}
+const emailWrapper = {
+	send({ to, subject, html }) {
+		const finalRecipient = process.env.RESEND_TEST_EMAIL || to;
+
+		console.log("====== FINAL RESEND WRAPPER ======");
+		console.log("ORIGINAL RECEIVER:", to);
+		console.log("TEST EMAIL:", process.env.RESEND_TEST_EMAIL);
+		console.log("ACTUAL RESEND TO:", finalRecipient);
+
+		const resend = new Resend(dynamicEnv.EMAIL_RESEND || process.env.EMAIL_RESEND);
+		return resend.emails.send({
+			from: "LifeLink <onboarding@resend.dev>",
+			to: finalRecipient,
+			subject,
+			html
+		});
 	}
 };
 
@@ -45,49 +39,17 @@ export async function sendContactEmail({ name, email: userEmail, subject, messag
 	}
 
 	const emailSubject = `New LifeLink Contact Query - ${subject}`;
-	const emailBody = `New user message received:
+	const emailBody = `New user message received:\n\nName:\n${name}\n\nEmail:\n${userEmail}\n\nSubject:\n${subject}\n\nMessage:\n${message}\n\nSent from:\nLifeLink Contact Page`;
 
-Name:
-${name}
+	const emailHtml = emailBody.replace(/\n/g, '<br/>');
 
-Email:
-${userEmail}
-
-Subject:
-${subject}
-
-Message:
-${message}
-
-Sent from:
-LifeLink Contact Page`;
-
-	// Safe Debugging Logs (Task 3)
-	console.log(`[Email Debug] API key exists: ${!!apiKey}`);
-	console.log(`[Email Debug] Sender email: "LifeLink <onboarding@resend.dev>"`);
-	console.log(`[Email Debug] Recipient count: 1`);
-
-	const response = await fetch('https://api.resend.com/emails', {
-		method: 'POST',
-		headers: {
-			'Authorization': `Bearer ${apiKey}`,
-			'Content-Type': 'application/json'
-		},
-		body: JSON.stringify({
-			from: "LifeLink <onboarding@resend.dev>",
-			to: 'lifelinklifelink2@gmail.com',
-			subject: emailSubject,
-			text: emailBody
-		})
+	const response = await emailWrapper.send({
+		to: 'lifelinklifelink2@gmail.com',
+		subject: emailSubject,
+		html: `<div style="font-family: sans-serif; line-height: 1.6;">${emailHtml}</div>`
 	});
 
-	if (!response.ok) {
-		const errorText = await response.text();
-		console.error(`[Resend Error Details]: Status ${response.status} - ${response.statusText}`, errorText);
-		throw new Error(`Resend email dispatch failed: Status ${response.status} - ${errorText || response.statusText}`);
-	}
-
-	return await response.json();
+	return response;
 }
 
 /**
@@ -118,8 +80,6 @@ export async function sendEmergencyBloodAlert({ donorEmails, bloodGroup, city, r
 		location: city || 'Requested Location'
 	}));
 
-	const testEmail = dynamicEnv.RESEND_TEST_EMAIL || process.env.RESEND_TEST_EMAIL;
-
 	let lastResult = null;
 
 	for (const donor of donorsToProcess) {
@@ -133,8 +93,7 @@ export async function sendEmergencyBloodAlert({ donorEmails, bloodGroup, city, r
 
 		console.log("FINAL RESEND TO:", finalRecipient);
 
-		lastResult = await resend.emails.send({
-			from: "LifeLink <onboarding@resend.dev>",
+		lastResult = await emailWrapper.send({
 			to: finalRecipient,
 			subject: "🚨 Emergency Blood Alert",
 			html: `

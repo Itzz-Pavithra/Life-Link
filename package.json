@@ -24,6 +24,7 @@
 		"dotenv": "^17.4.2",
 		"firebase": "^12.15.0",
 		"firebase-admin": "^13.5.0",
+		"resend": "^6.17.2",
 		"tailwindcss": "^4.3.1"
 	}
 }
