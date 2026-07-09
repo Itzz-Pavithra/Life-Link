@@ -1,8 +1,12 @@
 <script>
 	import { invalidateAll } from '$app/navigation';
 	import { db } from '$lib/auth.svelte.js';
+	import ImageCropper from '$lib/components/ImageCropper.svelte';
 
 	let { data } = $props();
+
+	let showCropper = $state(false);
+	let rawImageSrc = $state('');
 
 	// Availability state
 	let isAvailable = $state(data.user?.isAvailable !== false);
@@ -82,7 +86,8 @@
 		imageValidationError = '';
 		const reader = new FileReader();
 		reader.onload = (event) => {
-			profileAvatar = event.target.result;
+			rawImageSrc = event.target.result;
+			showCropper = true;
 		};
 		reader.readAsDataURL(file);
 	}
@@ -541,3 +546,16 @@
 		</div>
 	{/if}
 </div>
+
+{#if showCropper}
+	<ImageCropper
+		imageSrc={rawImageSrc}
+		onCrop={(croppedDataUrl) => {
+			profileAvatar = croppedDataUrl;
+			showCropper = false;
+		}}
+		onCancel={() => {
+			showCropper = false;
+		}}
+	/>
+{/if}

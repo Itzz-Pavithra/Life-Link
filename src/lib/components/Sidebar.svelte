@@ -31,8 +31,6 @@
 	const menuItems = {
 		recipient: [
 			{ id: 'dashboard', label: 'Dashboard', icon: '🏠' },
-			{ id: 'request-blood', label: 'Request Blood', icon: '📝' },
-			{ id: 'my-requests', label: 'My Requests', icon: '📋' },
 			{ id: 'search-donors', label: 'Search Donors', icon: '🔍' },
 			{ id: 'profile', label: 'Profile', icon: '👤' }
 		],
