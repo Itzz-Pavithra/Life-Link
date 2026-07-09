@@ -38,7 +38,7 @@ LifeLink Contact Page`;
 
 	// Safe Debugging Logs (Task 3)
 	console.log(`[Email Debug] API key exists: ${!!apiKey}`);
-	console.log(`[Email Debug] Sender email: "LifeLink Emergency <onboarding@resend.dev>"`);
+	console.log(`[Email Debug] Sender email: "LifeLink <onboarding@resend.dev>"`);
 	console.log(`[Email Debug] Recipient count: 1`);
 
 	const response = await fetch('https://api.resend.com/emails', {
@@ -48,7 +48,7 @@ LifeLink Contact Page`;
 			'Content-Type': 'application/json'
 		},
 		body: JSON.stringify({
-			from: "LifeLink Emergency <onboarding@resend.dev>",
+			from: "LifeLink <onboarding@resend.dev>",
 			to: 'lifelinklifelink2@gmail.com',
 			subject: emailSubject,
 			text: emailBody
@@ -74,109 +74,103 @@ export async function sendEmergencyBloodAlert({ donorEmails, bloodGroup, city, r
 		throw new Error('EMAIL_RESEND environment variable is not defined.');
 	}
 
+	// Fetch all matching donor profiles to obtain Name, Blood Group, Phone, and Location
+	let matchedDonors = [];
+	try {
+		const allUsers = await database.getUsers();
+		matchedDonors = allUsers.filter(u => donorEmails.includes(u.email));
+	} catch (dbErr) {
+		console.error('[Email Debug] Failed to fetch user profiles:', dbErr);
+	}
+
+	// Fallback to minimal donor structures if not found in DB
+	const donorsToProcess = matchedDonors.length > 0 ? matchedDonors : donorEmails.map(email => ({
+		name: 'Compatible Donor',
+		email: email,
+		bloodGroup: bloodGroup,
+		phone: 'Check dashboard',
+		location: city || 'Requested Location'
+	}));
+
 	const testEmail = dynamicEnv.RESEND_TEST_EMAIL || process.env.RESEND_TEST_EMAIL;
 
-	let emailSubject = `🚨 EMERGENCY: Blood Needed (${bloodGroup}) in ${city}`;
-	let emailBody = `Hello,
+	let lastResult = null;
 
-This is an emergency alert from LifeLink.
+	for (const donor of donorsToProcess) {
+		const finalRecipient = testEmail || donor.email;
 
-A recipient has requested an emergency match for Blood Group: ${bloodGroup} in City: ${city}.
+		console.log("RESEND TEST EMAIL:", process.env.RESEND_TEST_EMAIL);
+		console.log("FINAL EMAIL RECEIVER:", finalRecipient);
 
-Recipient Details:
-Name: ${recipientName}
-Contact Phone: ${contactPhone || 'Check dashboard for details'}
+		const emailTemplate = `
+			<div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #f1f5f9; border-radius: 16px;">
+				<h2 style="color: #b91c1c; margin-bottom: 20px;">🚨 Emergency Blood Request Alert</h2>
+				<p>An emergency matching alert has been triggered on LifeLink.</p>
+				
+				<h3 style="color: #1e293b; margin-top: 24px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">Matched Donor Details:</h3>
+				<table style="width: 100%; text-align: left; font-size: 14px; border-collapse: collapse;">
+					<tr>
+						<th style="padding: 6px 0; color: #64748b; width: 160px;">Name:</th>
+						<td style="padding: 6px 0; color: #0f172a; font-weight: bold;">${donor.name}</td>
+					</tr>
+					<tr>
+						<th style="padding: 6px 0; color: #64748b;">Original Donor Email:</th>
+						<td style="padding: 6px 0; color: #0f172a; font-weight: bold;">${donor.email}</td>
+					</tr>
+					<tr>
+						<th style="padding: 6px 0; color: #64748b;">Blood Group:</th>
+						<td style="padding: 6px 0; color: #0f172a; font-weight: bold;">${donor.bloodGroup || bloodGroup}</td>
+					</tr>
+					<tr>
+						<th style="padding: 6px 0; color: #64748b;">Phone:</th>
+						<td style="padding: 6px 0; color: #0f172a; font-weight: bold;">${donor.phone || 'N/A'}</td>
+					</tr>
+					<tr>
+						<th style="padding: 6px 0; color: #64748b;">Location:</th>
+						<td style="padding: 6px 0; color: #0f172a; font-weight: bold;">${donor.location || city}</td>
+					</tr>
+				</table>
 
-Please log in to your LifeLink dashboard to accept this emergency request and save a life.
+				<h3 style="color: #1e293b; margin-top: 24px; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px;">Recipient Information:</h3>
+				<table style="width: 100%; text-align: left; font-size: 14px; border-collapse: collapse;">
+					<tr>
+						<th style="padding: 6px 0; color: #64748b; width: 160px;">Patient Coordinator:</th>
+						<td style="padding: 6px 0; color: #0f172a;">${recipientName}</td>
+					</tr>
+					<tr>
+						<th style="padding: 6px 0; color: #64748b;">Coordinator Phone:</th>
+						<td style="padding: 6px 0; color: #0f172a;">${contactPhone || 'N/A'}</td>
+					</tr>
+				</table>
+				
+				<p style="margin-top: 30px; font-size: 12px; color: #94a3b8; text-align: center; border-top: 1px solid #f1f5f9; padding-top: 15px;">
+					LifeLink Emergency Dispatch System. Please check your recipient dashboard for more details.
+				</p>
+			</div>
+		`;
 
-Best regards,
-LifeLink Team`;
+		const response = await fetch('https://api.resend.com/emails', {
+			method: 'POST',
+			headers: {
+				'Authorization': `Bearer ${apiKey}`,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				from: "LifeLink <onboarding@resend.dev>",
+				to: finalRecipient,
+				subject: "🚨 Emergency Blood Request Alert",
+				html: emailTemplate
+			})
+		});
 
-	let finalRecipients = donorEmails;
-
-	if (testEmail) {
-		console.log(`[Email Debug] Demo Mode Active. Redirecting email to RESEND_TEST_EMAIL: ${testEmail}`);
-		let donorDetailsText = '';
-		try {
-			const allUsers = await database.getUsers();
-			const matchedDonors = allUsers.filter(u => donorEmails.includes(u.email));
-			matchedDonors.forEach((donor, idx) => {
-				donorDetailsText += `\n${idx + 1}. ${donor.name}\nEmail: ${donor.email}\nBlood: ${donor.bloodGroup || 'N/A'}\nPhone: ${donor.phone || 'N/A'}\n`;
-			});
-		} catch (dbErr) {
-			console.error('[Email Debug] Failed to fetch user profiles for demo list:', dbErr);
-			donorDetailsText = '\n(Unable to retrieve donor details from database)\n';
+		if (!response.ok) {
+			const errorText = await response.text();
+			console.error(`[Resend Send Alert Failure Details]: Status ${response.status}`, errorText);
+			throw new Error(`Resend email dispatch failed: Status ${response.status} - ${errorText}`);
 		}
 
-		emailSubject = `🚨 EMERGENCY DEMO: Blood Needed (${bloodGroup}) in ${city}`;
-		emailBody = `Hello,
-
-This is a DEMO MODE emergency alert from LifeLink.
-
-A recipient has requested an emergency match for Blood Group: ${bloodGroup} in City: ${city}.
-
-Recipient Details:
-Name: ${recipientName}
-Contact Phone: ${contactPhone || 'Check dashboard for details'}
-
-Matched Donors:${donorDetailsText}
-Please log in to your LifeLink dashboard to accept this emergency request and save a life.
-
-Best regards,
-LifeLink Team`;
-
-		finalRecipients = [testEmail];
+		lastResult = await response.json();
 	}
 
-	// Safe Debugging Logs (Task 3)
-	console.log(`[Email Debug] API key exists: ${!!apiKey}`);
-	console.log(`[Email Debug] Sender email: "LifeLink Emergency <onboarding@resend.dev>"`);
-	console.log(`[Email Debug] Recipient count: ${finalRecipients.length}`);
-
-	let response;
-	try {
-		console.log(`[Email Debug] Attempting to send emergency alert to ${finalRecipients.length} recipients...`);
-		response = await fetch('https://api.resend.com/emails', {
-			method: 'POST',
-			headers: {
-				'Authorization': `Bearer ${apiKey}`,
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({
-				from: "LifeLink Emergency <onboarding@resend.dev>",
-				to: finalRecipients.length > 0 ? finalRecipients : ["lifelinklifelink2@gmail.com"],
-				subject: emailSubject,
-				text: emailBody
-			})
-		});
-	} catch (err) {
-		console.error('[Email Debug] Initial send fetch error:', err);
-	}
-
-	if (!response || !response.ok) {
-		const errText = response ? await response.text() : 'No response';
-		console.warn('[Email Debug] Initial Resend call failed, trying sandbox fallback to verified email...', errText);
-		
-		response = await fetch('https://api.resend.com/emails', {
-			method: 'POST',
-			headers: {
-				'Authorization': `Bearer ${apiKey}`,
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify({
-				from: "LifeLink Emergency <onboarding@resend.dev>",
-				to: ["lifelinklifelink2@gmail.com"],
-				subject: emailSubject + ' (Sandbox Fallback)',
-				text: emailBody
-			})
-		});
-	}
-
-	if (!response.ok) {
-		const errorText = await response.text();
-		console.error('[Resend Fallback Error Details]:', errorText);
-		throw new Error(`Resend email dispatch failed: Status ${response.status} - ${errorText}`);
-	}
-
-	return await response.json();
+	return lastResult || { success: true, message: 'Processed successfully.' };
 }
