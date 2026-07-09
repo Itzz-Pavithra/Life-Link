@@ -16,10 +16,14 @@
 		if (e) e.preventDefault();
 		try {
 			await signOut(auth);
-			localStorage.removeItem('lifelink_user');
-			localStorage.removeItem('user');
+			localStorage.clear();
 			sessionStorage.clear();
-			await axios.post('/api/auth/logout');
+			db.user = null;
+			try {
+				await axios.post('/api/auth/logout');
+			} catch (err) {
+				// Ignore
+			}
 			db.addToast('Logged out successfully.', 'info');
 			window.location.href = '/';
 		} catch (err) {
@@ -55,7 +59,7 @@
 
 				{#if db.authLoading}
 					<div class="w-5 h-5 border-2 border-red-200 border-t-red-700 rounded-full animate-spin" aria-label="Authenticating session"></div>
-				{:else if db.user}
+				{:else if auth?.currentUser && db.user}
 					{#if !isPublicPage}
 						<a
 							href="/dashboard/{db.user.role}"
@@ -127,7 +131,7 @@
 			<div class="py-2 flex justify-center">
 				<div class="w-5 h-5 border-2 border-red-200 border-t-red-700 rounded-full animate-spin" aria-label="Authenticating session"></div>
 			</div>
-		{:else if db.user}
+		{:else if auth?.currentUser && db.user}
 			{#if !isPublicPage}
 				<a
 					href="/dashboard/{db.user.role}"

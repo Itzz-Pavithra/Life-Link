@@ -12,10 +12,14 @@
 		if (e) e.preventDefault();
 		try {
 			await signOut(auth);
-			localStorage.removeItem('lifelink_user');
-			localStorage.removeItem('user');
+			localStorage.clear();
 			sessionStorage.clear();
-			await axios.post('/api/auth/logout');
+			db.user = null;
+			try {
+				await axios.post('/api/auth/logout');
+			} catch (err) {
+				// Ignore
+			}
 			db.addToast('Logged out successfully.', 'info');
 			window.location.href = '/';
 		} catch (err) {

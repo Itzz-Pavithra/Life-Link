@@ -10,6 +10,7 @@
 	import { db } from '$lib/auth.svelte.js';
 	import { onMount } from 'svelte';
 	import axios from 'axios';
+	import { invalidateAll } from '$app/navigation';
 
 	let { children, data } = $props();
 
@@ -17,32 +18,35 @@
 
 	onMount(() => {
 		db.authLoading = true;
-		const unsubscribe = onAuthStateChanged(auth, async (user) => {
-			if (user) {
+		const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+			if (firebaseUser) {
 				try {
-					const res = await axios.get('/api/user/profile');
-					if (res.data && res.data.success && res.data.profile) {
+					const idToken = await firebaseUser.getIdToken();
+					const res = await axios.post('/api/auth/session', { idToken });
+					if (res.data && res.data.success && res.data.user) {
 						db.user = {
-							uid: user.uid,
-							email: user.email,
-							...res.data.profile
+							uid: firebaseUser.uid,
+							email: firebaseUser.email,
+							...res.data.user
 						};
+						await invalidateAll();
 					} else {
 						db.user = null;
 					}
 				} catch (err) {
-					console.error("Error fetching profile on auth change:", err);
+					console.error("Error restoring session on auth change:", err);
 					db.user = null;
 				}
 			} else {
 				db.user = null;
-				// If guest, clear stale cookies if lifelink_user exists
-				if (typeof document !== 'undefined' && document.cookie.includes('lifelink_user')) {
-					try {
-						await axios.post('/api/auth/logout');
-					} catch (err) {
-						// Ignore
-					}
+				if (typeof window !== 'undefined') {
+					localStorage.clear();
+					sessionStorage.clear();
+				}
+				try {
+					await axios.post('/api/auth/logout');
+				} catch (err) {
+					// Ignore
 				}
 			}
 			db.authLoading = false;

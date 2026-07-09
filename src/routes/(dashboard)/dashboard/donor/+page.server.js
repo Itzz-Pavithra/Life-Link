@@ -4,7 +4,13 @@ import { redirect } from '@sveltejs/kit';
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ locals }) {
 	if (!locals.user || locals.user.role !== 'donor') {
-		throw redirect(303, '/login');
+		return {
+			user: null,
+			requests: [],
+			history: [],
+			badges: [],
+			stats: { donationsCount: 0, livesSavedCount: 0 }
+		};
 	}
 
 	const donations = await database.getDonations();

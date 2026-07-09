@@ -48,21 +48,6 @@ export async function handle({ event, resolve }) {
 		event.locals.role = null;
 	}
 
-	const path = event.url.pathname;
-	if (path.startsWith('/dashboard')) {
-		if (!event.locals.user || !event.locals.role) {
-			throw redirect(303, '/login');
-		}
-
-		const segments = path.split('/');
-		const roleSegment = segments[2];
-		if (!roleSegment) {
-			throw redirect(303, `/dashboard/${event.locals.role}`);
-		} else if (roleSegment !== event.locals.role) {
-			throw redirect(303, '/login');
-		}
-	}
-
 	const response = await resolve(event);
 	return response;
 }

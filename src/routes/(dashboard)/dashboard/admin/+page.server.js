@@ -4,7 +4,19 @@ import { fail, redirect } from '@sveltejs/kit';
 /** @type {import('./$types').PageServerLoad} */
 export async function load({ locals }) {
 	if (!locals.user || locals.user.role !== 'admin') {
-		throw redirect(303, '/login');
+		return {
+			user: null,
+			users: [],
+			donors: [],
+			receivers: [],
+			eligibilityRequests: [],
+			bloodBanks: [],
+			requests: [],
+			donations: [],
+			systemLogs: [],
+			analytics: { monthlyActivity: [], distribution: [] },
+			stats: { totalDonors: 0, totalRequests: 0, resolvedRequests: 0, partnerBanks: 0 }
+		};
 	}
 
 	const users = await database.getUsers();

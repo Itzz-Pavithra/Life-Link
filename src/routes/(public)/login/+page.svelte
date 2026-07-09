@@ -112,8 +112,8 @@
 				console.log(err.code);
 				console.log(err.message);
 				
-				// Handle legacy users not yet in Firebase Auth
-				if (err.code === 'auth/user-not-found') {
+				// Handle legacy users not yet in Firebase Auth (enumeration protection makes code invalid-credential)
+				if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-credential') {
 					const res = await axios.post('/api/auth/login', {
 						email,
 						password,
@@ -123,22 +123,26 @@
 						// Retry signing in now that they are synced by the backend
 						const userCredential = await signInWithEmailAndPassword(auth, email, password);
 						firebaseUser = userCredential.user;
-						await handleAuthSuccess(res.data.user, firebaseUser);
-						return;
+					} else {
+						throw new Error(res.data.error || 'Invalid email or password');
 					}
+				} else {
+					throw err;
 				}
-				throw err;
 			}
 
-			// If client signin succeeded on the first try, run backend login to establish server session cookies
-			const res = await axios.post('/api/auth/login', {
-				email,
-				password,
-				role: selectedRole
-			});
+			// Verify ID token and fetch profile to establish session
+			const idToken = await firebaseUser.getIdToken();
+			const res = await axios.post('/api/auth/session', { idToken });
 
 			if (res.data.success) {
+				if (res.data.user.role !== selectedRole) {
+					await signOut(auth);
+					throw new Error('The selected role does not match this account.');
+				}
 				await handleAuthSuccess(res.data.user, firebaseUser);
+			} else {
+				throw new Error(res.data.error || 'Failed to establish session.');
 			}
 		} catch (err) {
 			console.log(err.code);

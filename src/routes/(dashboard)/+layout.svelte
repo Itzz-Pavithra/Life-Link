@@ -7,8 +7,19 @@
 	let sidebarOpen = $state(false);
 
 	$effect(() => {
-		if (!db.authLoading && !db.user) {
-			goto('/login');
+		if (!db.authLoading) {
+			if (!db.user) {
+				goto('/login');
+			} else {
+				const path = window.location.pathname;
+				const segments = path.split('/');
+				const roleSegment = segments[2];
+				if (!roleSegment) {
+					goto(`/dashboard/${db.user.role}`);
+				} else if (roleSegment !== db.user.role) {
+					goto('/login');
+				}
+			}
 		}
 	});
 </script>
