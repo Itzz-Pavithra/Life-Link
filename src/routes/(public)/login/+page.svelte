@@ -4,6 +4,7 @@
 	import { auth } from '$lib/firebase.client.js';
 	import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'firebase/auth';
 	import { onMount } from 'svelte';
+	import BloodWaveBackground from '$lib/components/BloodWaveBackground.svelte';
 
 	let { data } = $props();
 
@@ -195,7 +196,8 @@
 	});
 </script>
 
-<div class="min-h-screen bg-baby-pink flex items-center justify-center p-6 relative">
+<div class="min-h-screen flex items-center justify-center p-6 relative">
+	<BloodWaveBackground />
 	<!-- Ambient Background glows -->
 	<div class="absolute top-1/4 left-1/4 w-72 h-72 bg-red-400/5 rounded-full blur-3xl pointer-events-none"></div>
 	<div class="absolute bottom-1/4 right-1/4 w-72 h-72 bg-amber-450/5 rounded-full blur-3xl pointer-events-none"></div>

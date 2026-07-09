@@ -1,5 +1,7 @@
 <script>
 	import CompatibilityGuide from '$lib/components/CompatibilityGuide.svelte';
+	import BloodWaveBackground from '$lib/components/BloodWaveBackground.svelte';
+	import HeartbeatPulse from '$lib/components/HeartbeatPulse.svelte';
 	import { db } from '$lib/auth.svelte.js';
 
 	let { data } = $props();
@@ -46,36 +48,29 @@
 	
 	<!-- 1. HERO SECTION (Bounded Banner, Bounded Height, Blurred Image Overlay) -->
 	<section class="relative h-[600px] flex items-center justify-center overflow-hidden">
-		<!-- Background image container with blur effect (contained inside this section only) -->
-		<div class="absolute inset-0 z-0 overflow-hidden">
-			<!-- Blurred background image using real img tag for robust rendering -->
-			<img 
-				src="/blood-donation-bg.png" 
-				alt="Blood Donation Background"
-				class="w-full h-full object-cover filter blur-[4px] scale-[1.05]" 
-			/>
-			<!-- Precise dark transparent overlay above the image for readability -->
-			<div class="absolute inset-0" style="background-color: rgba(0, 0, 0, 0.45);"></div>
-		</div>
+		<!-- Premium animated red blood-flow liquid wave background -->
+		<BloodWaveBackground />
 
 		<!-- Hero Centered Content (Sharp text and buttons) -->
-		<div class="relative z-10 max-w-7xl mx-auto px-6 w-full text-center text-white space-y-6 flex flex-col items-center">
-			<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/20 border border-red-500/30 text-red-300 text-xs font-bold uppercase tracking-wider animate-pulse">
-				❤️ Emergency Life Saving Network
-			</div>
+		<div class="relative z-10 max-w-7xl mx-auto px-6 w-full text-center text-slate-900 space-y-6 flex flex-col items-center">
+			<HeartbeatPulse>
+				<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/25 text-red-700 text-xs font-bold uppercase tracking-wider">
+					❤️ Emergency Life Saving Network
+				</div>
+			</HeartbeatPulse>
 			
-			<h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight leading-[1.1] max-w-4xl text-white">
-				Donate Blood, <span class="text-red-500 drop-shadow-[0_2px_10px_rgba(239,68,68,0.3)]">Save Lives</span>
+			<h1 class="text-4xl sm:text-6xl font-extrabold tracking-tight leading-[1.1] max-w-4xl text-slate-900">
+				Donate Blood, <span class="text-red-650 drop-shadow-[0_2px_10px_rgba(220,38,38,0.15)]">Save Lives</span>
 			</h1>
 			
-			<p class="text-base sm:text-lg text-slate-200 max-w-2xl leading-relaxed font-medium">
+			<p class="text-base sm:text-lg text-slate-655 max-w-2xl leading-relaxed font-semibold">
 				LifeLink connects donors with people who need blood urgently.
 			</p>
 			
 			<div class="flex flex-wrap gap-4 justify-center pt-2">
 				<a
 					href="/eligibility"
-					class="bg-red-600 hover:bg-red-700 text-white font-bold px-8 py-3.5 rounded-2xl shadow-xl shadow-red-600/30 transition transform hover:-translate-y-0.5 active:scale-95 text-sm"
+					class="bg-red-650 hover:bg-red-750 text-white font-bold px-8 py-3.5 rounded-2xl shadow-xl shadow-red-600/30 transition transform hover:-translate-y-0.5 active:scale-95 text-sm"
 				>
 					Become a Donor
 				</a>

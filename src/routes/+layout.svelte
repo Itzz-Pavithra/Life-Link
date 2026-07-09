@@ -3,6 +3,7 @@
 	import Navbar from '$lib/components/Navbar.svelte';
 	import Toast from '$lib/components/Toast.svelte';
 	import AccessibilityPanel from '$lib/components/AccessibilityPanel.svelte';
+	import CookieConsent from '$lib/components/CookieConsent.svelte';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
 	import { auth } from '$lib/firebase.client.js';
@@ -84,3 +85,4 @@
 	</main>
 </div>
 <Footer />
+<CookieConsent />

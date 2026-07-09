@@ -4,6 +4,7 @@
 	import { db } from '$lib/auth.svelte.js';
 	import { auth } from '$lib/firebase.client.js';
 	import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+	import BloodWaveBackground from '$lib/components/BloodWaveBackground.svelte';
 
 	let role = $state('');
 	let name = $state('');
@@ -172,7 +173,8 @@
 	}
 </script>
 
-<div class="min-h-screen bg-baby-pink flex items-center justify-center p-6 relative">
+<div class="min-h-screen flex items-center justify-center p-6 relative">
+	<BloodWaveBackground />
 	<!-- Glowing accents -->
 	<div class="absolute top-1/4 left-1/4 w-72 h-72 bg-red-400/5 rounded-full blur-3xl pointer-events-none"></div>
 

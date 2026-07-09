@@ -1,0 +1,70 @@
+<script>
+	import FloatingBloodCells from './FloatingBloodCells.svelte';
+</script>
+
+<div class="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-gradient-to-b from-[#FFF5F6] via-[#FFF9FA] to-[#FFF5F6]">
+	<!-- Floating cells backdrop -->
+	<FloatingBloodCells />
+
+	<!-- Smooth Red/Pink Liquid Wave Background using SVG path animations -->
+	<div class="absolute bottom-0 left-0 w-full h-[185px] overflow-hidden opacity-[0.22]">
+		<svg class="waves" xmlns="http://www.w3.org/2000/svg" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
+			<defs>
+				<path id="gentle-wave" d="M-160 44c30 0 58-18 88-18s58 18 88 18 58-18 88-18 58 18 88 18v44h-352z" />
+			</defs>
+			<g class="parallax">
+				<use href="#gentle-wave" x="48" y="0" fill="rgba(220, 38, 38, 0.15)" />
+				<use href="#gentle-wave" x="48" y="3" fill="rgba(220, 38, 38, 0.25)" />
+				<use href="#gentle-wave" x="48" y="5" fill="rgba(220, 38, 38, 0.35)" />
+				<use href="#gentle-wave" x="48" y="7" fill="rgba(220, 38, 38, 0.45)" />
+			</g>
+		</svg>
+	</div>
+
+	<!-- Top waves for framing -->
+	<div class="absolute top-0 left-0 w-full h-[120px] overflow-hidden opacity-10 rotate-180">
+		<svg class="waves" xmlns="http://www.w3.org/2000/svg" viewBox="0 24 150 28" preserveAspectRatio="none" shape-rendering="auto">
+			<use href="#gentle-wave" x="48" y="0" fill="rgba(220, 38, 38, 0.2)" />
+			<use href="#gentle-wave" x="48" y="4" fill="rgba(220, 38, 38, 0.3)" />
+		</svg>
+	</div>
+</div>
+
+<style>
+	.waves {
+		position: relative;
+		width: 100%;
+		height: 105%;
+		min-height: 100px;
+		max-height: 150px;
+	}
+
+	/* Animation for moving waves */
+	.parallax > use {
+		animation: move-forever 25s cubic-bezier(.55,.5,.45,.5)     infinite;
+	}
+	.parallax > use:nth-child(1) {
+		animation-delay: -2s;
+		animation-duration: 7s;
+	}
+	.parallax > use:nth-child(2) {
+		animation-delay: -3s;
+		animation-duration: 10s;
+	}
+	.parallax > use:nth-child(3) {
+		animation-delay: -4s;
+		animation-duration: 13s;
+	}
+	.parallax > use:nth-child(4) {
+		animation-delay: -5s;
+		animation-duration: 20s;
+	}
+	@keyframes move-forever {
+		0% {
+			transform: translate3d(-90px,0,0);
+		}
+		100% {
+			transform: translate3d(85px,0,0);
+		}
+	}
+</style>
