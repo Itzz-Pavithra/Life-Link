@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import { env as dynamicEnv } from '$env/dynamic/private';
 
 dotenv.config();
 
@@ -11,7 +12,7 @@ dotenv.config();
  * @param {string} params.message - Message body
  */
 export async function sendContactEmail({ name, email: userEmail, subject, message }) {
-	const apiKey = process.env.EMAIL_RESEND;
+	const apiKey = dynamicEnv.EMAIL_RESEND || process.env.EMAIL_RESEND;
 	if (!apiKey) {
 		throw new Error('EMAIL_RESEND environment variable is not defined.');
 	}
@@ -34,6 +35,11 @@ ${message}
 Sent from:
 LifeLink Contact Page`;
 
+	// Safe Debugging Logs (Task 3)
+	console.log(`[Email Debug] API key exists: ${!!apiKey}`);
+	console.log(`[Email Debug] Sender email: "LifeLink Emergency <onboarding@resend.dev>"`);
+	console.log(`[Email Debug] Recipient count: 1`);
+
 	const response = await fetch('https://api.resend.com/emails', {
 		method: 'POST',
 		headers: {
@@ -41,7 +47,7 @@ LifeLink Contact Page`;
 			'Content-Type': 'application/json'
 		},
 		body: JSON.stringify({
-			from: 'LifeLink Emergency <onboarding@resend.dev>',
+			from: "LifeLink Emergency <onboarding@resend.dev>",
 			to: 'lifelinklifelink2@gmail.com',
 			subject: emailSubject,
 			text: emailBody
@@ -50,8 +56,8 @@ LifeLink Contact Page`;
 
 	if (!response.ok) {
 		const errorText = await response.text();
-		console.error('Resend API call failed:', errorText);
-		throw new Error(`Resend email dispatch failed with status: ${response.status} - ${response.statusText}`);
+		console.error(`[Resend Error Details]: Status ${response.status} - ${response.statusText}`, errorText);
+		throw new Error(`Resend email dispatch failed: Status ${response.status} - ${errorText || response.statusText}`);
 	}
 
 	return await response.json();
@@ -62,7 +68,7 @@ LifeLink Contact Page`;
  * @param {Object} params
  */
 export async function sendEmergencyBloodAlert({ donorEmails, bloodGroup, city, recipientName, contactPhone }) {
-	const apiKey = process.env.EMAIL_RESEND;
+	const apiKey = dynamicEnv.EMAIL_RESEND || process.env.EMAIL_RESEND;
 	if (!apiKey) {
 		throw new Error('EMAIL_RESEND environment variable is not defined.');
 	}
@@ -83,23 +89,14 @@ Please log in to your LifeLink dashboard to accept this emergency request and sa
 Best regards,
 LifeLink Team`;
 
-	let response = await fetch('https://api.resend.com/emails', {
-		method: 'POST',
-		headers: {
-			'Authorization': `Bearer ${apiKey}`,
-			'Content-Type': 'application/json'
-		},
-		body: JSON.stringify({
-			from: 'LifeLink Emergency <onboarding@resend.dev>',
-			to: donorEmails.length > 0 ? donorEmails : ['lifelinklifelink2@gmail.com'],
-			subject: emailSubject,
-			text: emailBody
-		})
-	});
+	// Safe Debugging Logs (Task 3)
+	console.log(`[Email Debug] API key exists: ${!!apiKey}`);
+	console.log(`[Email Debug] Sender email: "LifeLink Emergency <onboarding@resend.dev>"`);
+	console.log(`[Email Debug] Recipient count: ${donorEmails.length}`);
 
-	if (!response.ok) {
-		const errText = await response.text();
-		console.warn('Initial Resend call failed, trying sandbox fallback...', errText);
+	let response;
+	try {
+		console.log(`[Email Debug] Attempting to send emergency alert to ${donorEmails.length} donors...`);
 		response = await fetch('https://api.resend.com/emails', {
 			method: 'POST',
 			headers: {
@@ -107,8 +104,29 @@ LifeLink Team`;
 				'Content-Type': 'application/json'
 			},
 			body: JSON.stringify({
-				from: 'LifeLink Emergency <onboarding@resend.dev>',
-				to: ['lifelinklifelink2@gmail.com'],
+				from: "LifeLink Emergency <onboarding@resend.dev>",
+				to: donorEmails.length > 0 ? donorEmails : ["lifelinklifelink2@gmail.com"],
+				subject: emailSubject,
+				text: emailBody
+			})
+		});
+	} catch (err) {
+		console.error('[Email Debug] Initial send fetch error:', err);
+	}
+
+	if (!response || !response.ok) {
+		const errText = response ? await response.text() : 'No response';
+		console.warn('[Email Debug] Initial Resend call failed, trying sandbox fallback to verified email...', errText);
+		
+		response = await fetch('https://api.resend.com/emails', {
+			method: 'POST',
+			headers: {
+				'Authorization': `Bearer ${apiKey}`,
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify({
+				from: "LifeLink Emergency <onboarding@resend.dev>",
+				to: ["lifelinklifelink2@gmail.com"],
 				subject: emailSubject + ' (Sandbox Fallback)',
 				text: emailBody
 			})
@@ -117,8 +135,8 @@ LifeLink Team`;
 
 	if (!response.ok) {
 		const errorText = await response.text();
-		console.error('Resend fallback API call failed:', errorText);
-		throw new Error(`Resend email dispatch failed: ${response.status} - ${response.statusText}`);
+		console.error('[Resend Fallback Error Details]:', errorText);
+		throw new Error(`Resend email dispatch failed: Status ${response.status} - ${errorText}`);
 	}
 
 	return await response.json();
