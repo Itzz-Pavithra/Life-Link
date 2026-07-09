@@ -66,10 +66,7 @@
 		db.addToast(`Editing blood bank details: ${bank.name}`, 'info');
 	}
 
-	// Interactive Operations via fetch APIs
-	async function handleVerifyUser(userId, name) {
-		db.addToast(`User ${name} credentials verified. Security token released.`, 'success');
-	}
+
 
 	async function handleUserSuspend(userId, name) {
 		try {

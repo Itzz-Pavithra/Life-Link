@@ -83,6 +83,53 @@
 		</div>
 	</section>
 
+	<!-- 1.5 REAL-TIME STATISTICS SECTION -->
+	<section class="py-12 bg-white border-y border-slate-100 relative">
+		<div class="max-w-7xl mx-auto px-6">
+			<div class="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+				<div class="flex flex-col items-center p-4">
+					<span class="text-3xl sm:text-4xl font-black text-red-700 tracking-tight mb-2">
+						{data.landing?.stats?.activeDonors || 0}
+					</span>
+					<span class="text-xs font-bold text-slate-500 uppercase tracking-wider">
+						Blood Availability
+					</span>
+					<span class="text-[10px] text-slate-400 mt-1">Active Donors Online</span>
+				</div>
+
+				<div class="flex flex-col items-center p-4">
+					<span class="text-3xl sm:text-4xl font-black text-red-700 tracking-tight mb-2">
+						{data.landing?.stats?.resolvedRequests || 0}
+					</span>
+					<span class="text-xs font-bold text-slate-500 uppercase tracking-wider">
+						Lives Connected
+					</span>
+					<span class="text-[10px] text-slate-400 mt-1">Emergency Matches Resolved</span>
+				</div>
+
+				<div class="flex flex-col items-center p-4">
+					<span class="text-3xl sm:text-4xl font-black text-red-700 tracking-tight mb-2">
+						{data.landing?.stats?.partnerBanks || 0}
+					</span>
+					<span class="text-xs font-bold text-slate-500 uppercase tracking-wider">
+						Partner Banks
+					</span>
+					<span class="text-[10px] text-slate-400 mt-1">Linked Centers & inventory</span>
+				</div>
+
+				<div class="flex flex-col items-center p-4">
+					<span class="text-3xl sm:text-4xl font-black text-red-700 tracking-tight mb-2">
+						{data.landing?.stats?.totalDonations || 0}
+					</span>
+					<span class="text-xs font-bold text-slate-500 uppercase tracking-wider">
+						Total Donations
+					</span>
+					<span class="text-[10px] text-slate-400 mt-1">Successful Blood Drives</span>
+				</div>
+			</div>
+		</div>
+	</section>
+
 	<!-- 2. HOW IT WORKS SECTION -->
 	<section id="how-it-works" class="py-24 px-6 bg-slate-950 text-white relative">
 		<!-- Background decorations -->
