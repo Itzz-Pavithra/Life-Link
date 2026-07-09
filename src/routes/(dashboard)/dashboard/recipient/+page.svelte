@@ -214,7 +214,7 @@
 			});
 			const result = await res.json();
 			if (result.success) {
-				db.addToast(`🚨 Emergency Alert sent successfully to ${filteredDonors.length} compatible donors!`, 'success');
+				db.addToast(result.message || `Emergency alert processed successfully for ${filteredDonors.length} matching donors`, 'success');
 			} else {
 				db.addToast(result.error || 'Failed to send alert.', 'error');
 			}

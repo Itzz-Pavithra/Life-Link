@@ -1,5 +1,6 @@
 import dotenv from 'dotenv';
 import { env as dynamicEnv } from '$env/dynamic/private';
+import { database } from './db.js';
 
 dotenv.config();
 
@@ -73,8 +74,10 @@ export async function sendEmergencyBloodAlert({ donorEmails, bloodGroup, city, r
 		throw new Error('EMAIL_RESEND environment variable is not defined.');
 	}
 
-	const emailSubject = `🚨 EMERGENCY: Blood Needed (${bloodGroup}) in ${city}`;
-	const emailBody = `Hello,
+	const testEmail = dynamicEnv.RESEND_TEST_EMAIL || process.env.RESEND_TEST_EMAIL;
+
+	let emailSubject = `🚨 EMERGENCY: Blood Needed (${bloodGroup}) in ${city}`;
+	let emailBody = `Hello,
 
 This is an emergency alert from LifeLink.
 
@@ -89,14 +92,50 @@ Please log in to your LifeLink dashboard to accept this emergency request and sa
 Best regards,
 LifeLink Team`;
 
+	let finalRecipients = donorEmails;
+
+	if (testEmail) {
+		console.log(`[Email Debug] Demo Mode Active. Redirecting email to RESEND_TEST_EMAIL: ${testEmail}`);
+		let donorDetailsText = '';
+		try {
+			const allUsers = await database.getUsers();
+			const matchedDonors = allUsers.filter(u => donorEmails.includes(u.email));
+			matchedDonors.forEach((donor, idx) => {
+				donorDetailsText += `\n${idx + 1}. ${donor.name}\nEmail: ${donor.email}\nBlood: ${donor.bloodGroup || 'N/A'}\nPhone: ${donor.phone || 'N/A'}\n`;
+			});
+		} catch (dbErr) {
+			console.error('[Email Debug] Failed to fetch user profiles for demo list:', dbErr);
+			donorDetailsText = '\n(Unable to retrieve donor details from database)\n';
+		}
+
+		emailSubject = `🚨 EMERGENCY DEMO: Blood Needed (${bloodGroup}) in ${city}`;
+		emailBody = `Hello,
+
+This is a DEMO MODE emergency alert from LifeLink.
+
+A recipient has requested an emergency match for Blood Group: ${bloodGroup} in City: ${city}.
+
+Recipient Details:
+Name: ${recipientName}
+Contact Phone: ${contactPhone || 'Check dashboard for details'}
+
+Matched Donors:${donorDetailsText}
+Please log in to your LifeLink dashboard to accept this emergency request and save a life.
+
+Best regards,
+LifeLink Team`;
+
+		finalRecipients = [testEmail];
+	}
+
 	// Safe Debugging Logs (Task 3)
 	console.log(`[Email Debug] API key exists: ${!!apiKey}`);
 	console.log(`[Email Debug] Sender email: "LifeLink Emergency <onboarding@resend.dev>"`);
-	console.log(`[Email Debug] Recipient count: ${donorEmails.length}`);
+	console.log(`[Email Debug] Recipient count: ${finalRecipients.length}`);
 
 	let response;
 	try {
-		console.log(`[Email Debug] Attempting to send emergency alert to ${donorEmails.length} donors...`);
+		console.log(`[Email Debug] Attempting to send emergency alert to ${finalRecipients.length} recipients...`);
 		response = await fetch('https://api.resend.com/emails', {
 			method: 'POST',
 			headers: {
@@ -105,7 +144,7 @@ LifeLink Team`;
 			},
 			body: JSON.stringify({
 				from: "LifeLink Emergency <onboarding@resend.dev>",
-				to: donorEmails.length > 0 ? donorEmails : ["lifelinklifelink2@gmail.com"],
+				to: finalRecipients.length > 0 ? finalRecipients : ["lifelinklifelink2@gmail.com"],
 				subject: emailSubject,
 				text: emailBody
 			})
