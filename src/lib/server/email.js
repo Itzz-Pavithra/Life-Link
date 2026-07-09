@@ -41,7 +41,7 @@ LifeLink Contact Page`;
 			'Content-Type': 'application/json'
 		},
 		body: JSON.stringify({
-			from: 'LifeLink Contact <onboarding@resend.dev>',
+			from: 'LifeLink Emergency <onboarding@resend.dev>',
 			to: 'lifelinklifelink2@gmail.com',
 			subject: emailSubject,
 			text: emailBody
@@ -90,7 +90,7 @@ LifeLink Team`;
 			'Content-Type': 'application/json'
 		},
 		body: JSON.stringify({
-			from: 'LifeLink Alerts <onboarding@resend.dev>',
+			from: 'LifeLink Emergency <onboarding@resend.dev>',
 			to: donorEmails.length > 0 ? donorEmails : ['lifelinklifelink2@gmail.com'],
 			subject: emailSubject,
 			text: emailBody
@@ -107,7 +107,7 @@ LifeLink Team`;
 				'Content-Type': 'application/json'
 			},
 			body: JSON.stringify({
-				from: 'LifeLink Alerts <onboarding@resend.dev>',
+				from: 'LifeLink Emergency <onboarding@resend.dev>',
 				to: ['lifelinklifelink2@gmail.com'],
 				subject: emailSubject + ' (Sandbox Fallback)',
 				text: emailBody
