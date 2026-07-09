@@ -1,4 +1,5 @@
 import { json } from '@sveltejs/kit';
+import { env as dynamicEnv } from '$env/dynamic/private';
 import { submitEligibilityQuiz, reviewEligibility, database } from '$lib/server/db.js';
 import { sendEmail } from '$lib/server/email.js';
 
@@ -42,29 +43,20 @@ export async function POST({ request }) {
 
 		// Send email notification to Admin
 		try {
-			const users = await database.getUsers();
-			const admins = users.filter(u => u.role === 'admin');
-			const adminEmails = admins.map(a => a.email);
-
-			if (adminEmails.length === 0) {
-				adminEmails.push('admin@lifelink.com');
-			}
-
-			for (const adminEmail of adminEmails) {
-				await sendEmail({
-					to: adminEmail,
-					subject: "New Donor Eligibility Request Pending",
-					html: `
-						<p>A donor submitted eligibility verification.</p>
-						<p>Please login to admin dashboard.</p>
-						<br/>
-						<p><strong>Donor Name:</strong> ${name}</p>
-						<p><strong>Blood Group:</strong> ${bloodGroup || 'O+'}</p>
-						<p><strong>Email:</strong> ${email}</p>
-					`,
-					type: 'Admin Notification'
-				});
-			}
+			const adminEmail = dynamicEnv.ADMIN_EMAIL || process.env.ADMIN_EMAIL || 'admin@lifelink.com';
+			await sendEmail({
+				to: adminEmail,
+				subject: "New Donor Eligibility Request Pending",
+				html: `
+					<p>A donor submitted eligibility verification.</p>
+					<p>Please login to admin dashboard.</p>
+					<br/>
+					<p><strong>Donor Name:</strong> ${name}</p>
+					<p><strong>Blood Group:</strong> ${bloodGroup || 'O+'}</p>
+					<p><strong>Email:</strong> ${email}</p>
+				`,
+				type: 'Admin Notification'
+			});
 		} catch (emailErr) {
 			console.error('Failed to send admin notification email:', emailErr);
 		}

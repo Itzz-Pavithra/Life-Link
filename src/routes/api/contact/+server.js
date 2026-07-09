@@ -32,7 +32,7 @@ export async function POST({ request }) {
 		// Write to firebase collection `contactMessages` using existing structure
 		await createDocument('contactMessages', id, contactMessage);
 
-		// Backend email dispatch via Resend
+		// Backend email dispatch via Nodemailer
 		await sendContactEmail({
 			name: contactMessage.name,
 			email: contactMessage.email,
