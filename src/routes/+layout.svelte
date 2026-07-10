@@ -28,40 +28,66 @@
 			}
 		}, 8000);
 
-		const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+		let unsubscribe = () => {};
+
+		async function verifySession() {
 			try {
-				if (firebaseUser) {
-					// Firebase user signed in (Google or Firebase email/password)
-					try {
-						const idToken = await firebaseUser.getIdToken(true);
-						const res = await axios.post('/api/auth/session', { idToken });
-						if (res.data && res.data.success && res.data.user) {
-							clearTimeout(safetyTimer);
-							setAuthenticatedUser({
-								uid: firebaseUser.uid,
-								email: firebaseUser.email,
-								...res.data.user
-							});
-							await invalidateAll();
-						} else {
-							// Session endpoint returned failure — try profile fallback (manual login)
-							await tryProfileFallback(safetyTimer);
-						}
-					} catch (err) {
-						console.warn('[LifeLink] Firebase session restore failed, trying profile fallback:', err.message);
-						await tryProfileFallback(safetyTimer);
-					}
-				} else {
-					// No Firebase user — check if manual login session exists via cookie
-					await tryProfileFallback(safetyTimer);
+				if (!auth) {
+					// No Firebase Auth client — fallback to manual session cookie
+					await tryProfileFallback();
+					return;
 				}
-			} catch (err) {
-				console.error('[LifeLink] Auth state change error:', err);
-				clearTimeout(safetyTimer);
+
+				await new Promise((resolve, reject) => {
+					let resolved = false;
+					const unsubscribeAuth = onAuthStateChanged(
+						auth,
+						async (firebaseUser) => {
+							if (resolved) return;
+							resolved = true;
+							try {
+								if (firebaseUser) {
+									const idToken = await firebaseUser.getIdToken(true);
+									const res = await axios.post('/api/auth/session', { idToken });
+									if (res.data && res.data.success && res.data.user) {
+										setAuthenticatedUser({
+											uid: firebaseUser.uid,
+											email: firebaseUser.email,
+											...res.data.user
+										});
+										await invalidateAll();
+									} else {
+										await tryProfileFallback();
+									}
+								} else {
+									await tryProfileFallback();
+								}
+								resolve();
+							} catch (err) {
+								reject(err);
+							}
+						},
+						(err) => {
+							if (!resolved) {
+								resolved = true;
+								reject(err);
+							}
+						}
+					);
+					unsubscribe = unsubscribeAuth;
+				});
+			} catch (error) {
+				console.error('[LifeLink] verifySession exception:', error);
 				setAuthenticatedUser(null);
 				clearLocalStorage();
+				await silentLogout();
+			} finally {
+				clearTimeout(safetyTimer);
+				db.authLoading = false;
 			}
-		});
+		}
+
+		verifySession();
 
 		return () => {
 			clearTimeout(safetyTimer);
@@ -69,17 +95,15 @@
 		};
 	});
 
-	async function tryProfileFallback(safetyTimer) {
+	async function tryProfileFallback() {
 		try {
 			const res = await axios.get('/api/user/profile');
 			if (res.data && res.data.success && res.data.profile) {
 				// Valid manual login session via cookie
-				clearTimeout(safetyTimer);
 				setAuthenticatedUser(res.data.profile);
 				await invalidateAll();
 			} else {
 				// No valid session at all
-				clearTimeout(safetyTimer);
 				setAuthenticatedUser(null);
 				clearLocalStorage();
 				await silentLogout();
@@ -89,9 +113,9 @@
 			if (err.response?.status !== 401) {
 				console.warn('[LifeLink] Profile fetch error:', err.message);
 			}
-			clearTimeout(safetyTimer);
 			setAuthenticatedUser(null);
 			clearLocalStorage();
+			await silentLogout();
 		}
 	}
 
