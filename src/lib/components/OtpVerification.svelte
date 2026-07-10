@@ -154,19 +154,19 @@
 			<button
 				type="submit"
 				disabled={loading || otpCode.length !== 6 || remainingAttempts === 0 || timer === 0}
-				class="w-full bg-red-650 hover:bg-red-750 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-red-700/25 transition transform active:scale-95 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+				class="w-full bg-primary hover:bg-red-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition transform active:scale-95 cursor-pointer"
 			>
 				{loading ? 'Verifying Code...' : 'Verify & Activate Account'}
 			</button>
 		</form>
 
-		<div class="text-center text-xs text-slate-400">
+		<div class="text-center text-xs text-slate-400 font-medium">
 			Didn't receive the email code?
 			<button
 				type="button"
 				onclick={handleResend}
 				disabled={resending}
-				class="text-red-700 font-bold hover:underline ml-1 cursor-pointer disabled:opacity-50"
+				class="text-primary font-bold hover:text-red-700 hover:underline ml-1 cursor-pointer"
 			>
 				{resending ? 'Sending...' : 'Resend OTP'}
 			</button>

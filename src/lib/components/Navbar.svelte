@@ -63,13 +63,13 @@
 					<!-- Authenticated user INSIDE dashboard pages: show Dashboard link + Logout -->
 					<a
 						href="/dashboard/{db.user.role}"
-						class="text-sm font-bold text-red-700 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl transition"
+						class="text-sm font-bold text-primary bg-baby-pink hover:bg-red-100 px-4 py-2 rounded-xl transition"
 					>
 						💻 Dashboard
 					</a>
 					<button
 						onclick={handleLogout}
-						class="text-sm font-semibold text-gray-500 hover:text-red-650 transition cursor-pointer font-bold bg-transparent border-none text-slate-500 hover:text-red-650"
+						class="text-sm font-bold text-slate-700 hover:text-primary transition cursor-pointer bg-transparent border-none"
 					>
 						Logout
 					</button>
@@ -77,7 +77,7 @@
 					<!-- Authenticated user on PUBLIC pages: just show Dashboard link, no Logout -->
 					<a
 						href="/dashboard/{db.user.role}"
-						class="text-sm font-bold text-red-700 bg-red-50 hover:bg-red-100 px-4 py-2 rounded-xl transition"
+						class="text-sm font-bold text-primary bg-baby-pink hover:bg-red-100 px-4 py-2 rounded-xl transition"
 					>
 						💻 Dashboard
 					</a>
@@ -86,7 +86,7 @@
 					<a href="/login" class="text-sm font-semibold text-gray-700 hover:text-red-700 transition">Login</a>
 					<a
 						href="/register"
-						class="bg-red-700 hover:bg-red-850 text-white text-sm font-bold px-5 py-2.5 rounded-xl shadow-lg shadow-red-700/25 transition transform active:scale-95"
+						class="bg-primary hover:bg-red-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl shadow-lg transition transform active:scale-95"
 					>
 						Register
 					</a>
@@ -143,14 +143,14 @@
 			<!-- Authenticated user inside dashboard pages -->
 			<a
 				href="/dashboard/{db.user.role}"
-				class="block text-sm font-bold text-red-700 bg-red-50 hover:bg-red-100 px-4 py-3 rounded-xl transition"
+				class="block text-sm font-bold text-primary bg-baby-pink hover:bg-red-100 px-4 py-3 rounded-xl transition"
 				onclick={() => mobileMenuOpen = false}
 			>
 				💻 Dashboard
 			</a>
 			<button
 				onclick={(e) => { mobileMenuOpen = false; handleLogout(e); }}
-				class="block w-full text-left text-sm font-semibold text-gray-500 hover:text-red-650 hover:bg-rose-50/50 px-3 py-2 rounded-xl transition cursor-pointer"
+				class="block w-full text-left text-sm font-bold text-slate-700 hover:text-primary hover:bg-rose-50/50 px-3 py-2 rounded-xl transition cursor-pointer"
 			>
 				Logout
 			</button>
@@ -158,7 +158,7 @@
 			<!-- Authenticated user on public pages: just Dashboard link -->
 			<a
 				href="/dashboard/{db.user.role}"
-				class="block text-sm font-bold text-red-700 bg-red-50 hover:bg-red-100 px-4 py-3 rounded-xl transition"
+				class="block text-sm font-bold text-primary bg-baby-pink hover:bg-red-100 px-4 py-3 rounded-xl transition"
 				onclick={() => mobileMenuOpen = false}
 			>
 				💻 Dashboard
@@ -171,7 +171,7 @@
 			>Login</a>
 			<a
 				href="/register"
-				class="block text-center bg-red-700 hover:bg-red-850 bg-red-700 hover:bg-red-800 text-white text-sm font-bold py-3.5 rounded-xl shadow-lg transition active:scale-95"
+				class="block text-center bg-primary hover:bg-red-700 text-white text-sm font-semibold py-3.5 rounded-xl shadow-lg transition active:scale-95"
 				onclick={() => mobileMenuOpen = false}
 			>
 				Register

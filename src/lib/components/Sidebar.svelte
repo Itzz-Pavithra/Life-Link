@@ -88,7 +88,7 @@
 				<button
 					class="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-xs font-semibold transition-all duration-200 text-left cursor-pointer
 					{db.activeTab === item.id 
-						? 'bg-red-700 text-white shadow-lg shadow-red-700/20 font-bold' 
+						? 'bg-primary text-white shadow-lg shadow-red-700/20 font-bold' 
 						: 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}"
 					onclick={() => { db.activeTab = item.id; sidebarOpen = false; }}
 				>

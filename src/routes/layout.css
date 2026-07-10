@@ -35,6 +35,98 @@ textarea:focus-visible {
 	outline-offset: 2px !important;
 }
 
+/* Global Button Accessibility CSS */
+button,
+a[role="button"],
+.btn {
+	cursor: pointer;
+	font-family: inherit;
+	transition: background-color 0.2s ease, color 0.2s ease, transform 0.1s ease, border-color 0.2s ease;
+}
+
+/* Primary Button Global Style Defaults */
+.btn-primary,
+button.bg-primary,
+button.bg-red-600,
+button.bg-red-700,
+a.bg-primary,
+a.bg-red-600,
+a.bg-red-700,
+a.bg-red-650 {
+	background-color: #dc2626 !important;
+	color: #ffffff !important;
+	font-weight: 600 !important;
+}
+
+.btn-primary:hover,
+button.bg-primary:hover,
+button.bg-red-600:hover,
+button.bg-red-700:hover,
+a.bg-primary:hover,
+a.bg-red-600:hover,
+a.bg-red-700:hover,
+a.bg-red-650:hover {
+	background-color: #b91c1c !important;
+	color: #ffffff !important;
+}
+
+/* Light Button Global Style Defaults */
+.btn-light,
+button.bg-white,
+button.bg-slate-50,
+button.bg-slate-100,
+button.bg-slate-200,
+button.bg-gray-100,
+button.bg-gray-200,
+button.bg-red-50,
+a.bg-white,
+a.bg-slate-50,
+a.bg-slate-100,
+a.bg-slate-200,
+a.bg-red-50 {
+	color: #1e3a5f !important; /* Ensure high contrast dark blue text */
+	border-color: #e2e8f0 !important;
+}
+
+/* Destructive / warning buttons in light color variants */
+button.text-red-700.bg-red-50,
+button.text-red-700.bg-white,
+button.bg-red-50.text-red-700,
+button.bg-white.text-red-700,
+a.bg-red-50.text-red-700,
+a.bg-white.text-red-700 {
+	color: #dc2626 !important; /* Enforce primary red instead of red-700 */
+}
+
+.btn-light:hover,
+button.bg-white:hover,
+button.bg-slate-50:hover,
+button.bg-slate-100:hover,
+button.bg-slate-200:hover,
+button.bg-gray-100:hover,
+button.bg-gray-200:hover,
+button.bg-red-50:hover,
+a.bg-white:hover,
+a.bg-slate-50:hover,
+a.bg-slate-100:hover,
+a.bg-slate-200:hover,
+a.bg-red-50:hover {
+	background-color: #fff5f6 !important;
+	color: #dc2626 !important;
+	border-color: #fecdd3 !important;
+}
+
+/* Enforce disabled buttons visibility */
+button:disabled,
+.btn:disabled {
+	opacity: 0.65 !important;
+	cursor: not-allowed !important;
+	background-color: #f1f5f9 !important;
+	color: #64748b !important;
+	border-color: #cbd5e1 !important;
+}
+
+
 /* Theme: Baby Pink Minimal Theme Overrides for Light Mode */
 html:not(.dark):not(.contrast-high) body {
 	background-color: #fff2f4; /* Soft rose tint background */

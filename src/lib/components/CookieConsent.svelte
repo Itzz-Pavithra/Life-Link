@@ -38,13 +38,13 @@
 		<div class="flex gap-3 justify-end text-xs font-bold">
 			<button
 				onclick={reject}
-				class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-slate-600 rounded-xl transition cursor-pointer"
+				class="px-4 py-2 border border-slate-200 hover:bg-slate-50 text-secondary rounded-xl transition cursor-pointer font-bold"
 			>
 				Reject Cookies
 			</button>
 			<button
 				onclick={accept}
-				class="px-4 py-2 bg-red-650 hover:bg-red-700 text-white rounded-xl shadow-md shadow-red-600/20 transition cursor-pointer"
+				class="px-4 py-2 bg-primary hover:bg-red-700 text-white rounded-xl shadow-md transition cursor-pointer font-bold"
 			>
 				Accept Cookies
 			</button>

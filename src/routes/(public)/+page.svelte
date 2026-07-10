@@ -70,7 +70,7 @@
 			<div class="flex flex-wrap gap-4 justify-center pt-2">
 				<a
 					href="/eligibility"
-					class="bg-red-650 hover:bg-red-750 text-white font-bold px-8 py-3.5 rounded-2xl shadow-xl shadow-red-600/30 transition transform hover:-translate-y-0.5 active:scale-95 text-sm"
+					class="bg-primary hover:bg-red-700 text-white font-bold px-8 py-3.5 rounded-2xl shadow-xl transition transform hover:-translate-y-0.5 active:scale-95 text-sm"
 				>
 					Become a Donor
 				</a>
@@ -272,7 +272,7 @@
 
 						<button
 							type="submit"
-							class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-4 rounded-2xl shadow-lg shadow-red-700/25 transition transform active:scale-95 text-sm cursor-pointer"
+							class="w-full bg-primary hover:bg-red-700 text-white font-bold py-4 rounded-2xl shadow-lg transition transform active:scale-95 text-sm cursor-pointer"
 						>
 							Send Message
 						</button>

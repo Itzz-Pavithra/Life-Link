@@ -178,7 +178,7 @@
 				Take this clinical assessment to check if you are eligible to donate blood. Submissions are reviewed by our medical team.
 			</p>
 			<button
-				class="bg-red-700 hover:bg-red-800 text-white font-bold px-8 py-3 rounded-xl shadow-lg transition transform active:scale-95 cursor-pointer"
+				class="bg-primary hover:bg-red-700 text-white font-bold px-8 py-3 rounded-xl shadow-lg transition transform active:scale-95 cursor-pointer"
 				onclick={() => step = 1}
 			>
 				Start Assessment
@@ -289,9 +289,9 @@
 			</div>
 
 			<div class="flex justify-between">
-				<button class="text-gray-500 font-semibold px-4 py-2" onclick={() => step = 0}>Cancel</button>
+				<button class="text-secondary font-bold hover:text-primary transition px-4 py-2" onclick={() => step = 0}>Cancel</button>
 				<button
-					class="bg-red-700 hover:bg-red-800 text-white font-bold px-6 py-2.5 rounded-xl disabled:opacity-50 cursor-pointer"
+					class="bg-primary hover:bg-red-700 text-white font-bold px-6 py-2.5 rounded-xl transition cursor-pointer"
 					disabled={!isStep1Valid}
 					onclick={() => step = 2}
 				>
@@ -378,8 +378,8 @@
 			</div>
 
 			<div class="flex justify-between">
-				<button class="text-gray-500 font-semibold px-4 py-2" onclick={() => step = 1}>Back</button>
-				<button class="bg-red-700 hover:bg-red-800 text-white font-bold px-6 py-2.5 rounded-xl cursor-pointer" onclick={() => step = 3}>
+				<button class="text-secondary font-bold hover:text-primary transition px-4 py-2" onclick={() => step = 1}>Back</button>
+				<button class="bg-primary hover:bg-red-700 text-white font-bold px-6 py-2.5 rounded-xl transition cursor-pointer" onclick={() => step = 3}>
 					Next Step
 				</button>
 			</div>
@@ -450,8 +450,8 @@
 			</div>
 
 			<div class="flex justify-between">
-				<button class="text-gray-500 font-semibold px-4 py-2" onclick={() => step = 2}>Back</button>
-				<button class="bg-red-700 hover:bg-red-800 text-white font-bold px-6 py-2.5 rounded-xl cursor-pointer" onclick={() => step = 4}>
+				<button class="text-secondary font-bold hover:text-primary transition px-4 py-2" onclick={() => step = 2}>Back</button>
+				<button class="bg-primary hover:bg-red-700 text-white font-bold px-6 py-2.5 rounded-xl transition cursor-pointer" onclick={() => step = 4}>
 					Next Step
 				</button>
 			</div>
@@ -510,8 +510,8 @@
 			</div>
 
 			<div class="flex justify-between">
-				<button class="text-gray-500 font-semibold px-4 py-2" onclick={() => step = 3}>Back</button>
-				<button class="bg-red-700 hover:bg-red-800 text-white font-bold px-6 py-2.5 rounded-xl cursor-pointer" onclick={() => step = 5}>
+				<button class="text-secondary font-bold hover:text-primary transition px-4 py-2" onclick={() => step = 3}>Back</button>
+				<button class="bg-primary hover:bg-red-700 text-white font-bold px-6 py-2.5 rounded-xl transition cursor-pointer" onclick={() => step = 5}>
 					Next Step
 				</button>
 			</div>
@@ -561,9 +561,9 @@
 			</div>
 
 			<div class="flex justify-between">
-				<button class="text-gray-500 font-semibold px-4 py-2" onclick={() => step = 4}>Back</button>
+				<button class="text-secondary font-bold hover:text-primary transition px-4 py-2" onclick={() => step = 4}>Back</button>
 				<button
-					class="bg-red-700 hover:bg-red-800 text-white font-bold px-6 py-2.5 rounded-xl cursor-pointer"
+					class="bg-primary hover:bg-red-700 text-white font-bold px-6 py-2.5 rounded-xl transition cursor-pointer"
 					onclick={handleSubmit}
 				>
 					Submit Assessment
@@ -610,11 +610,11 @@
 			{/if}
 
 			<div class="pt-4 flex justify-center gap-3">
-				<a href="/" class="bg-slate-900 hover:bg-black text-white font-bold px-6 py-3 rounded-xl transition text-sm">
+				<a href="/" class="bg-white border border-slate-200 text-secondary hover:bg-baby-pink hover:text-primary font-bold px-6 py-3 rounded-xl transition text-sm">
 					Return Home
 				</a>
 				<button
-					class="bg-red-50 hover:bg-red-100 text-red-700 font-bold px-6 py-3 rounded-xl transition text-sm cursor-pointer"
+					class="bg-white border border-red-200 text-primary font-bold px-6 py-3 rounded-xl hover:bg-red-50 transition text-sm cursor-pointer"
 					onclick={resetQuiz}
 				>
 					Retake Assessment

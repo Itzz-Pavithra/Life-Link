@@ -161,7 +161,7 @@
 					<button
 						type="submit"
 						disabled={isSending}
-						class="w-full bg-red-700 hover:bg-red-800 disabled:bg-red-400 disabled:cursor-not-allowed text-white font-bold py-3.5 rounded-xl shadow-lg shadow-red-700/25 transition transform active:scale-95"
+						class="w-full bg-primary hover:bg-red-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition transform active:scale-95 cursor-pointer"
 					>
 						{isSending ? "Sending..." : "Send Message"}
 					</button>

@@ -639,13 +639,13 @@
 									<td class="py-3 px-4 text-right space-x-2">
 										{#if user.role !== 'admin'}
 											<button
-												class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2.5 py-1 rounded-lg transition cursor-pointer text-[10px]"
+												class="bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold px-2.5 py-1 rounded-lg transition cursor-pointer text-[10px]"
 												onclick={() => handleUserSuspend(user.id, user.name, user.status)}
 											>
 												{user.status === 'active' ? 'Suspend' : 'Unsuspend'}
 											</button>
 											<button
-												class="bg-red-50 hover:bg-red-100 text-red-700 font-bold px-2.5 py-1 rounded-lg transition cursor-pointer text-[10px]"
+												class="bg-white border border-red-200 text-primary hover:bg-red-50 font-bold px-2.5 py-1 rounded-lg transition cursor-pointer text-[10px]"
 												onclick={() => handleUserDelete(user.id, user.name)}
 											>
 												Delete
@@ -663,7 +663,7 @@
 				<!-- Pagination -->
 				<div class="flex justify-between items-center pt-4 border-t border-slate-50">
 					<button
-						class="px-3 py-1 bg-slate-100 hover:bg-slate-200 font-bold text-[10px] rounded-lg disabled:opacity-50"
+						class="px-3 py-1 bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold text-[10px] rounded-lg disabled:opacity-50"
 						disabled={userPage === 1}
 						onclick={() => userPage--}
 					>
@@ -671,7 +671,7 @@
 					</button>
 					<span class="text-[10px] text-slate-500 font-bold">Page {userPage} of {Math.ceil(filteredUsers.length / PAGE_SIZE)}</span>
 					<button
-						class="px-3 py-1 bg-slate-100 hover:bg-slate-200 font-bold text-[10px] rounded-lg disabled:opacity-50"
+						class="px-3 py-1 bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold text-[10px] rounded-lg disabled:opacity-50"
 						disabled={userPage * PAGE_SIZE >= filteredUsers.length}
 						onclick={() => userPage++}
 					>
@@ -839,7 +839,7 @@
 									</td>
 									<td class="py-3 px-4 text-right space-x-2">
 										<button
-											class="bg-slate-900 hover:bg-black text-white font-bold px-2.5 py-1 rounded-lg transition cursor-pointer text-[10px]"
+											class="bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold px-2.5 py-1 rounded-lg transition cursor-pointer text-[10px]"
 											onclick={() => selectedEligRequest = elig}
 										>
 											View Questionnaire Answers
@@ -854,7 +854,7 @@
 				<!-- Pagination -->
 				<div class="flex justify-between items-center pt-4 border-t border-slate-50">
 					<button
-						class="px-3 py-1 bg-slate-100 hover:bg-slate-200 font-bold text-[10px] rounded-lg disabled:opacity-50"
+						class="px-3 py-1 bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold text-[10px] rounded-lg disabled:opacity-50"
 						disabled={eligPage === 1}
 						onclick={() => eligPage--}
 					>
@@ -862,7 +862,7 @@
 					</button>
 					<span class="text-[10px] text-slate-500 font-bold">Page {eligPage} of {Math.ceil(filteredEligibility.length / PAGE_SIZE)}</span>
 					<button
-						class="px-3 py-1 bg-slate-100 hover:bg-slate-200 font-bold text-[10px] rounded-lg disabled:opacity-50"
+						class="px-3 py-1 bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold text-[10px] rounded-lg disabled:opacity-50"
 						disabled={eligPage * PAGE_SIZE >= filteredEligibility.length}
 						onclick={() => eligPage++}
 					>
@@ -949,20 +949,20 @@
 									<td class="py-3 px-4 text-right space-x-1.5">
 										{#if req.status === 'Pending'}
 											<button
-												class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-2 py-1 rounded-lg text-[9px] transition cursor-pointer"
+												class="bg-primary hover:bg-red-700 text-white font-bold px-2 py-1 rounded-lg text-[9px] transition cursor-pointer"
 												onclick={() => handleActionRequest(req.id, 'Approved')}
 											>
 												Approve
 											</button>
 											<button
-												class="bg-red-50 hover:bg-red-100 text-red-700 font-bold px-2 py-1 rounded-lg text-[9px] transition cursor-pointer"
+												class="bg-white border border-red-200 text-primary hover:bg-red-50 font-bold px-2 py-1 rounded-lg text-[9px] transition cursor-pointer"
 												onclick={() => handleActionRequest(req.id, 'Rejected')}
 											>
 												Reject
 											</button>
 										{:else if req.status === 'Approved'}
 											<button
-												class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-2 py-1 rounded-lg text-[9px] transition cursor-pointer"
+												class="bg-primary hover:bg-red-700 text-white font-bold px-2 py-1 rounded-lg text-[9px] transition cursor-pointer"
 												onclick={() => handleActionRequest(req.id, 'Completed')}
 											>
 												Mark Completed
@@ -980,7 +980,7 @@
 				<!-- Pagination -->
 				<div class="flex justify-between items-center pt-4 border-t border-slate-50">
 					<button
-						class="px-3 py-1 bg-slate-100 hover:bg-slate-200 font-bold text-[10px] rounded-lg disabled:opacity-50"
+						class="px-3 py-1 bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold text-[10px] rounded-lg disabled:opacity-50"
 						disabled={reqPage === 1}
 						onclick={() => reqPage--}
 					>
@@ -988,7 +988,7 @@
 					</button>
 					<span class="text-[10px] text-slate-500 font-bold">Page {reqPage} of {Math.ceil(filteredRequests.length / PAGE_SIZE)}</span>
 					<button
-						class="px-3 py-1 bg-slate-100 hover:bg-slate-200 font-bold text-[10px] rounded-lg disabled:opacity-50"
+						class="px-3 py-1 bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold text-[10px] rounded-lg disabled:opacity-50"
 						disabled={reqPage * PAGE_SIZE >= filteredRequests.length}
 						onclick={() => reqPage++}
 					>
@@ -1029,14 +1029,14 @@
 									</div>
 									<div class="flex gap-2">
 										<button
-											class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold p-1.5 rounded-lg text-xs transition cursor-pointer"
+											class="bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold p-1.5 rounded-lg text-xs transition cursor-pointer"
 											title="Edit"
 											onclick={() => startEditBank(bank)}
 										>
 											✏️
 										</button>
 										<button
-											class="bg-red-50 hover:bg-red-100 text-red-700 font-bold p-1.5 rounded-lg text-xs transition cursor-pointer"
+											class="bg-white border border-red-200 text-primary hover:bg-red-50 font-bold p-1.5 rounded-lg text-xs transition cursor-pointer"
 											title="Delete"
 											onclick={() => handleBankDelete(bank.id, bank.name)}
 										>
@@ -1072,7 +1072,7 @@
 					<!-- Pagination -->
 					<div class="flex justify-between items-center pt-4 border-t border-slate-50">
 						<button
-							class="px-3 py-1 bg-slate-100 hover:bg-slate-200 font-bold text-[10px] rounded-lg disabled:opacity-50"
+							class="px-3 py-1 bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold text-[10px] rounded-lg disabled:opacity-50"
 							disabled={bankPage === 1}
 							onclick={() => bankPage--}
 						>
@@ -1080,7 +1080,7 @@
 						</button>
 						<span class="text-[10px] text-slate-500 font-bold">Page {bankPage} of {Math.ceil(filteredBanks.length / PAGE_SIZE)}</span>
 						<button
-							class="px-3 py-1 bg-slate-100 hover:bg-slate-200 font-bold text-[10px] rounded-lg disabled:opacity-50"
+							class="px-3 py-1 bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold text-[10px] rounded-lg disabled:opacity-50"
 							disabled={bankPage * PAGE_SIZE >= filteredBanks.length}
 							onclick={() => bankPage++}
 						>
@@ -1174,14 +1174,14 @@
 					<div class="flex gap-2 pt-2">
 						<button
 							type="submit"
-							class="flex-grow bg-slate-900 hover:bg-black text-white font-bold py-2.5 rounded-xl transition cursor-pointer"
+							class="flex-grow bg-primary hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition cursor-pointer"
 						>
 							{editingBankId ? 'Save details' : 'Create Blood Bank'}
 						</button>
 						{#if editingBankId}
 							<button
 								type="button"
-								class="bg-gray-150 text-gray-700 hover:bg-gray-250 font-bold px-3 py-2.5 rounded-xl border transition cursor-pointer bg-gray-200"
+								class="bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold px-3 py-2.5 rounded-xl transition cursor-pointer"
 								onclick={resetBankForm}
 							>
 								Cancel
@@ -1306,7 +1306,7 @@
 
 					<button
 						type="submit"
-						class="w-full bg-slate-900 hover:bg-black text-white font-bold py-2.5 rounded-xl transition cursor-pointer"
+						class="w-full bg-primary hover:bg-red-700 text-white font-bold py-2.5 rounded-xl transition cursor-pointer"
 					>
 						Register Donation Drive
 					</button>
@@ -1326,19 +1326,19 @@
 				<!-- Export Row -->
 				<div class="flex flex-wrap gap-2">
 					<button
-						class="bg-red-700 hover:bg-red-800 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer"
+						class="bg-primary hover:bg-red-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer"
 						onclick={() => exportToCSV(data.users, ['id', 'name', 'email', 'phone', 'location', 'role', 'status', 'bloodGroup', 'createdAt'], 'lifelink_users.csv')}
 					>
 						📥 Export Users CSV
 					</button>
 					<button
-						class="bg-blue-600 hover:bg-blue-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer"
+						class="bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer"
 						onclick={() => exportToCSV(data.requests, ['id', 'patientName', 'bloodGroup', 'units', 'hospital', 'city', 'urgency', 'status', 'submittedAt'], 'lifelink_requests.csv')}
 					>
 						📥 Export Requests CSV
 					</button>
 					<button
-						class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer"
+						class="bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer"
 						onclick={() => exportToCSV(data.bloodBanks, ['id', 'name', 'address', 'phone', 'email', 'workingHours'], 'lifelink_bloodbanks.csv')}
 					>
 						📥 Export Blood Banks CSV
@@ -1510,7 +1510,7 @@
 					<p class="text-[10px] text-gray-500">Applicant: {selectedEligRequest.name} ({selectedEligRequest.email})</p>
 				</div>
 				<button
-					class="p-1 rounded-full hover:bg-gray-150 text-gray-400 hover:text-slate-800 transition text-lg cursor-pointer bg-gray-100"
+					class="p-1 rounded-full bg-white hover:bg-rose-50 border border-slate-200 text-secondary hover:text-primary transition text-lg cursor-pointer flex items-center justify-center w-8 h-8"
 					onclick={() => selectedEligRequest = null}
 				>
 					✕
@@ -1587,20 +1587,20 @@
 			<div class="flex gap-3 justify-end border-t border-slate-50 pt-4">
 				{#if selectedEligRequest.status === 'Pending'}
 					<button
-						class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-6 py-2 rounded-xl transition cursor-pointer text-xs"
+						class="bg-primary hover:bg-red-700 text-white font-bold px-6 py-2 rounded-xl transition cursor-pointer text-xs"
 						onclick={() => handleReviewEligibility(selectedEligRequest.id, 'Approved', selectedEligRequest.email)}
 					>
 						Approve Candidate
 					</button>
 					<button
-						class="bg-red-50 hover:bg-red-100 text-red-700 font-bold px-6 py-2 rounded-xl transition cursor-pointer text-xs"
+						class="bg-white border border-red-200 text-primary hover:bg-red-50 font-bold px-6 py-2 rounded-xl transition cursor-pointer text-xs"
 						onclick={() => handleReviewEligibility(selectedEligRequest.id, 'Rejected', selectedEligRequest.email)}
 					>
 						Reject Candidate
 					</button>
 				{/if}
 				<button
-					class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-5 py-2 rounded-xl border transition cursor-pointer text-xs"
+					class="bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold px-5 py-2 rounded-xl transition cursor-pointer text-xs"
 					onclick={() => selectedEligRequest = null}
 				>
 					Close

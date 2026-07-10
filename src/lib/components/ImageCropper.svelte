@@ -144,14 +144,14 @@
 			<button
 				type="button"
 				onclick={onCancel}
-				class="flex-1 py-3 border border-slate-200 text-slate-700 font-bold rounded-xl text-xs hover:bg-slate-50 cursor-pointer"
+				class="flex-1 py-3 border border-slate-200 text-secondary font-bold rounded-xl text-xs hover:bg-slate-50 cursor-pointer transition"
 			>
 				Cancel
 			</button>
 			<button
 				type="button"
 				onclick={handleApply}
-				class="flex-1 py-3 bg-red-700 hover:bg-red-800 text-white font-bold rounded-xl text-xs shadow-lg shadow-red-700/10 cursor-pointer"
+				class="flex-1 py-3 bg-primary hover:bg-red-700 text-white font-bold rounded-xl text-xs shadow-lg transition cursor-pointer"
 			>
 				Apply Crop
 			</button>

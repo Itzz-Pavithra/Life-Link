@@ -277,7 +277,7 @@
 						<label class="text-[10px] font-bold text-slate-500 uppercase" for="admin-pass">Choose Password *</label>
 						<button
 							type="button"
-							class="text-[10px] font-bold text-red-700 hover:text-red-850 hover:underline cursor-pointer"
+							class="text-[10px] font-bold text-primary hover:text-red-700 hover:underline cursor-pointer"
 							onclick={suggestSetupPassword}
 						>
 							Suggest Strong Password
@@ -317,7 +317,7 @@
 
 				<button
 					type="submit"
-					class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-red-700/25 transition transform active:scale-95 cursor-pointer"
+					class="w-full bg-primary hover:bg-red-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition transform active:scale-95 cursor-pointer"
 				>
 					Initialize Administrator Account
 				</button>
@@ -398,7 +398,7 @@
 
 				<button
 					type="submit"
-					class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-red-700/25 transition transform active:scale-95 cursor-pointer"
+					class="w-full bg-primary hover:bg-red-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition transform active:scale-95 cursor-pointer"
 				>
 					Sign In
 				</button>
@@ -413,7 +413,7 @@
 			<button
 				type="button"
 				onclick={handleGoogleSignIn}
-				class="w-full bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold py-3 rounded-xl flex items-center justify-center gap-2.5 transition active:scale-95 cursor-pointer text-sm"
+				class="w-full bg-white hover:bg-slate-50 border border-slate-200 text-secondary font-bold py-3 rounded-xl flex items-center justify-center gap-2.5 transition active:scale-95 cursor-pointer text-sm"
 			>
 				<svg class="h-5 w-5" viewBox="0 0 24 24">
 					<path

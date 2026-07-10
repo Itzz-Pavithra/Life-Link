@@ -328,7 +328,7 @@
 							<div class="mt-4">
 								{#if req.status !== 'Accepted'}
 									<button
-										class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-2.5 rounded-xl text-xs transition cursor-pointer"
+										class="w-full bg-primary hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition cursor-pointer"
 										onclick={() => handleAcceptEmergency(req.id)}
 									>
 										Accept Emergency Drive
@@ -419,7 +419,7 @@
 				{#if !isEditing}
 					<button
 						onclick={() => isEditing = true}
-						class="bg-red-700 hover:bg-red-800 text-white font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer"
+						class="bg-primary hover:bg-red-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer"
 					>
 						✏️ Edit Profile
 					</button>
@@ -562,13 +562,13 @@
 						<button
 							type="button"
 							onclick={cancelEditing}
-							class="w-full bg-slate-150 hover:bg-slate-200 text-slate-800 font-bold py-3 rounded-xl transition cursor-pointer text-sm"
+							class="w-full bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold py-3 rounded-xl transition cursor-pointer text-sm"
 						>
 							Cancel
 						</button>
 						<button
 							type="submit"
-							class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 rounded-xl transition cursor-pointer text-sm"
+							class="w-full bg-primary hover:bg-red-700 text-white font-bold py-3 rounded-xl transition cursor-pointer text-sm"
 						>
 							Save Changes
 						</button>
@@ -587,7 +587,7 @@
 			</div>
 			<button
 				onclick={() => showDeleteConfirm = true}
-				class="bg-red-50 hover:bg-red-100 border border-red-200 text-red-700 font-bold px-5 py-2.5 rounded-xl transition text-sm cursor-pointer whitespace-nowrap"
+				class="bg-white border border-red-250 text-primary font-bold px-5 py-2.5 rounded-xl hover:bg-red-50 transition text-sm cursor-pointer whitespace-nowrap"
 			>
 				🗑️ Delete My Account
 			</button>
@@ -623,14 +623,14 @@
 				<button
 					onclick={() => showDeleteConfirm = false}
 					disabled={deletingAccount}
-					class="w-full bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold py-3 rounded-xl transition cursor-pointer disabled:opacity-50"
+					class="w-full bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold py-3 rounded-xl transition cursor-pointer disabled:opacity-50"
 				>
 					Cancel
 				</button>
 				<button
 					onclick={handleDeleteAccount}
 					disabled={deletingAccount}
-					class="w-full bg-red-700 hover:bg-red-800 text-white font-bold py-3 rounded-xl transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+					class="w-full bg-primary hover:bg-red-700 text-white font-bold py-3 rounded-xl transition cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
 				>
 					{deletingAccount ? 'Deleting...' : 'Delete Permanently'}
 				</button>

@@ -34,7 +34,7 @@
 
 			<button
 				type="submit"
-				class="w-full bg-red-700 text-white font-bold py-3.5 rounded-xl hover:bg-red-800 shadow-lg shadow-red-700/20 active:scale-95 transition cursor-pointer"
+				class="w-full bg-primary text-white font-bold py-3.5 rounded-xl hover:bg-red-700 shadow-lg active:scale-95 transition cursor-pointer"
 			>
 				Send Reset Link
 			</button>
@@ -44,7 +44,7 @@
 		<div class="text-center mt-6">
 			<a
 				href="/login"
-				class="text-red-700 font-bold hover:underline"
+				class="text-primary font-bold hover:text-red-700 hover:underline"
 			>
 				← Back to Login
 			</a>
