@@ -42,17 +42,7 @@ export async function POST({ request }) {
 			return json({ error: 'Admin accounts cannot be created through registration.' }, { status: 403 });
 		}
 
-		// Verify clinical eligibility for donors
-		if (role === 'donor') {
-			const eligibilitySnap = await db.collection('eligibility_requests')
-				.where('email', '==', email.toLowerCase())
-				.where('status', '==', 'Approved')
-				.limit(1)
-				.get();
-			if (eligibilitySnap.empty) {
-				return json({ error: 'You must submit the Eligibility Checker and receive Admin Approval before registering as a donor.' }, { status: 400 });
-			}
-		}
+
 
 		const newUser = await createUser({
 			name: fullName,

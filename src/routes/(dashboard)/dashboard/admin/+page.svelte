@@ -16,16 +16,12 @@
 
 	let receiverSearchQuery = $state('');
 
-	let eligSearchQuery = $state('');
-	let eligFilterStatus = $state('all');
-
 	let reqSearchQuery = $state('');
 	let reqFilterStatus = $state('all');
 
 	let bankSearchQuery = $state('');
 
 	// Modals & Details State
-	let selectedEligRequest = $state(null);
 	let selectedUserDetail = $state(null);
 
 	// Blood Bank Edit State
@@ -39,7 +35,6 @@
 
 	// Pagination variables (10 records per page)
 	let userPage = $state(1);
-	let eligPage = $state(1);
 	let reqPage = $state(1);
 	let bankPage = $state(1);
 	const PAGE_SIZE = 5;
@@ -118,25 +113,7 @@
 		}
 	}
 
-	async function handleReviewEligibility(requestId, status, candidateEmail) {
-		try {
-			const res = await fetch('/api/eligibility', {
-				method: 'PUT',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ requestId, status })
-			});
-			const result = await res.json();
-			if (result.success) {
-				db.addToast(`Eligibility request for ${candidateEmail} has been ${status.toUpperCase()}`, 'success');
-				selectedEligRequest = null;
-				await invalidateAll();
-			} else {
-				db.addToast(result.error || 'Failed to review request.', 'error');
-			}
-		} catch (err) {
-			db.addToast('Error communicating with server.', 'error');
-		}
-	}
+
 
 	async function handleActionRequest(requestId, status) {
 		try {
@@ -271,15 +248,7 @@
 		})
 	);
 
-	const filteredEligibility = $derived(
-		data.eligibilityRequests.filter(r => {
-			const matchesSearch = r.name.toLowerCase().includes(eligSearchQuery.toLowerCase()) ||
-								  r.email.toLowerCase().includes(eligSearchQuery.toLowerCase()) ||
-								  r.location.toLowerCase().includes(eligSearchQuery.toLowerCase());
-			const matchesStatus = eligFilterStatus === 'all' || r.status === eligFilterStatus;
-			return matchesSearch && matchesStatus;
-		})
-	);
+
 
 	const filteredRequests = $derived(
 		data.requests.filter(r => {
@@ -300,7 +269,6 @@
 
 	// paginated listings
 	const paginatedUsers = $derived(filteredUsers.slice((userPage - 1) * PAGE_SIZE, userPage * PAGE_SIZE));
-	const paginatedElig = $derived(filteredEligibility.slice((eligPage - 1) * PAGE_SIZE, eligPage * PAGE_SIZE));
 	const paginatedReqs = $derived(filteredRequests.slice((reqPage - 1) * PAGE_SIZE, reqPage * PAGE_SIZE));
 	const paginatedBanks = $derived(filteredBanks.slice((bankPage - 1) * PAGE_SIZE, bankPage * PAGE_SIZE));
 
@@ -775,99 +743,6 @@
 							</div>
 						</div>
 					{/each}
-				</div>
-			{/if}
-		</div>
-
-	<!-- TAB 5: ELIGIBILITY REQUESTS QUEUE -->
-	{:else if db.activeTab === 'eligibility-requests'}
-		<div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-6">
-			<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-slate-50 pb-4">
-				<div>
-					<h3 class="text-lg font-bold text-slate-900">Donor Eligibility Assessment Queue</h3>
-					<p class="text-[10px] text-slate-500">Clinical questionnaires submitted by prospective donors.</p>
-				</div>
-				<div class="flex gap-2">
-					<input
-						type="text"
-						bind:value={eligSearchQuery}
-						placeholder="Search by Email..."
-						class="border border-slate-200 px-3 py-1.5 rounded-xl text-xs focus:ring-2 focus:ring-red-500 focus:outline-none"
-					/>
-					<select
-						bind:value={eligFilterStatus}
-						class="border border-slate-200 px-3 py-1.5 rounded-xl text-xs bg-white focus:outline-none"
-					>
-						<option value="all">All Submissions</option>
-						<option value="Pending">Pending</option>
-						<option value="Approved">Approved</option>
-						<option value="Rejected">Rejected</option>
-					</select>
-				</div>
-			</div>
-
-			{#if filteredEligibility.length === 0}
-				<p class="text-slate-400 text-xs">No eligibility requests logged.</p>
-			{:else}
-				<div class="overflow-x-auto">
-					<table class="w-full border-collapse text-left text-sm">
-						<thead>
-							<tr class="border-b border-slate-100 text-slate-400 text-[10px] font-bold uppercase">
-								<th class="py-3 px-4">Candidate</th>
-								<th class="py-3 px-4">Email Address</th>
-								<th class="py-3 px-4">Vitals (Age/Weight)</th>
-								<th class="py-3 px-4">Status</th>
-								<th class="py-3 px-4 text-right">Verification Audits</th>
-							</tr>
-						</thead>
-						<tbody class="divide-y divide-slate-50">
-							{#each paginatedElig as elig}
-								<tr class="hover:bg-slate-50/30 transition text-xs">
-									<td class="py-3 px-4">
-										<span class="font-bold text-slate-900 block">{elig.name}</span>
-										<span class="text-[9px] text-slate-400">📍 {elig.location} • {elig.phone}</span>
-									</td>
-									<td class="py-3 px-4 font-mono">{elig.email}</td>
-									<td class="py-3 px-4 text-slate-650 font-semibold">{elig.answers?.age} yrs • {elig.answers?.weight} kg</td>
-									<td class="py-3 px-4">
-										<span class="px-2 py-0.5 rounded font-bold text-[9px] tracking-wide uppercase
-											{elig.status === 'Pending' ? 'bg-amber-50 text-amber-700 border border-amber-200' : ''}
-											{elig.status === 'Approved' ? 'bg-emerald-50 text-emerald-700 border border-emerald-250' : ''}
-											{elig.status === 'Rejected' ? 'bg-red-50 text-red-700 border border-red-150' : ''}">
-											{elig.status}
-										</span>
-									</td>
-									<td class="py-3 px-4 text-right space-x-2">
-										<button
-											class="bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold px-2.5 py-1 rounded-lg transition cursor-pointer text-[10px]"
-											onclick={() => selectedEligRequest = elig}
-										>
-											View Questionnaire Answers
-										</button>
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
-
-				<!-- Pagination -->
-				<div class="flex justify-between items-center pt-4 border-t border-slate-50">
-					<button
-						class="px-3 py-1 bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold text-[10px] rounded-lg disabled:opacity-50"
-						disabled={eligPage === 1}
-						onclick={() => eligPage--}
-					>
-						Prev
-					</button>
-					<span class="text-[10px] text-slate-500 font-bold">Page {eligPage} of {Math.ceil(filteredEligibility.length / PAGE_SIZE)}</span>
-					<button
-						class="px-3 py-1 bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold text-[10px] rounded-lg disabled:opacity-50"
-						disabled={eligPage * PAGE_SIZE >= filteredEligibility.length}
-						onclick={() => eligPage++}
-					>
-						Next
-					</button>
 				</div>
 			{/if}
 		</div>
@@ -1499,113 +1374,3 @@
 		</div>
 	{/if}
 </div>
-
-<!-- Modal: Eligibility Questionnaire Viewer -->
-{#if selectedEligRequest}
-	<div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-		<div class="bg-white border border-slate-100 p-6 rounded-[32px] shadow-2xl w-full max-w-2xl max-h-[85vh] overflow-y-auto space-y-6 relative animate-fadeIn text-left">
-			<div class="flex justify-between items-start">
-				<div>
-					<h3 class="text-lg font-bold text-slate-900">Eligibility Questionnaire Assessment</h3>
-					<p class="text-[10px] text-gray-500">Applicant: {selectedEligRequest.name} ({selectedEligRequest.email})</p>
-				</div>
-				<button
-					class="p-1 rounded-full bg-white hover:bg-rose-50 border border-slate-200 text-secondary hover:text-primary transition text-lg cursor-pointer flex items-center justify-center w-8 h-8"
-					onclick={() => selectedEligRequest = null}
-				>
-					✕
-				</button>
-			</div>
-
-			<div class="grid sm:grid-cols-2 gap-4 text-xs">
-				<div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-					<p class="text-slate-400 font-semibold uppercase text-[9px] mb-1">Age</p>
-					<p class="font-bold text-slate-800">{selectedEligRequest.answers?.age} years</p>
-				</div>
-				<div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-					<p class="text-slate-400 font-semibold uppercase text-[9px] mb-1">Weight</p>
-					<p class="font-bold text-slate-800">{selectedEligRequest.answers?.weight} kg</p>
-				</div>
-				<div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-					<p class="text-slate-400 font-semibold uppercase text-[9px] mb-1">Gender</p>
-					<p class="font-bold text-slate-800">{selectedEligRequest.answers?.gender}</p>
-				</div>
-				<div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-					<p class="text-slate-400 font-semibold uppercase text-[9px] mb-1">Last Donation</p>
-					<p class="font-bold text-slate-800">{selectedEligRequest.answers?.lastDonation === 12 ? 'Never / >12 months' : `${selectedEligRequest.answers?.lastDonation} months ago`}</p>
-				</div>
-				<div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-					<p class="text-slate-400 font-semibold uppercase text-[9px] mb-1">Blood Pressure</p>
-					<p class="font-bold uppercase text-slate-800">{selectedEligRequest.answers?.bloodPressure}</p>
-				</div>
-				<div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-					<p class="text-slate-400 font-semibold uppercase text-[9px] mb-1">Diabetic under insulin?</p>
-					<p class="font-bold uppercase text-slate-800">{selectedEligRequest.answers?.diabetes ? 'Yes' : 'No'}</p>
-				</div>
-				<div class="bg-slate-50 p-3 rounded-xl border border-slate-100 col-span-2">
-					<p class="text-slate-400 font-semibold uppercase text-[9px] mb-1">Chronic Diseases</p>
-					<p class="font-bold text-slate-800">{selectedEligRequest.answers?.chronicDisease === true ? 'Yes' : (selectedEligRequest.answers?.chronicDisease || 'None')}</p>
-				</div>
-				<div class="bg-slate-50 p-3 rounded-xl border border-slate-100 col-span-2">
-					<p class="text-slate-400 font-semibold uppercase text-[9px] mb-1">Ongoing Prescribed Medications</p>
-					<p class="font-bold text-slate-800">{selectedEligRequest.answers?.medication === true ? 'Yes' : (selectedEligRequest.answers?.medication || 'None')}</p>
-				</div>
-				<div class="bg-slate-50 p-3 rounded-xl border border-slate-100 col-span-2">
-					<p class="text-slate-400 font-semibold uppercase text-[9px] mb-1">Recent Major Surgeries</p>
-					<p class="font-bold text-slate-800">{selectedEligRequest.answers?.surgeryHistory === true ? 'Yes' : (selectedEligRequest.answers?.surgeryHistory || 'None')}</p>
-				</div>
-				<div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-					<p class="text-slate-400 font-semibold uppercase text-[9px] mb-1">Tattoo or Piercings (last 6m)</p>
-					<p class="font-bold text-slate-800">{selectedEligRequest.answers?.tattoo ? 'Yes' : 'No'}</p>
-				</div>
-				<div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-					<p class="text-slate-400 font-semibold uppercase text-[9px] mb-1">Pregnancy or Breastfeeding</p>
-					<p class="font-bold text-slate-800">{selectedEligRequest.answers?.pregnancy === 'na' ? 'Not Applicable' : (selectedEligRequest.answers?.pregnancy === 'yes' ? 'Yes' : 'No')}</p>
-				</div>
-				<div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-					<p class="text-slate-400 font-semibold uppercase text-[9px] mb-1">Fever, cold, active flu?</p>
-					<p class="font-bold text-slate-800">{selectedEligRequest.answers?.fever ? 'Yes' : 'No'}</p>
-				</div>
-				<div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-					<p class="text-slate-400 font-semibold uppercase text-[9px] mb-1">Vaccinations (last 4w)</p>
-					<p class="font-bold text-slate-800">{selectedEligRequest.answers?.vaccination ? 'Yes' : 'No'}</p>
-				</div>
-				<div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-					<p class="text-slate-400 font-semibold uppercase text-[9px] mb-1">Est. Hemoglobin level</p>
-					<p class="font-bold text-slate-800">{selectedEligRequest.answers?.hemoglobin} g/dL</p>
-				</div>
-				<div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
-					<p class="text-slate-400 font-semibold uppercase text-[9px] mb-1">COVID-19 symptoms (last 14d)</p>
-					<p class="font-bold text-slate-800">{selectedEligRequest.answers?.covidHistory ? 'Yes' : 'No'}</p>
-				</div>
-				<div class="bg-slate-50 p-3 rounded-xl border border-slate-100 col-span-2">
-					<p class="text-slate-400 font-semibold uppercase text-[9px] mb-1">Medical Notes</p>
-					<p class="font-bold text-slate-800">{selectedEligRequest.answers?.medicalHistory || 'None logged'}</p>
-				</div>
-			</div>
-
-			<div class="flex gap-3 justify-end border-t border-slate-50 pt-4">
-				{#if selectedEligRequest.status === 'Pending'}
-					<button
-						class="bg-primary hover:bg-red-700 text-white font-bold px-6 py-2 rounded-xl transition cursor-pointer text-xs"
-						onclick={() => handleReviewEligibility(selectedEligRequest.id, 'Approved', selectedEligRequest.email)}
-					>
-						Approve Candidate
-					</button>
-					<button
-						class="bg-white border border-red-200 text-primary hover:bg-red-50 font-bold px-6 py-2 rounded-xl transition cursor-pointer text-xs"
-						onclick={() => handleReviewEligibility(selectedEligRequest.id, 'Rejected', selectedEligRequest.email)}
-					>
-						Reject Candidate
-					</button>
-				{/if}
-				<button
-					class="bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold px-5 py-2 rounded-xl transition cursor-pointer text-xs"
-					onclick={() => selectedEligRequest = null}
-				>
-					Close
-				</button>
-			</div>
-		</div>
-	</div>
-{/if}

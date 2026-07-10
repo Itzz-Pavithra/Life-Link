@@ -46,7 +46,6 @@
 			{ id: 'users', label: 'All Users', icon: '👥' },
 			{ id: 'donors', label: 'Donors List', icon: '🩸' },
 			{ id: 'receivers', label: 'Receivers List', icon: '📋' },
-			{ id: 'eligibility-requests', label: 'Eligibility Queue', icon: '🛡️' },
 			{ id: 'blood-requests', label: 'Blood Requests', icon: '📋' },
 			{ id: 'blood-banks', label: 'Blood Banks', icon: '🏥' },
 			{ id: 'donation-history', label: 'Donation History', icon: '🕒' },

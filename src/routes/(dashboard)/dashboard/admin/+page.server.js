@@ -23,7 +23,6 @@ export async function load({ locals }) {
 	const bloodRequests = await database.getRequests();
 	const bloodBanks = await database.getBloodBanks();
 	const donations = await database.getDonations();
-	const eligibilityRequests = await database.getEligibilityRequests();
 	const logs = await database.getSystemLogs();
 
 	// Helper function for last 6 months stats
@@ -95,7 +94,7 @@ export async function load({ locals }) {
 		users,
 		donors: donorsList,
 		receivers: users.filter(u => u.role === 'recipient'),
-		eligibilityRequests,
+		eligibilityRequests: [],
 		bloodBanks,
 		requests: bloodRequests,
 		donations,

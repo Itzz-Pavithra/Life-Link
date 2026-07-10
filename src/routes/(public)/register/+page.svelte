@@ -6,12 +6,23 @@
 	import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 	import BloodWaveBackground from '$lib/components/BloodWaveBackground.svelte';
 	import OtpVerification from '$lib/components/OtpVerification.svelte';
+	import { onMount } from 'svelte';
 
 	let showOtp = $state(false);
 	let registeredEmail = $state('');
 
 	let role = $state('');
 	let name = $state('');
+
+	onMount(() => {
+		const searchParams = new URLSearchParams(window.location.search);
+		if (searchParams.has('role')) role = searchParams.get('role');
+		if (searchParams.has('name')) name = searchParams.get('name');
+		if (searchParams.has('email')) email = searchParams.get('email');
+		if (searchParams.has('phone')) phone = searchParams.get('phone');
+		if (searchParams.has('location')) location = searchParams.get('location');
+		if (searchParams.has('bloodGroup')) bloodGroup = searchParams.get('bloodGroup');
+	});
 	let email = $state('');
 	let phone = $state('');
 	let location = $state('');

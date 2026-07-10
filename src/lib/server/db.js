@@ -110,9 +110,8 @@ export const database = {
 			return {
 				steps: [
 					{ step: '01', title: 'Eligibility Checker', desc: 'Prospective donors take our standard questionnaire.', icon: '📋' },
-					{ step: '02', title: 'Admin Verification', desc: 'Administrators verify questionnaire answers securely.', icon: '🔍' },
-					{ step: '03', title: 'Register & Match', desc: 'Eligible donors register and match with local patient requests.', icon: '⚡' },
-					{ step: '04', title: 'Save Lives', desc: 'Donate blood, log history, and rescue patient emergencies.', icon: '🩸' }
+					{ step: '02', title: 'Register & Match', desc: 'Create a donor profile immediately after passing the check.', icon: '⚡' },
+					{ step: '03', title: 'Save Lives', desc: 'Donate blood, log history, and rescue patient emergencies.', icon: '🩸' }
 				],
 				benefits: [
 					{ title: 'Zero Latency Matching', desc: 'Instantly coordinates compatibility matches for urgent blood requests.', icon: '⚡' },
@@ -120,13 +119,13 @@ export const database = {
 					{ title: 'Hospital Inventory Alerts', desc: 'Monitors real-time blood bank units by group to prevent deficits.', icon: '📊' }
 				],
 				faqs: [
-					{ q: 'Who can register as a blood donor on LifeLink?', a: 'Any user between 18 and 65 years old who passes our Eligibility Checker. Once approved by an Admin, you can register and receive emergency requests.' },
+					{ q: 'Who can register as a blood donor on LifeLink?', a: 'Any user between 18 and 65 years old who passes our Eligibility Checker can register immediately and receive emergency requests.' },
 					{ q: 'Can receivers register directly?', a: 'Yes. Receivers requesting emergency blood do not require eligibility verification and can register, search blood banks, and submit requests immediately.' },
 					{ q: 'Is there only one admin account?', a: 'Yes. LifeLink enforces role security. The initial admin is configured on the first login run and no further admin accounts can ever be created.' }
 				],
 				testimonials: [
 					{ quote: "Our hospital required O+ units in minutes. The direct matching on LifeLink resolved our ticket with nearby donors faster than traditional phone channels.", author: "Dr. Anish Sharma", role: "Emergency Medical Officer" },
-					{ quote: "Knowing my eligibility questionnaire was personally reviewed by the clinical team gave me confidence in LifeLink's standards. Highly professional.", author: "Meera Patel", role: "Approved Donor" }
+					{ quote: "Checking eligibility was extremely fast. I answered the clinical questions, registered immediately, and saved a life the next day.", author: "Meera Patel", role: "Active Donor" }
 				],
 				stats: {
 					activeDonors: activeDonorsCount,
@@ -175,16 +174,7 @@ export async function createUser(userData) {
 		throw new Error('An account already exists with this email. One email can only have one LifeLink role. Please delete your existing account before creating a new one.');
 	}
 
-	// If donor, check approved eligibility
-	if (userData.role === 'donor') {
-		const eligReqs = await getCollection('eligibility_requests');
-		const approvedElig = eligReqs.some(
-			r => r.email.toLowerCase() === userData.email.toLowerCase() && r.status === 'Approved'
-		);
-		if (!approvedElig) {
-			throw new Error('You must submit the Eligibility Checker and receive Administrator Approval before registering as a donor.');
-		}
-	}
+
 
 	const userId = `USR${Date.now()}`;
 	const newUser = {
@@ -268,74 +258,8 @@ export async function suspendUser(userId, operatorEmail, reason = '') {
 	return { ...user, ...updates };
 }
 
-// Eligibility Questionnaire Actions
-export async function submitEligibilityQuiz(email, name, phone, location, bloodGroup, answers) {
-	const lowercaseEmail = email.toLowerCase();
-	const eligReqs = await getCollection('eligibility_requests');
-	const existing = eligReqs.find(r => r.email.toLowerCase() === lowercaseEmail);
-	const isEligible = answers.age >= 18 && answers.weight >= 45;
-	const newStatus = isEligible ? 'Pending' : 'Rejected';
+// Eligibility Questionnaire Actions (Deprecated/Removed)
 
-	if (existing) {
-		if (existing.status === 'Approved') {
-			throw new Error('This email is already approved for blood donation.');
-		} else if (existing.status === 'Pending') {
-			throw new Error('You already have a pending eligibility submission. Please wait for admin verification.');
-		} else {
-			// If rejected, allow re-submission
-			await updateDocument('eligibility_requests', existing.id, {
-				status: newStatus,
-				answers,
-				name,
-				phone,
-				location,
-				bloodGroup: bloodGroup || 'O+',
-				submittedAt: new Date().toISOString()
-			});
-		}
-	} else {
-		const id = `ELG${Date.now()}`;
-		const newRequest = {
-			id,
-			name,
-			email: lowercaseEmail,
-			phone,
-			location,
-			bloodGroup: bloodGroup || 'O+',
-			answers,
-			status: newStatus,
-			submittedAt: new Date().toISOString()
-		};
-		await createDocument('eligibility_requests', id, newRequest);
-	}
-
-	await addLog(lowercaseEmail, `Eligibility Questionnaire Submitted`);
-	return true;
-}
-
-export async function reviewEligibility(requestId, status, reviewerEmail) {
-	const req = await getDocument('eligibility_requests', requestId);
-	if (!req) return false;
-
-	const formattedStatus = status === 'Approved' ? 'Approved' : 'Rejected';
-
-	await updateDocument('eligibility_requests', requestId, {
-		status: formattedStatus,
-		eligibilityStatus: status.toLowerCase(),
-		reviewedAt: new Date().toISOString()
-	});
-
-	// If the user already registered, update their user record as well
-	const user = await getUserByEmail(req.email);
-	if (user) {
-		await updateDocument('users', user.id, {
-			eligibilityStatus: status.toLowerCase()
-		});
-	}
-
-	await addLog(reviewerEmail, `Eligibility request for ${req.email} ${status.toUpperCase()}`);
-	return true;
-}
 
 // Blood Request Actions
 export async function addRequest(req, userEmail) {

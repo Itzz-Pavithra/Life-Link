@@ -50,17 +50,63 @@
 		name && email && phone && location && age && weight && !ageError && !weightError
 	);
 
-	let isEligible = $derived(parseInt(age) >= 18 && parseFloat(weight) >= 45);
+	let isStep2Valid = $derived(medicalHistory && medicalHistory.trim() !== '');
+
 	let eligibilityReasons = $derived.by(() => {
 		const reasons = [];
-		if (parseInt(age) < 18) {
+		if (!age || parseInt(age) < 18) {
 			reasons.push("Minimum age required is 18 years.");
 		}
-		if (parseFloat(weight) < 45) {
+		if (!weight || parseFloat(weight) < 45) {
 			reasons.push("Minimum weight required is 45kg.");
+		}
+		if (lastDonation !== 'never' && parseInt(lastDonation) < 3) {
+			reasons.push("A minimum gap of 3 months is required since your last donation.");
+		}
+		if (diabetes === 'yes') {
+			reasons.push("Diabetic candidates are not eligible to donate.");
+		}
+		if (bloodPressure !== 'normal') {
+			reasons.push("Blood pressure must be within normal levels.");
+		}
+		if (chronicDisease === 'yes') {
+			reasons.push("Candidates with chronic diseases are not eligible to donate.");
+		}
+		if (surgeryHistory === 'yes') {
+			reasons.push("Cannot donate within 6 months of a major surgery.");
+		}
+		if (pregnancy === 'yes') {
+			reasons.push("Cannot donate during pregnancy or breastfeeding.");
+		}
+		if (fever === 'yes') {
+			reasons.push("Cannot donate with active fever, cold, or flu symptoms.");
+		}
+		if (tattoo === 'yes') {
+			reasons.push("Cannot donate within 6 months of getting a tattoo or piercing.");
+		}
+		if (alcohol === 'yes') {
+			reasons.push("Cannot donate if alcohol was consumed in the last 24 hours.");
+		}
+		if (medication === 'yes') {
+			reasons.push("Cannot donate while taking prescribed medications.");
+		}
+		if (covidHistory === 'yes') {
+			reasons.push("Cannot donate within 14 days of COVID-19 symptoms or exposure.");
+		}
+		if (vaccination === 'yes') {
+			reasons.push("Cannot donate within 4 weeks of receiving a vaccine.");
+		}
+		const hb = parseFloat(hemoglobin);
+		if (isNaN(hb) || hb < 12.5 || hb > 18.0) {
+			reasons.push("Hemoglobin level must be between 12.5 and 18.0 g/dL.");
+		}
+		if (!medicalHistory || !medicalHistory.trim()) {
+			reasons.push("Medical history information is required.");
 		}
 		return reasons;
 	});
+
+	let isEligible = $derived(eligibilityReasons.length === 0);
 
 	function resetQuiz() {
 		step = 0;
@@ -103,58 +149,15 @@
 			return;
 		}
 
-		if (!isEligible) {
-			step = 6;
+		if (!isStep2Valid) {
+			errorMsg = 'Please provide medical history notes.';
+			step = 2;
 			return;
 		}
 
-		const payload = {
-			name,
-			email,
-			phone,
-			location,
-			bloodGroup,
-			answers: {
-				age: parseInt(age),
-				weight: parseFloat(weight),
-				gender,
-				lastDonation: lastDonation === 'never' ? 12 : parseInt(lastDonation),
-				medicalHistory,
-				diabetes: diabetes === 'yes',
-				bloodPressure,
-				surgeryHistory: surgeryHistory === 'yes' ? surgeryDetails || 'Yes' : 'No',
-				pregnancy,
-				fever: fever === 'yes',
-				tattoo: tattoo === 'yes',
-				smoking: smoking === 'yes',
-				alcohol: alcohol === 'yes',
-				medication: medication === 'yes' ? medicationDetails || 'Yes' : 'No',
-				covidHistory: covidHistory === 'yes',
-				vaccination: vaccination === 'yes',
-				hemoglobin: parseFloat(hemoglobin),
-				chronicDisease: chronicDisease === 'yes' ? chronicDetails || 'Yes' : 'No'
-			}
-		};
-
-		try {
-			const res = await fetch('/api/eligibility', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify(payload)
-			});
-			const data = await res.json();
-			if (res.ok) {
-				successMsg = 'Questionnaire submitted successfully!';
-				db.addToast('Eligibility quiz logged. Pending admin approval.', 'success');
-				step = 6;
-			} else {
-				errorMsg = data.error || 'Failed to submit questionnaire.';
-				db.addToast(errorMsg, 'error');
-			}
-		} catch (err) {
-			errorMsg = 'A network error occurred. Please try again.';
-			db.addToast(errorMsg, 'error');
-		}
+		successMsg = 'Questionnaire completed successfully!';
+		db.addToast(isEligible ? 'You are eligible to donate blood!' : 'You are currently not eligible to donate.', isEligible ? 'success' : 'warning');
+		step = 6;
 	}
 </script>
 
@@ -367,7 +370,7 @@
 				</div>
 
 				<div class="flex flex-col gap-1">
-					<label class="text-[10px] font-bold text-slate-500 uppercase">Medical History Notes (Optional)</label>
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Medical History Notes *</label>
 					<textarea
 						bind:value={medicalHistory}
 						placeholder="List any ongoing medical treatments or allergies"
@@ -379,7 +382,11 @@
 
 			<div class="flex justify-between">
 				<button class="text-secondary font-bold hover:text-primary transition px-4 py-2" onclick={() => step = 1}>Back</button>
-				<button class="bg-primary hover:bg-red-700 text-white font-bold px-6 py-2.5 rounded-xl transition cursor-pointer" onclick={() => step = 3}>
+				<button
+					class="bg-primary hover:bg-red-700 text-white font-bold px-6 py-2.5 rounded-xl transition cursor-pointer disabled:opacity-50"
+					disabled={!isStep2Valid}
+					onclick={() => step = 3}
+				>
 					Next Step
 				</button>
 			</div>
@@ -575,29 +582,29 @@
 		<!-- Results Pending View -->
 		<div class="text-center py-6 space-y-4">
 			{#if isEligible}
-				<div class="text-6xl mb-4 animate-bounce">✅</div>
+				<div class="text-6xl mb-4 animate-bounce">❤️</div>
 				<h3 class="text-3xl font-extrabold text-slate-900">
-					Eligible
+					You are eligible to donate blood ❤️
 				</h3>
 				<p class="text-emerald-700 bg-emerald-50 border border-emerald-200 p-4 rounded-2xl text-sm font-semibold max-w-md mx-auto">
-					You meet the basic eligibility requirements for blood donation.
-				</p>
-				<p class="text-gray-600 text-sm max-w-md mx-auto leading-relaxed">
-					Your clinical questionnaire has been successfully logged. LifeLink system records require administrator review to authorize new blood donors.
+					You meet all safety and clinical criteria for whole blood donation.
 				</p>
 				
-				<div class="bg-red-50 border border-red-100 p-4 rounded-2xl text-xs max-w-sm mx-auto space-y-2 text-slate-800 font-semibold">
-					<p>📧 <strong>Email Checked:</strong> {email.toLowerCase()}</p>
-					<p>🛡️ <strong>Authorization Status:</strong> Pending Verification</p>
+				<div class="pt-4 flex justify-center gap-3">
+					<a href="/" class="bg-white border border-slate-200 text-secondary hover:bg-baby-pink hover:text-primary font-bold px-6 py-3 rounded-xl transition text-sm">
+						Return Home
+					</a>
+					<a
+						href="/register?role=donor&name={encodeURIComponent(name)}&email={encodeURIComponent(email)}&phone={encodeURIComponent(phone)}&location={encodeURIComponent(location)}&bloodGroup={encodeURIComponent(bloodGroup)}"
+						class="bg-primary hover:bg-red-700 text-white font-bold px-8 py-3 rounded-xl shadow-lg transition transform active:scale-95 text-sm cursor-pointer"
+					>
+						Continue Registration
+					</a>
 				</div>
-
-				<p class="text-xs text-gray-500 max-w-xs mx-auto">
-					Once approved, you will be permitted to register a new donor profile using this email address.
-				</p>
 			{:else}
 				<div class="text-6xl mb-4 animate-bounce">❌</div>
 				<h3 class="text-3xl font-extrabold text-slate-900">
-					Not Eligible
+					Sorry, you are currently not eligible to donate blood
 				</h3>
 				<div class="bg-red-50 border border-red-200 p-4 rounded-2xl text-sm font-semibold max-w-md mx-auto text-red-700 space-y-2">
 					{#each eligibilityReasons as reason}
@@ -607,19 +614,19 @@
 				<p class="text-gray-600 text-sm max-w-md mx-auto leading-relaxed">
 					Unfortunately, you do not meet the safety criteria for blood donation at this time.
 				</p>
-			{/if}
 
-			<div class="pt-4 flex justify-center gap-3">
-				<a href="/" class="bg-white border border-slate-200 text-secondary hover:bg-baby-pink hover:text-primary font-bold px-6 py-3 rounded-xl transition text-sm">
-					Return Home
-				</a>
-				<button
-					class="bg-white border border-red-200 text-primary font-bold px-6 py-3 rounded-xl hover:bg-red-50 transition text-sm cursor-pointer"
-					onclick={resetQuiz}
-				>
-					Retake Assessment
-				</button>
-			</div>
+				<div class="pt-4 flex justify-center gap-3">
+					<a href="/" class="bg-white border border-slate-200 text-secondary hover:bg-baby-pink hover:text-primary font-bold px-6 py-3 rounded-xl transition text-sm">
+						Return Home
+					</a>
+					<button
+						class="bg-white border border-red-200 text-primary font-bold px-6 py-3 rounded-xl hover:bg-red-50 transition text-sm cursor-pointer"
+						onclick={resetQuiz}
+					>
+						Retake Assessment
+					</button>
+				</div>
+			{/if}
 		</div>
 	{/if}
 </div>
