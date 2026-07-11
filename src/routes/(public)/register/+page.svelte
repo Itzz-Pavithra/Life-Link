@@ -50,6 +50,18 @@
 			: ''
 	);
 
+	let passwordStrength = $derived.by(() => {
+		if (!password) return 0;
+		let score = 0;
+		if (password.length >= 8) score++;
+		if (/[A-Z]/.test(password)) score++;
+		if (/[a-z]/.test(password)) score++;
+		if (/[0-9]/.test(password)) score++;
+		if (/[!@#$%^&*()_+\-=\[\]{}|;:',.<>?\/~`]/.test(password)) score++;
+		return score;
+	});
+
+
 	function generateStrongPassword() {
 		const length = 12;
 		const uppercase = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -189,16 +201,16 @@
 	}
 </script>
 
-<div class="min-h-screen flex items-center justify-center p-4 sm:p-6 relative">
+<div class="min-h-screen flex items-center justify-center p-4 sm:p-6 relative bg-baby-pink">
 	<BloodWaveBackground />
-	<!-- Glowing accents -->
+	<!-- Ambient Background glows -->
 	<div class="absolute top-1/4 left-1/4 w-72 h-72 bg-red-400/5 rounded-full blur-3xl pointer-events-none"></div>
 
-	<div class="bg-white border border-slate-100 p-6 sm:p-8 rounded-[32px] shadow-2xl w-full max-w-2xl space-y-8 relative z-10">
+	<div class="bg-white border border-slate-100 p-6 sm:p-8 rounded-[32px] shadow-2xl w-full max-w-2xl space-y-6 relative z-10 animate-fade-in-up">
 		<!-- Header -->
 		<div class="text-center space-y-2">
-			<a href="/" class="inline-flex items-center gap-2.5 mb-2">
-				<img src="/logo.png" alt="LifeLink Logo" class="h-10 w-10 object-contain" />
+			<a href="/" class="inline-flex items-center gap-2.5 mb-1">
+				<img src="/logo.png" alt="LifeLink Logo" class="h-9 w-9 object-contain" />
 				<span class="text-2xl font-black text-slate-900 tracking-tight">LifeLink</span>
 			</a>
 			<h2 class="text-xl font-bold text-slate-800">Create Your Account</h2>
@@ -206,28 +218,36 @@
 		</div>
 
 		{#if errorMessage}
-			<div class="p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl">
+			<div class="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl">
 				⚠️ {errorMessage}
 			</div>
 		{/if}
 
-		<form onsubmit={handleRegister} class="space-y-6">
+		<form onsubmit={handleRegister} class="space-y-4">
 			<!-- Role Selector -->
-			<div class="flex flex-col gap-1.5">
-				<label class="text-[10px] font-bold text-slate-500 uppercase">I want to register as a *</label>
-				<select
-					bind:value={role}
-					class="border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm bg-white font-semibold text-slate-800"
-					required
-				>
-					<option value="">-- Choose Role --</option>
-					<option value="donor">Whole Blood Donor (Requires Eligibility Approval)</option>
-					<option value="recipient">Recipient / Patient / Receiver</option>
-				</select>
+			<div class="flex flex-col gap-1">
+				<label class="text-[10px] font-bold text-slate-500 uppercase" for="role-select">I want to register as a *</label>
+				<div class="relative w-full">
+					<span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none">
+						<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+							<path stroke-linecap="round" stroke-linejoin="round" d="M5.121 17.804A13.937 13.937 0 0112 16c2.5 0 4.847.655 6.879 1.804M15 10a3 3 0 11-6 0 3 3 0 016 0zm6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+						</svg>
+					</span>
+					<select
+						id="role-select"
+						bind:value={role}
+						class="w-full border border-slate-200 p-3 pl-10 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm bg-white font-semibold text-slate-800"
+						required
+					>
+						<option value="">-- Choose Role --</option>
+						<option value="donor">Whole Blood Donor (Requires Eligibility Approval)</option>
+						<option value="recipient">Recipient / Receiver</option>
+					</select>
+				</div>
 			</div>
 
 			{#if role === 'donor'}
-				<div class="p-4 bg-amber-50 border border-amber-250 text-amber-900 text-xs font-semibold rounded-2xl">
+				<div class="p-3 bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold rounded-2xl">
 					⚠️ <strong>Donor Eligibility Required:</strong> Your email address must have an approved eligibility request from the Admin. If you haven't taken the questionnaire, please do so <a href="/eligibility" class="text-red-700 underline font-bold">here</a>.
 				</div>
 			{/if}
@@ -236,70 +256,106 @@
 			<div class="grid sm:grid-cols-2 gap-4">
 				<div class="flex flex-col gap-1">
 					<label class="text-[10px] font-bold text-slate-500 uppercase" for="fullname">Full Name *</label>
-					<input
-						id="fullname"
-						type="text"
-						bind:value={name}
-						placeholder="Enter your name"
-						class="border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
-						required
-					/>
+					<div class="relative w-full">
+						<span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+							<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+							</svg>
+						</span>
+						<input
+							id="fullname"
+							type="text"
+							bind:value={name}
+							placeholder="Enter your name"
+							class="w-full border border-slate-200 p-3 pl-10 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm bg-white"
+							required
+						/>
+					</div>
 				</div>
 
 				<div class="flex flex-col gap-1">
 					<label class="text-[10px] font-bold text-slate-500 uppercase" for="email">Email Address *</label>
-					<input
-						id="email"
-						type="email"
-						bind:value={email}
-						placeholder="email@example.com"
-						class="border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
-						required
-					/>
+					<div class="relative w-full">
+						<span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+							<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+							</svg>
+						</span>
+						<input
+							id="email"
+							type="email"
+							bind:value={email}
+							placeholder="email@example.com"
+							class="w-full border border-slate-200 p-3 pl-10 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm bg-white"
+							required
+						/>
+					</div>
 				</div>
 
 				<div class="flex flex-col gap-1">
 					<label class="text-[10px] font-bold text-slate-500 uppercase" for="phone">Phone Number *</label>
-					<input
-						id="phone"
-						type="tel"
-						bind:value={phone}
-						placeholder="e.g. 9876543210"
-						class="border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
-						required
-					/>
+					<div class="relative w-full">
+						<span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+							<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.94.725l.548 2.2a1 1 0 01-.321.988l-1.305.98a10.582 10.582 0 004.872 4.872l.98-1.305a1 1 0 01.988-.321l2.2.548a1 1 0 01.725.94V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+							</svg>
+						</span>
+						<input
+							id="phone"
+							type="tel"
+							bind:value={phone}
+							placeholder="9876543210"
+							class="w-full border border-slate-200 p-3 pl-10 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm bg-white"
+							required
+						/>
+					</div>
 				</div>
 
 				<div class="flex flex-col gap-1">
 					<label class="text-[10px] font-bold text-slate-500 uppercase" for="city">City / Location *</label>
-					<input
-						id="city"
-						type="text"
-						bind:value={location}
-						placeholder="e.g. Salem"
-						class="border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm"
-						required
-					/>
+					<div class="relative w-full">
+						<span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+							<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+								<path stroke-linecap="round" stroke-linejoin="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+							</svg>
+						</span>
+						<input
+							id="city"
+							type="text"
+							bind:value={location}
+							placeholder="Salem"
+							class="w-full border border-slate-200 p-3 pl-10 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm bg-white"
+							required
+						/>
+					</div>
 				</div>
 
 				{#if role === 'donor' || role === 'recipient'}
-					<div class="flex flex-col gap-1 col-span-2">
+					<div class="flex flex-col gap-1 col-span-2 animate-fade-in-up">
 						<label class="text-[10px] font-bold text-slate-500 uppercase" for="bloodGroup">Blood Group *</label>
-						<select
-							id="bloodGroup"
-							bind:value={bloodGroup}
-							class="border border-slate-200 p-3 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm bg-white"
-							required
-						>
-							<option value="O+">O+</option>
-							<option value="A+">A+</option>
-							<option value="B+">B+</option>
-							<option value="AB+">AB+</option>
-							<option value="O-">O-</option>
-							<option value="A-">A-</option>
-							<option value="B-">B-</option>
-							<option value="AB-">AB-</option>
-						</select>
+						<div class="relative w-full">
+							<span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400 pointer-events-none">
+								<svg class="h-4 w-4 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+									<path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd" />
+								</svg>
+							</span>
+							<select
+								id="bloodGroup"
+								bind:value={bloodGroup}
+								class="w-full border border-slate-200 p-3 pl-10 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm bg-white font-semibold text-slate-800"
+								required
+							>
+								<option value="O+">O+</option>
+								<option value="A+">A+</option>
+								<option value="B+">B+</option>
+								<option value="AB+">AB+</option>
+								<option value="O-">O-</option>
+								<option value="A-">A-</option>
+								<option value="B-">B-</option>
+								<option value="AB-">AB-</option>
+							</select>
+						</div>
 					</div>
 				{/if}
 			</div>
@@ -308,23 +364,28 @@
 			<div class="grid sm:grid-cols-2 gap-4">
 				<!-- Choose Password -->
 				<div class="flex flex-col gap-1">
-					<div class="flex justify-between items-center mb-1">
+					<div class="flex justify-between items-center mb-0.5">
 						<label class="text-[10px] font-bold text-slate-500 uppercase" for="password">Choose Password *</label>
 						<button
 							type="button"
-							class="text-[10px] font-bold text-primary hover:text-red-700 hover:underline cursor-pointer"
+							class="text-[9px] font-bold text-primary hover:text-red-700 hover:underline cursor-pointer"
 							onclick={suggestPassword}
 						>
-							Suggest Strong Password
+							Suggest Password
 						</button>
 					</div>
 					<div class="relative w-full">
+						<span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+							<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+							</svg>
+						</span>
 						<input
 							id="password"
 							type={showPassword ? "text" : "password"}
 							bind:value={password}
 							placeholder="••••••••"
-							class="w-full border {passwordError ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 focus:ring-red-500'} p-3 pr-10 rounded-xl focus:ring-2 focus:outline-none text-sm transition-all"
+							class="w-full border {passwordError ? 'border-red-500 focus:ring-red-500' : 'border-slate-200 focus:ring-red-500'} p-3 pl-10 pr-10 rounded-xl focus:ring-2 focus:outline-none text-sm bg-white transition-all"
 							required
 						/>
 						<button
@@ -334,19 +395,41 @@
 							aria-label={showPassword ? "Hide password" : "Show password"}
 						>
 							{#if showPassword}
-								<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
 									<path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
 								</svg>
 							{:else}
-								<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
 								</svg>
 							{/if}
 						</button>
 					</div>
 					{#if passwordError}
-						<p class="text-xs text-red-650 mt-1">⚠️ {passwordError}</p>
+						<span class="text-[10px] text-red-650 font-semibold leading-tight">⚠️ {passwordError}</span>
+					{/if}
+
+					<!-- Dynamic Password Strength Bar -->
+					{#if password}
+						<div class="mt-1 space-y-1">
+							<div class="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden flex">
+								<div 
+									class="h-full transition-all duration-300 {
+										passwordStrength <= 2 ? 'bg-red-500' :
+										passwordStrength <= 4 ? 'bg-amber-500' : 'bg-emerald-500'
+									}"
+									style="width: {(passwordStrength / 5) * 100}%"
+								></div>
+							</div>
+							<div class="flex justify-between text-[9px] font-bold text-slate-500">
+								<span>Strength: {
+									passwordStrength <= 2 ? 'Weak' :
+									passwordStrength <= 4 ? 'Fair' : 'Strong'
+								}</span>
+								<span>{passwordStrength}/5 rules</span>
+							</div>
+						</div>
 					{/if}
 				</div>
 
@@ -354,12 +437,17 @@
 				<div class="flex flex-col gap-1">
 					<label class="text-[10px] font-bold text-slate-500 uppercase" for="confirm-password">Confirm Password *</label>
 					<div class="relative w-full">
+						<span class="absolute inset-y-0 left-0 flex items-center pl-3.5 text-slate-400">
+							<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+							</svg>
+						</span>
 						<input
 							id="confirm-password"
 							type={showConfirmPassword ? "text" : "password"}
 							bind:value={confirmPassword}
 							placeholder="••••••••"
-							class="w-full border border-slate-200 p-3 pr-10 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm transition-all"
+							class="w-full border border-slate-200 p-3 pl-10 pr-10 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm bg-white transition-all"
 							required
 						/>
 						<button
@@ -369,12 +457,12 @@
 							aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
 						>
 							{#if showConfirmPassword}
-								<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
 									<path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
 								</svg>
 							{:else}
-								<svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+								<svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
 									<path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.542-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.542 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
 								</svg>
 							{/if}
@@ -385,16 +473,16 @@
 
 			<button
 				type="submit"
-				class="w-full bg-primary hover:bg-red-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition transform active:scale-95 cursor-pointer"
+				class="w-full bg-primary hover:bg-red-700 text-white font-bold py-3.5 rounded-xl shadow-lg transition transform active:scale-95 cursor-pointer text-sm"
 			>
 				Register Account
 			</button>
 		</form>
 
 		<div class="relative flex py-2 items-center">
-			<div class="flex-grow border-t border-slate-200"></div>
-			<span class="flex-shrink mx-4 text-slate-400 text-xs font-semibold uppercase">Or</span>
-			<div class="flex-grow border-t border-slate-200"></div>
+			<div class="flex-grow border-t border-slate-100"></div>
+			<span class="flex-shrink mx-4 text-slate-400 text-[10px] font-bold uppercase">Or</span>
+			<div class="flex-grow border-t border-slate-100"></div>
 		</div>
 
 		<button
@@ -423,7 +511,7 @@
 			Continue with Google
 		</button>
 
-		<div class="text-center text-xs text-slate-400">
+		<div class="text-center text-xs text-slate-450 mt-4">
 			Already have an account?
 			<a href="/login" class="text-red-700 font-bold hover:underline ml-1">Sign In</a>
 		</div>
@@ -432,4 +520,4 @@
 
 {#if showOtp}
 	<OtpVerification email={registeredEmail} onVerified={() => goto('/login')} />
-{/if}
+{/if}
