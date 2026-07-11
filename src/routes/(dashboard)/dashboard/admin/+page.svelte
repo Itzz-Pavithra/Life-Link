@@ -40,6 +40,19 @@
 	let bankPage = $state(1);
 	const PAGE_SIZE = 5;
 
+	// Logs Explorer State
+	let logsTab = $state('all'); // all, requests, donors, recipients, admin, auth, system
+	let logFilterDate = $state('');
+	let logFilterEmail = $state('');
+	let logFilterRole = $state('all');
+	let logFilterStatus = $state('all');
+	let logFilterBloodGroup = $state('all');
+	let logFilterCity = $state('all');
+	let logSearchQuery = $state('');
+	let logPage = $state(1);
+	let selectedSystemLog = $state(null);
+	const LOGS_PAGE_SIZE = 25;
+
 	// Reset forms helper
 	function resetBankForm() {
 		editingBankId = null;
@@ -219,6 +232,243 @@
 		db.addToast(`Successfully exported ${filename}`, 'success');
 	}
 
+	function classifyLog(log, users) {
+		const userRecord = users.find(u => u.email.toLowerCase() === log.user.toLowerCase());
+		const role = userRecord ? userRecord.role : 'system';
+		const activity = log.activity.toLowerCase();
+		
+		let category = 'System';
+		let status = 'Information'; // Success, Failed, Pending, Information
+		
+		// Category matching
+		if (activity.includes('blood request') || activity.includes('alert') || activity.includes('emergency') || activity.includes('blood received')) {
+			category = 'Blood Requests';
+		} else if (activity.includes('donor') && (activity.includes('register') || activity.includes('eligibility') || activity.includes('profile') || activity.includes('accepted') || activity.includes('rejected') || activity.includes('unavailable') || activity.includes('log donation'))) {
+			category = 'Donor Activities';
+		} else if (activity.includes('recipient') && (activity.includes('register') || activity.includes('request') || activity.includes('completed') || activity.includes('profile'))) {
+			category = 'Recipient Activities';
+		} else if (activity.includes('admin') || activity.includes('suspend') || activity.includes('unsuspend') || activity.includes('blood bank') || activity.includes('settings') || activity.includes('deleted user')) {
+			category = 'Admin Activities';
+		} else if (activity.includes('login') || activity.includes('logout') || activity.includes('google') || activity.includes('password') || activity.includes('otp verification') || activity.includes('verify')) {
+			category = 'Authentication';
+		} else if (activity.includes('email') || activity.includes('warning') || activity.includes('failed') || activity.includes('error') || activity.includes('database') || activity.includes('otp sent') || activity.includes('sent otp')) {
+			category = 'System';
+		} else {
+			// Fallbacks
+			if (role === 'admin') category = 'Admin Activities';
+			else if (role === 'donor') category = 'Donor Activities';
+			else if (role === 'recipient') category = 'Recipient Activities';
+		}
+
+		if (category === 'System') {
+			if (activity.includes('request') || activity.includes('completed')) {
+				category = 'Blood Requests';
+			}
+		}
+
+		// Status matching
+		if (activity.includes('failed') || activity.includes('error') || activity.includes('warning') || activity.includes('reject') || activity.includes('suspend') || activity.includes('deleted')) {
+			status = 'Failed';
+		} else if (activity.includes('pending') || activity.includes('wait')) {
+			status = 'Pending';
+		} else if (activity.includes('success') || activity.includes('accept') || activity.includes('completed') || activity.includes('register') || activity.includes('submitted') || activity.includes('sent') || activity.includes('created') || activity.includes('updated') || activity.includes('passed') || activity.includes('log donation')) {
+			status = 'Success';
+		}
+
+		// Parsed Details extraction
+		let details = 'N/A';
+		if (activity.includes('for ')) {
+			details = log.activity.slice(log.activity.toLowerCase().indexOf('for ') + 4);
+		} else if (activity.includes('registered: ')) {
+			details = log.activity.slice(log.activity.toLowerCase().indexOf('registered: ') + 12);
+		} else if (activity.includes('deleted user: ')) {
+			details = log.activity.slice(log.activity.toLowerCase().indexOf('deleted user: ') + 14);
+		} else if (activity.includes('created: ')) {
+			details = log.activity.slice(log.activity.toLowerCase().indexOf('created: ') + 9);
+		} else if (activity.includes('updated: ')) {
+			details = log.activity.slice(log.activity.toLowerCase().indexOf('updated: ') + 9);
+		} else if (activity.includes('updated at ')) {
+			details = log.activity.slice(log.activity.toLowerCase().indexOf('updated at ') + 11);
+		} else if (activity.includes('toggled to ')) {
+			details = log.activity.slice(log.activity.toLowerCase().indexOf('toggled to ') + 11);
+		}
+
+		// Parse city/blood group contexts
+		let city = 'N/A';
+		const cities = ['salem', 'chennai', 'coimbatore', 'madurai', 'trichy'];
+		for (const c of cities) {
+			if (activity.includes(c)) {
+				city = c.charAt(0).toUpperCase() + c.slice(1);
+				break;
+			}
+		}
+
+		let bloodGroup = 'N/A';
+		const bgs = ['a+', 'a-', 'b+', 'b-', 'ab+', 'ab-', 'o+', 'o-'];
+		for (const bg of bgs) {
+			const regex = new RegExp(`\\b${bg.replace('+', '\\+')}\\b`, 'i');
+			if (regex.test(log.activity)) {
+				bloodGroup = bg.toUpperCase();
+				break;
+			}
+		}
+
+		return {
+			...log,
+			category,
+			role: role.toUpperCase(),
+			status,
+			details,
+			city,
+			bloodGroup
+		};
+	}
+
+	const classifiedLogs = $derived(
+		(data.systemLogs || []).map(log => classifyLog(log, data.users))
+	);
+
+	const filteredLogs = $derived(
+		classifiedLogs.filter(log => {
+			if (logsTab !== 'all') {
+				const tabMap = {
+					'requests': 'Blood Requests',
+					'donors': 'Donor Activities',
+					'recipients': 'Recipient Activities',
+					'admin': 'Admin Activities',
+					'auth': 'Authentication',
+					'system': 'System'
+				};
+				if (log.category !== tabMap[logsTab]) return false;
+			}
+
+			if (logFilterDate && !log.timestamp.startsWith(logFilterDate)) return false;
+			if (logFilterEmail && !log.user.toLowerCase().includes(logFilterEmail.toLowerCase())) return false;
+			if (logFilterRole !== 'all' && log.role !== logFilterRole.toUpperCase()) return false;
+			if (logFilterStatus !== 'all' && log.status !== logFilterStatus) return false;
+			if (logFilterBloodGroup !== 'all' && log.bloodGroup !== logFilterBloodGroup) return false;
+			if (logFilterCity !== 'all' && log.city.toLowerCase() !== logFilterCity.toLowerCase()) return false;
+
+			if (logSearchQuery.trim()) {
+				const query = logSearchQuery.toLowerCase();
+				const userName = (data.users.find(u => u.email.toLowerCase() === log.user.toLowerCase())?.name || '').toLowerCase();
+				const matchesSearch = 
+					log.id.toLowerCase().includes(query) ||
+					log.user.toLowerCase().includes(query) ||
+					userName.includes(query) ||
+					log.activity.toLowerCase().includes(query);
+				if (!matchesSearch) return false;
+			}
+
+			return true;
+		})
+	);
+
+	const paginatedLogs = $derived(
+		filteredLogs.slice((logPage - 1) * LOGS_PAGE_SIZE, logPage * LOGS_PAGE_SIZE)
+	);
+
+	function exportLogsToCSV() {
+		const logs = filteredLogs;
+		if (!logs || logs.length === 0) {
+			db.addToast('No logs available to export.', 'error');
+			return;
+		}
+		const headers = ['Log ID', 'Timestamp', 'Category', 'User Email', 'Role', 'Activity Description', 'Status', 'Details'];
+		const csvContent = [
+			headers.join(','),
+			...logs.map(log => [
+				`"${log.id}"`,
+				`"${log.timestamp}"`,
+				`"${log.category}"`,
+				`"${log.user}"`,
+				`"${log.role}"`,
+				`"${log.activity.replace(/"/g, '""')}"`,
+				`"${log.status}"`,
+				`"${log.details.replace(/"/g, '""')}"`
+			].join(','))
+		].join('\n');
+
+		const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+		const url = URL.createObjectURL(blob);
+		const link = document.createElement('a');
+		link.setAttribute('href', url);
+		link.setAttribute('download', `lifelink_system_logs_${Date.now()}.csv`);
+		document.body.appendChild(link);
+		link.click();
+		document.body.removeChild(link);
+		db.addToast('Successfully exported system logs CSV.', 'success');
+	}
+
+	function exportLogsToPDF() {
+		const logs = filteredLogs;
+		if (!logs || logs.length === 0) {
+			db.addToast('No logs available to export.', 'error');
+			return;
+		}
+
+		const printWindow = window.open('', '_blank');
+		if (!printWindow) {
+			db.addToast('Popup blocker prevented PDF export window.', 'error');
+			return;
+		}
+
+		const rowsHtml = logs.map(log => `
+			<tr style="border-bottom: 1px solid #e2e8f0; font-size: 10px;">
+				<td style="padding: 8px; font-family: monospace;">${log.id}</td>
+				<td style="padding: 8px;">${log.timestamp}</td>
+				<td style="padding: 8px;">${log.category}</td>
+				<td style="padding: 8px;">${log.user}</td>
+				<td style="padding: 8px; font-weight: bold;">${log.role}</td>
+				<td style="padding: 8px;">${log.activity}</td>
+				<td style="padding: 8px;">${log.status}</td>
+			</tr>
+		`).join('');
+
+		printWindow.document.write(`
+			<html>
+				<head>
+					<title>LifeLink System Audit Log Report</title>
+					<style>
+						body { font-family: sans-serif; margin: 40px; color: #1e293b; }
+						h1 { font-size: 18px; margin-bottom: 5px; }
+						p { font-size: 10px; color: #64748b; margin-top: 0; }
+						table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+						th { background-color: #f1f5f9; padding: 10px; font-size: 10px; text-align: left; border-bottom: 2px solid #cbd5e1; }
+					</style>
+				</head>
+				<body>
+					<h1>LifeLink System Audit Log Report</h1>
+					<p>Generated on ${new Date().toLocaleString()} | Total Logs: ${logs.length}</p>
+					<table>
+						<thead>
+							<tr>
+								<th>Log ID</th>
+								<th>Timestamp</th>
+								<th>Category</th>
+								<th>User Email</th>
+								<th>Role</th>
+								<th>Activity Description</th>
+								<th>Status</th>
+							</tr>
+						</thead>
+						<tbody>
+							${rowsHtml}
+						</tbody>
+					</table>
+					<script>
+						window.onload = function() {
+							window.print();
+							window.close();
+						};
+					</` + `script>
+				</body>
+			</html>
+		`);
+		printWindow.document.close();
+		db.addToast('Audit Log PDF report generated successfully.', 'success');
+	}
+
 	// Filters computations
 	const filteredUsers = $derived(
 		data.users.filter(u => {
@@ -342,6 +592,15 @@
 		const pendingRequests = (data.requests || []).filter(r => r.status === 'Pending').length;
 		const emergencyRequests = (data.requests || []).filter(r => r.urgency === 'Emergency' || r.urgency === 'Urgent').length;
 
+		// Today's stats
+		const todayDateStr = new Date().toISOString().split('T')[0];
+		const todaysActivities = (data.systemLogs || []).filter(log => log.timestamp && log.timestamp.startsWith(todayDateStr)).length;
+		const emergencyAlerts = (data.systemLogs || []).filter(log => log.activity.toLowerCase().includes('alert') || log.activity.toLowerCase().includes('emergency')).length;
+		const acceptedRequests = (data.requests || []).filter(r => r.acceptedCount > 0).length;
+		const rejectedRequests = (data.requests || []).filter(r => r.rejectedCount > 0).length;
+		const newDonors = (data.users || []).filter(u => u.role === 'donor' && u.createdAt && u.createdAt.startsWith(todayDateStr)).length;
+		const newRecipients = (data.users || []).filter(u => u.role === 'recipient' && u.createdAt && u.createdAt.startsWith(todayDateStr)).length;
+
 		// Available donors by blood group
 		const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 		const availableDonorsByGroup = {};
@@ -374,7 +633,13 @@
 			pendingRequests,
 			emergencyRequests,
 			availableDonorsByGroup,
-			cityAvailability
+			cityAvailability,
+			todaysActivities,
+			emergencyAlerts,
+			acceptedRequests,
+			rejectedRequests,
+			newDonors,
+			newRecipients
 		};
 	});
 
@@ -1338,35 +1603,281 @@
 				{/if}
 			</div>
 
-			<!-- 8 Recent User Activity -->
-			<div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm">
-				<h4 class="text-sm font-bold text-slate-900 mb-4">Recent User Activity Logs</h4>
-				{#if data.systemLogs.length === 0}
-					<span class="text-xs text-slate-400 font-semibold block">No data available</span>
-				{:else}
-					<div class="overflow-x-auto">
-						<table class="w-full border-collapse text-left text-sm">
-							<thead>
-								<tr class="border-b border-slate-100 text-slate-400 text-[10px] font-bold uppercase">
-									<th class="py-3 px-4">Log ID</th>
-									<th class="py-3 px-4">User</th>
-									<th class="py-3 px-4">Activity</th>
-									<th class="py-3 px-4">Timestamp</th>
+			<!-- 8 System Audit Log Explorer -->
+			<div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-6">
+				<div>
+					<h3 class="text-lg font-bold text-slate-900">System Audit Log Explorer</h3>
+					<p class="text-[10px] text-slate-500 mt-1">Audit security profiles, tracking histories, system errors, and logins.</p>
+				</div>
+
+				<!-- Log Explorer Summary Cards -->
+				<div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-4">
+					<div class="bg-slate-50/50 border border-slate-100 p-4 rounded-2xl text-center">
+						<span class="text-[9px] text-slate-400 block font-bold uppercase tracking-wider">Today's Activities</span>
+						<span class="text-xl font-black text-slate-900 block mt-1">{reportStats.todaysActivities}</span>
+					</div>
+					<div class="bg-red-50/30 border border-red-100 p-4 rounded-2xl text-center">
+						<span class="text-[9px] text-red-500 block font-bold uppercase tracking-wider">Emergency Alerts Sent</span>
+						<span class="text-xl font-black text-red-700 block mt-1">{reportStats.emergencyAlerts}</span>
+					</div>
+					<div class="bg-slate-50/50 border border-slate-100 p-4 rounded-2xl text-center">
+						<span class="text-[9px] text-slate-400 block font-bold uppercase tracking-wider">Blood Requests</span>
+						<span class="text-xl font-black text-slate-800 block mt-1">{reportStats.totalRequestsCreated}</span>
+					</div>
+					<div class="bg-emerald-50/30 border border-emerald-100 p-4 rounded-2xl text-center">
+						<span class="text-[9px] text-emerald-600 block font-bold uppercase tracking-wider">Accepted Requests</span>
+						<span class="text-xl font-black text-emerald-700 block mt-1">{reportStats.acceptedRequests}</span>
+					</div>
+					<div class="bg-red-50/30 border border-red-100 p-4 rounded-2xl text-center">
+						<span class="text-[9px] text-red-500 block font-bold uppercase tracking-wider">Rejected Requests</span>
+						<span class="text-xl font-black text-red-700 block mt-1">{reportStats.rejectedRequests}</span>
+					</div>
+					<div class="bg-rose-50/30 border border-rose-100 p-4 rounded-2xl text-center">
+						<span class="text-[9px] text-rose-500 block font-bold uppercase tracking-wider">New Donors</span>
+						<span class="text-xl font-black text-rose-700 block mt-1">{reportStats.newDonors} today</span>
+					</div>
+					<div class="bg-blue-50/30 border border-blue-100 p-4 rounded-2xl text-center">
+						<span class="text-[9px] text-blue-500 block font-bold uppercase tracking-wider">New Recipients</span>
+						<span class="text-xl font-black text-blue-700 block mt-1">{reportStats.newRecipients} today</span>
+					</div>
+				</div>
+
+				<!-- Categorized Activity Tabs -->
+				<div class="flex flex-wrap border-b border-slate-150 text-xs font-bold text-slate-500 gap-1">
+					<button
+						class="px-4 py-2 border-b-2 transition cursor-pointer
+							{logsTab === 'all' ? 'border-primary text-primary font-black' : 'border-transparent hover:text-primary'}"
+						onclick={() => { logsTab = 'all'; logPage = 1; }}
+					>
+						All Activities
+					</button>
+					<button
+						class="px-4 py-2 border-b-2 transition cursor-pointer
+							{logsTab === 'requests' ? 'border-primary text-primary font-black' : 'border-transparent hover:text-primary'}"
+						onclick={() => { logsTab = 'requests'; logPage = 1; }}
+					>
+						Blood Requests
+					</button>
+					<button
+						class="px-4 py-2 border-b-2 transition cursor-pointer
+							{logsTab === 'donors' ? 'border-primary text-primary font-black' : 'border-transparent hover:text-primary'}"
+						onclick={() => { logsTab = 'donors'; logPage = 1; }}
+					>
+						Donor Activities
+					</button>
+					<button
+						class="px-4 py-2 border-b-2 transition cursor-pointer
+							{logsTab === 'recipients' ? 'border-primary text-primary font-black' : 'border-transparent hover:text-primary'}"
+						onclick={() => { logsTab = 'recipients'; logPage = 1; }}
+					>
+						Recipient Activities
+					</button>
+					<button
+						class="px-4 py-2 border-b-2 transition cursor-pointer
+							{logsTab === 'admin' ? 'border-primary text-primary font-black' : 'border-transparent hover:text-primary'}"
+						onclick={() => { logsTab = 'admin'; logPage = 1; }}
+					>
+						Admin Activities
+					</button>
+					<button
+						class="px-4 py-2 border-b-2 transition cursor-pointer
+							{logsTab === 'auth' ? 'border-primary text-primary font-black' : 'border-transparent hover:text-primary'}"
+						onclick={() => { logsTab = 'auth'; logPage = 1; }}
+					>
+						Authentication
+					</button>
+					<button
+						class="px-4 py-2 border-b-2 transition cursor-pointer
+							{logsTab === 'system' ? 'border-primary text-primary font-black' : 'border-transparent hover:text-primary'}"
+						onclick={() => { logsTab = 'system'; logPage = 1; }}
+					>
+						System
+					</button>
+				</div>
+
+				<!-- Filters & Search Row -->
+				<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 text-xs">
+					<!-- Search box -->
+					<div class="flex flex-col gap-1 col-span-2 lg:col-span-2">
+						<label class="text-[10px] font-bold text-slate-400 uppercase">Search logs</label>
+						<input
+							type="text"
+							bind:value={logSearchQuery}
+							placeholder="ID, Email, Name..."
+							class="border border-slate-200 px-3 py-2 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none w-full"
+						/>
+					</div>
+
+					<!-- Date Filter -->
+					<div class="flex flex-col gap-1">
+						<label class="text-[10px] font-bold text-slate-400 uppercase">Date</label>
+						<input
+							type="date"
+							bind:value={logFilterDate}
+							class="border border-slate-200 px-3 py-2 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none bg-white font-medium"
+						/>
+					</div>
+
+					<!-- Role Filter -->
+					<div class="flex flex-col gap-1">
+						<label class="text-[10px] font-bold text-slate-400 uppercase">User Role</label>
+						<select
+							bind:value={logFilterRole}
+							class="border border-slate-200 px-3 py-2 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none bg-white font-semibold"
+						>
+							<option value="all">All Roles</option>
+							<option value="admin">Admin</option>
+							<option value="donor">Donor</option>
+							<option value="recipient">Recipient</option>
+							<option value="system">System</option>
+						</select>
+					</div>
+
+					<!-- Activity Type (Status) Filter -->
+					<div class="flex flex-col gap-1">
+						<label class="text-[10px] font-bold text-slate-400 uppercase">Status</label>
+						<select
+							bind:value={logFilterStatus}
+							class="border border-slate-200 px-3 py-2 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none bg-white font-semibold"
+						>
+							<option value="all">All Status</option>
+							<option value="Success">Success</option>
+							<option value="Failed">Failed</option>
+							<option value="Pending">Pending</option>
+							<option value="Information">Information</option>
+						</select>
+					</div>
+
+					<!-- Blood Group Filter -->
+					<div class="flex flex-col gap-1">
+						<label class="text-[10px] font-bold text-slate-400 uppercase">Blood Group</label>
+						<select
+							bind:value={logFilterBloodGroup}
+							class="border border-slate-200 px-3 py-2 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none bg-white font-semibold"
+						>
+							<option value="all">All Groups</option>
+							<option value="O+">O+</option>
+							<option value="A+">A+</option>
+							<option value="B+">B+</option>
+							<option value="AB+">AB+</option>
+							<option value="O-">O-</option>
+							<option value="A-">A-</option>
+							<option value="B-">B-</option>
+							<option value="AB-">AB-</option>
+						</select>
+					</div>
+
+					<!-- City Filter -->
+					<div class="flex flex-col gap-1">
+						<label class="text-[10px] font-bold text-slate-400 uppercase">City</label>
+						<select
+							bind:value={logFilterCity}
+							class="border border-slate-200 px-3 py-2 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none bg-white font-semibold"
+						>
+							<option value="all">All Cities</option>
+							<option value="Salem">Salem</option>
+							<option value="Chennai">Chennai</option>
+							<option value="Coimbatore">Coimbatore</option>
+							<option value="Madurai">Madurai</option>
+							<option value="Trichy">Trichy</option>
+						</select>
+					</div>
+				</div>
+
+				<!-- Table container -->
+				<div class="overflow-x-auto border border-slate-100 rounded-2xl bg-slate-50/20">
+					<table class="w-full border-collapse text-left text-sm">
+						<thead>
+							<tr class="border-b border-slate-100 text-slate-400 text-[10px] font-bold uppercase bg-slate-50/50">
+								<th class="py-3 px-4">Time</th>
+								<th class="py-3 px-4">Category</th>
+								<th class="py-3 px-4">User</th>
+								<th class="py-3 px-4">Role</th>
+								<th class="py-3 px-4">Activity</th>
+								<th class="py-3 px-4">Status</th>
+								<th class="py-3 px-4">Details</th>
+								<th class="py-3 px-4 text-right">Action</th>
+							</tr>
+						</thead>
+						<tbody class="divide-y divide-slate-50 bg-white">
+							{#if filteredLogs.length === 0}
+								<tr>
+									<td colspan="8" class="py-8 text-center text-slate-400 text-xs italic">
+										No logs match your active filters or search terms.
+									</td>
 								</tr>
-							</thead>
-							<tbody class="divide-y divide-slate-50">
-								{#each data.systemLogs.slice(0, 10) as log}
+							{:else}
+								{#each paginatedLogs as log}
 									<tr class="hover:bg-slate-50/30 transition text-xs">
-										<td class="py-3 px-4 font-mono font-bold text-slate-500">{log.id}</td>
-										<td class="py-3 px-4 font-semibold text-slate-900">{log.user}</td>
-										<td class="py-3 px-4 text-slate-600">{log.activity}</td>
-										<td class="py-3 px-4 text-slate-400">{log.timestamp}</td>
+										<td class="py-3 px-4 text-gray-400 whitespace-nowrap">{log.timestamp}</td>
+										<td class="py-3 px-4 font-semibold text-slate-800">{log.category}</td>
+										<td class="py-3 px-4 text-slate-600 truncate max-w-40" title={log.user}>{log.user}</td>
+										<td class="py-3 px-4 font-bold uppercase text-[9px] tracking-wider text-slate-500">{log.role}</td>
+										<td class="py-3 px-4 text-slate-900 font-medium truncate max-w-64" title={log.activity}>{log.activity}</td>
+										<td class="py-3 px-4">
+											<span class="px-2 py-0.5 rounded font-bold text-[9px] uppercase tracking-wider
+												{log.status === 'Success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-150' : ''}
+												{log.status === 'Failed' ? 'bg-red-50 text-red-700 border border-red-150' : ''}
+												{log.status === 'Pending' ? 'bg-amber-50 text-amber-700 border border-amber-250' : ''}
+												{log.status === 'Information' ? 'bg-blue-50 text-blue-700 border border-blue-200' : ''}">
+												{log.status}
+											</span>
+										</td>
+										<td class="py-3 px-4 text-slate-550 truncate max-w-32" title={log.details}>{log.details}</td>
+										<td class="py-3 px-4 text-right">
+											<button
+												class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2 py-1 rounded transition cursor-pointer text-[9px]"
+												onclick={() => selectedSystemLog = log}
+											>
+												View
+											</button>
+										</td>
 									</tr>
 								{/each}
-							</tbody>
-						</table>
+							{/if}
+						</tbody>
+					</table>
+				</div>
+
+				<!-- Pagination & Export Row -->
+				<div class="flex flex-col sm:flex-row justify-between items-center gap-4 pt-4 border-t border-slate-50">
+					<!-- Export buttons -->
+					<div class="flex gap-2">
+						<button
+							onclick={exportLogsToCSV}
+							class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer"
+						>
+							📥 Export CSV
+						</button>
+						<button
+							onclick={exportLogsToPDF}
+							class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer"
+						>
+							📄 Export PDF
+						</button>
 					</div>
-				{/if}
+
+					<!-- Page navigation -->
+					<div class="flex items-center gap-3">
+						<button
+							class="px-3 py-1 bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold text-[10px] rounded-lg disabled:opacity-50"
+							disabled={logPage === 1}
+							onclick={() => logPage--}
+						>
+							Prev
+						</button>
+						<span class="text-[10px] text-slate-500 font-bold">
+							Page {logPage} of {Math.ceil(filteredLogs.length / LOGS_PAGE_SIZE) || 1}
+						</span>
+						<button
+							class="px-3 py-1 bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold text-[10px] rounded-lg disabled:opacity-50"
+							disabled={logPage * LOGS_PAGE_SIZE >= filteredLogs.length}
+							onclick={() => logPage++}
+						>
+							Next
+						</button>
+					</div>
+				</div>
 			</div>
 		</div>
 
@@ -1461,6 +1972,53 @@
 					Close View
 				</button>
 			</div>
+		</div>
+	</div>
+{/if}
+
+{#if selectedSystemLog}
+	<div class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+		<div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-4 text-left">
+			<div class="flex justify-between items-start border-b border-slate-100 pb-3">
+				<div>
+					<h3 class="text-sm font-black text-slate-900">System Log Audit Details</h3>
+					<p class="text-[10px] text-slate-400 mt-1">Log ID: {selectedSystemLog.id}</p>
+				</div>
+				<button onclick={() => selectedSystemLog = null} class="text-slate-400 hover:text-slate-655 text-lg cursor-pointer">
+					✕
+				</button>
+			</div>
+			
+			<div class="text-xs space-y-2.5 bg-slate-50 p-4 rounded-2xl border border-slate-100 text-slate-700">
+				<p><strong>Timestamp:</strong> {selectedSystemLog.timestamp}</p>
+				<p><strong>Category:</strong> {selectedSystemLog.category}</p>
+				<p><strong>User/Operator:</strong> {selectedSystemLog.user}</p>
+				<p><strong>User Role:</strong> <span class="font-bold text-slate-900">{selectedSystemLog.role}</span></p>
+				<p><strong>Activity Summary:</strong> {selectedSystemLog.activity}</p>
+				<p><strong>Status:</strong> 
+					<span class="px-2 py-0.5 rounded font-bold text-[9px] uppercase tracking-wider
+						{selectedSystemLog.status === 'Success' ? 'bg-emerald-50 text-emerald-700 border border-emerald-150' : ''}
+						{selectedSystemLog.status === 'Failed' ? 'bg-red-50 text-red-700 border border-red-150' : ''}
+						{selectedSystemLog.status === 'Pending' ? 'bg-amber-50 text-amber-700 border border-amber-250' : ''}
+						{selectedSystemLog.status === 'Information' ? 'bg-blue-50 text-blue-700 border border-blue-200' : ''}">
+						{selectedSystemLog.status}
+					</span>
+				</p>
+				<p><strong>Parsed Details:</strong> {selectedSystemLog.details}</p>
+				{#if selectedSystemLog.bloodGroup && selectedSystemLog.bloodGroup !== 'N/A'}
+					<p><strong>Blood Group Context:</strong> {selectedSystemLog.bloodGroup}</p>
+				{/if}
+				{#if selectedSystemLog.city && selectedSystemLog.city !== 'N/A'}
+					<p><strong>City Context:</strong> {selectedSystemLog.city}</p>
+				{/if}
+			</div>
+
+			<button
+				onclick={() => selectedSystemLog = null}
+				class="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl transition cursor-pointer text-xs"
+			>
+				Close Audit
+			</button>
 		</div>
 	</div>
 {/if}
