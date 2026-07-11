@@ -59,29 +59,27 @@
 
 				{#if db.authLoading}
 					<div class="w-5 h-5 border-2 border-red-200 border-t-red-700 rounded-full animate-spin" aria-label="Authenticating session"></div>
-				{:else}
+				{:else if db.user}
 					<a
-						href={db.user ? `/dashboard/${db.user.role}` : '/login'}
+						href="/dashboard/{db.user.role}"
 						class="text-sm font-bold text-primary bg-baby-pink hover:bg-red-100 px-4 py-2 rounded-xl transition"
 					>
 						💻 Dashboard
 					</a>
-					{#if db.user}
-						<button
-							onclick={handleLogout}
-							class="text-sm font-bold text-slate-700 hover:text-primary transition cursor-pointer bg-transparent border-none"
-						>
-							Logout
-						</button>
-					{:else}
-						<a href="/login" class="text-sm font-semibold text-gray-700 hover:text-red-700 transition">Login</a>
-						<a
-							href="/register"
-							class="bg-primary hover:bg-red-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl shadow-lg transition transform active:scale-95"
-						>
-							Register
-						</a>
-					{/if}
+					<button
+						onclick={handleLogout}
+						class="text-sm font-bold text-slate-700 hover:text-primary transition cursor-pointer bg-transparent border-none"
+					>
+						Logout
+					</button>
+				{:else}
+					<a href="/login" class="text-sm font-semibold text-gray-700 hover:text-red-700 transition">Login</a>
+					<a
+						href="/register"
+						class="bg-primary hover:bg-red-700 text-white text-sm font-semibold px-5 py-2.5 rounded-xl shadow-lg transition transform active:scale-95"
+					>
+						Register
+					</a>
 				{/if}
 			</div>
 
@@ -131,35 +129,33 @@
 			<div class="py-2 flex justify-center">
 				<div class="w-5 h-5 border-2 border-red-200 border-t-red-700 rounded-full animate-spin" aria-label="Authenticating session"></div>
 			</div>
-		{:else}
+		{:else if db.user}
 			<a
-				href={db.user ? `/dashboard/${db.user.role}` : '/login'}
+				href="/dashboard/{db.user.role}"
 				class="block text-sm font-bold text-primary bg-baby-pink hover:bg-red-100 px-4 py-3 rounded-xl transition"
 				onclick={() => mobileMenuOpen = false}
 			>
 				💻 Dashboard
 			</a>
-			{#if db.user}
-				<button
-					onclick={(e) => { mobileMenuOpen = false; handleLogout(e); }}
-					class="block w-full text-left text-sm font-bold text-slate-700 hover:text-primary hover:bg-rose-50/50 px-3 py-2 rounded-xl transition cursor-pointer"
-				>
-					Logout
-				</button>
-			{:else}
-				<a
-					href="/login"
-					class="block text-sm font-semibold text-gray-700 hover:text-red-750 hover:bg-rose-50/50 px-3 py-2 rounded-xl transition"
-					onclick={() => mobileMenuOpen = false}
-				>Login</a>
-				<a
-					href="/register"
-					class="block text-center bg-primary hover:bg-red-700 text-white text-sm font-semibold py-3.5 rounded-xl shadow-lg transition active:scale-95"
-					onclick={() => mobileMenuOpen = false}
-				>
-					Register
-				</a>
-			{/if}
+			<button
+				onclick={(e) => { mobileMenuOpen = false; handleLogout(e); }}
+				class="block w-full text-left text-sm font-bold text-slate-700 hover:text-primary hover:bg-rose-50/50 px-3 py-2 rounded-xl transition cursor-pointer"
+			>
+				Logout
+			</button>
+		{:else}
+			<a
+				href="/login"
+				class="block text-sm font-semibold text-gray-700 hover:text-red-750 hover:bg-rose-50/50 px-3 py-2 rounded-xl transition"
+				onclick={() => mobileMenuOpen = false}
+			>Login</a>
+			<a
+				href="/register"
+				class="block text-center bg-primary hover:bg-red-700 text-white text-sm font-semibold py-3.5 rounded-xl shadow-lg transition active:scale-95"
+				onclick={() => mobileMenuOpen = false}
+			>
+				Register
+			</a>
 		{/if}
 	</div>
 </nav>

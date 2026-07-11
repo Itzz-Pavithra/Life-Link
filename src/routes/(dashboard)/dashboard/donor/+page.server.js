@@ -21,12 +21,12 @@ export async function load({ locals }) {
 		d => d.donorId === locals.user.id || d.donorName.toLowerCase() === locals.user.name.toLowerCase()
 	);
 
-	// Load pending or accepted blood requests that match donor's blood group
+	// Load pending, accepted, or completed blood requests that match donor's blood group
 	const matchedRequests = bloodRequests.filter(
-		r => (r.status === 'Pending' || r.status === 'Accepted') && r.bloodGroup === locals.user.bloodGroup
+		r => (r.status === 'Pending' || r.status === 'Accepted' || r.status === 'Completed') && r.bloodGroup === locals.user.bloodGroup
 	);
 
-	const requests = await Promise.all(
+	const requests = (await Promise.all(
 		matchedRequests.map(async (r) => {
 			const donorResponse = await database.getDonorResponse(r.id, locals.user.id);
 			return {
@@ -34,7 +34,13 @@ export async function load({ locals }) {
 				donorResponse
 			};
 		})
-	);
+	)).filter(r => {
+		// If request is completed, only show it to the donor who accepted it
+		if (r.status === 'Completed') {
+			return r.donorResponse && r.donorResponse.status === 'Accepted';
+		}
+		return true;
+	});
 
 	const donationsCount = history.length;
 	const livesSavedCount = donationsCount * 3;

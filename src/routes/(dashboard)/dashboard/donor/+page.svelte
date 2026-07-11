@@ -339,7 +339,11 @@
 							</div>
 
 							<div class="mt-4 flex flex-col gap-2">
-								{#if !req.donorResponse}
+								{#if req.status === 'Completed'}
+									<span class="w-full block text-center bg-emerald-50 border border-emerald-250 text-emerald-700 font-extrabold py-2.5 rounded-xl text-xs">
+										✔ Blood Donation Completed
+									</span>
+								{:else if !req.donorResponse}
 									<div class="grid grid-cols-2 gap-2">
 										<button
 											class="bg-primary hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition cursor-pointer"

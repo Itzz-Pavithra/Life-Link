@@ -303,6 +303,27 @@
 			isFirstLoad = false;
 		}
 	});
+
+	async function handleCompleteRequest(requestId) {
+		if (!confirm("Are you sure you have successfully received the required blood?")) return;
+
+		try {
+			const response = await fetch('/api/requests/complete', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ requestId })
+			});
+			const res = await response.json();
+			if (res.success) {
+				db.addToast('🎉 Blood request marked as successfully completed!', 'success');
+				await invalidateAll();
+			} else {
+				db.addToast(res.error || 'Failed to complete request', 'error');
+			}
+		} catch (err) {
+			db.addToast('Error communicating with server.', 'error');
+		}
+	}
 </script>
 
 <div class="space-y-6">
@@ -412,46 +433,65 @@
 								</div>
 							</div>
 
-							<!-- Donor Responses List -->
-							<div class="space-y-3">
-								<h5 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Donor Responses ({req.donorResponses.length} compatible matched)</h5>
-								
-								{#if req.donorResponses.length === 0}
-									<p class="text-xs text-slate-400 italic">No compatible active and available donors found for this blood group.</p>
-								{:else}
-									<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-										{#each req.donorResponses as dr}
-											<div class="bg-white border border-slate-100 rounded-xl p-4 flex flex-col justify-between shadow-xs hover:shadow-sm transition">
-												<div class="flex justify-between items-start">
-													<div>
-														<h6 class="font-bold text-slate-800 text-xs">{dr.donorName}</h6>
-														<span class="text-[9px] uppercase font-bold tracking-widest mt-1 inline-block
-															{dr.status === 'Accepted' ? 'text-emerald-700' : ''}
-															{dr.status === 'Rejected' ? 'text-red-700' : ''}
-															{dr.status === 'Waiting' ? 'text-slate-400' : ''}">
-															{dr.status === 'Accepted' ? 'Accepted ✓' : dr.status === 'Rejected' ? 'Rejected by donor' : 'Waiting for donor response...'}
-														</span>
-													</div>
-												</div>
-
-												{#if dr.status === 'Accepted' && dr.donorDetails}
-													<div class="mt-3 pt-2.5 border-t border-slate-50 text-[10px] text-slate-500 space-y-1 bg-slate-50/50 p-2 rounded-lg">
-														<p><strong>Blood Group:</strong> {dr.donorDetails.bloodGroup}</p>
-														<p><strong>City:</strong> {dr.donorDetails.location || 'Not Specified'}</p>
-														<p><strong>Phone:</strong> {dr.donorDetails.phone || 'Not Provided'}</p>
-														<p><strong>Email:</strong> {dr.donorDetails.email}</p>
-														{#if dr.donorDetails.phone}
-															<a href="tel:{dr.donorDetails.phone}" class="mt-2 block w-full text-center bg-primary hover:bg-red-700 text-white font-bold py-1 rounded-md text-[9px] transition">
-																Call Donor
-															</a>
-														{/if}
-													</div>
-												{/if}
-											</div>
-										{/each}
+							{#if req.status === 'Completed'}
+								<div class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl text-center">
+									<span class="font-extrabold text-emerald-700 text-sm block">✔ Blood Successfully Received</span>
+									<p class="text-[10px] text-emerald-650 mt-1">This request has been successfully resolved.</p>
+								</div>
+							{:else}
+								<!-- Donor Responses List -->
+								<div class="space-y-3">
+									<div class="flex justify-between items-center flex-wrap gap-2">
+										<h5 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Donor Responses ({req.donorResponses.length} compatible matched)</h5>
+										
+										<!-- Blood Received Button -->
+										{#if req.donorResponses.some(dr => dr.status === 'Accepted')}
+											<button
+												onclick={() => handleCompleteRequest(req.id)}
+												class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-xl text-[10px] transition cursor-pointer"
+											>
+												✅ Blood Received / Mark as Completed
+											</button>
+										{/if}
 									</div>
-								{/if}
-							</div>
+									
+									{#if req.donorResponses.length === 0}
+										<p class="text-xs text-slate-400 italic">No compatible active and available donors found for this blood group.</p>
+									{:else}
+										<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+											{#each req.donorResponses as dr}
+												<div class="bg-white border border-slate-100 rounded-xl p-4 flex flex-col justify-between shadow-xs hover:shadow-sm transition">
+													<div class="flex justify-between items-start">
+														<div>
+															<h6 class="font-bold text-slate-800 text-xs">{dr.donorName}</h6>
+															<span class="text-[9px] uppercase font-bold tracking-widest mt-1 inline-block
+																{dr.status === 'Accepted' ? 'text-emerald-700' : ''}
+																{dr.status === 'Rejected' ? 'text-red-700' : ''}
+																{dr.status === 'Waiting' ? 'text-slate-400' : ''}">
+																{dr.status === 'Accepted' ? 'Accepted ✓' : dr.status === 'Rejected' ? 'Rejected by donor' : 'Waiting for donor response...'}
+															</span>
+														</div>
+													</div>
+
+													{#if dr.status === 'Accepted' && dr.donorDetails}
+														<div class="mt-3 pt-2.5 border-t border-slate-50 text-[10px] text-slate-500 space-y-1 bg-slate-50/50 p-2 rounded-lg">
+															<p><strong>Blood Group:</strong> {dr.donorDetails.bloodGroup}</p>
+															<p><strong>City:</strong> {dr.donorDetails.location || 'Not Specified'}</p>
+															<p><strong>Phone:</strong> {dr.donorDetails.phone || 'Not Provided'}</p>
+															<p><strong>Email:</strong> {dr.donorDetails.email}</p>
+															{#if dr.donorDetails.phone}
+																<a href="tel:{dr.donorDetails.phone}" class="mt-2 block w-full text-center bg-primary hover:bg-red-700 text-white font-bold py-1 rounded-md text-[9px] transition">
+																	Call Donor
+																</a>
+															{/if}
+														</div>
+													{/if}
+												</div>
+											{/each}
+										</div>
+									{/if}
+								</div>
+							{/if}
 						</div>
 					{/each}
 				</div>

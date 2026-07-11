@@ -1412,6 +1412,17 @@
 				</button>
 			</div>
 
+			{#if selectedRequestForResponses.status === 'Completed'}
+				<div class="bg-emerald-50 border border-emerald-150 p-4 rounded-2xl text-[11px] text-emerald-800 space-y-1.5 font-semibold">
+					<p class="text-emerald-700 font-extrabold text-xs mb-1 flex items-center gap-1">✔ Blood Successfully Received</p>
+					<p><strong>Completed Date:</strong> {selectedRequestForResponses.completedAt ? new Date(selectedRequestForResponses.completedAt).toLocaleString() : 'N/A'}</p>
+					<p><strong>Recipient:</strong> {selectedRequestForResponses.submittedBy}</p>
+					{#if selectedRequestForResponses.donorResponses.find(dr => dr.status === 'Accepted')}
+						<p><strong>Donor Name:</strong> {selectedRequestForResponses.donorResponses.find(dr => dr.status === 'Accepted').donorName}</p>
+					{/if}
+				</div>
+			{/if}
+
 			<!-- List Responses -->
 			<div class="space-y-3 max-h-80 overflow-y-auto pr-1">
 				{#if selectedRequestForResponses.donorResponses.length === 0}

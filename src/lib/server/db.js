@@ -174,6 +174,56 @@ export const database = {
 		}
 		await createDocument(path, donorId, responseData);
 		return responseData;
+	},
+	async completeBloodRequest(requestId, completedByEmail) {
+		const req = await getDocument('blood_requests', requestId);
+		if (!req) throw new Error('Blood request not found.');
+		if (req.status === 'Completed') throw new Error('Blood request is already completed.');
+
+		const completedAt = new Date().toISOString();
+		const updates = {
+			status: 'Completed',
+			completedAt,
+			completedBy: completedByEmail
+		};
+
+		await updateDocument('blood_requests', requestId, updates);
+
+		// Try to find the donor who accepted this request, to log a real donation record
+		try {
+			const responses = await getCollection(`blood_requests/${requestId}/responses`);
+			const acceptedResponse = responses.find(r => r.status === 'Accepted');
+			
+			if (acceptedResponse) {
+				const newDonation = {
+					id: `DON${Date.now().toString().slice(-6)}`,
+					donorId: acceptedResponse.donorId,
+					donorName: acceptedResponse.donorName,
+					bloodGroup: req.bloodGroup,
+					units: Number(req.units),
+					hospital: req.hospital,
+					date: completedAt.split('T')[0]
+				};
+				await createDocument('donations', newDonation.id, newDonation);
+			} else {
+				// Fallback to Voluntary Donor if no matching accepted donor was logged
+				const newDonation = {
+					id: `DON${Date.now().toString().slice(-6)}`,
+					donorId: 'MATCHED_DONOR',
+					donorName: 'Voluntary Donor',
+					bloodGroup: req.bloodGroup,
+					units: Number(req.units),
+					hospital: req.hospital,
+					date: completedAt.split('T')[0]
+				};
+				await createDocument('donations', newDonation.id, newDonation);
+			}
+		} catch (donationErr) {
+			console.error('Error logging donation automatically upon request completion:', donationErr);
+		}
+
+		await addLog(completedByEmail, `Blood Request completed for ${req.patientName}`);
+		return true;
 	}
 };
 
