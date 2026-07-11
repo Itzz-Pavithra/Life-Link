@@ -1,4 +1,4 @@
-import { fail, redirect } from '@sveltejs/kit';
+import { fail } from '@sveltejs/kit';
 import { getUserByEmail, hashPassword } from '$lib/server/db.js';
 import { db } from '$lib/server/firebase.js';
 
