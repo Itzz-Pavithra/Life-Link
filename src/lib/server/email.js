@@ -144,15 +144,15 @@ export async function sendPasswordResetEmail({ to, name, resetLink }) {
 		html: `
 			<div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #f1f5f9; border-radius: 16px;">
 				<h2 style="color: #dc2626; margin-bottom: 20px; text-align: center;">LifeLink Password Reset ❤️</h2>
-				<p>Hello <strong>\${name}</strong>,</p>
+				<p>Hello <strong>${name}</strong>,</p>
 				<p>We received a request to reset your password for your LifeLink account. Click the button below to choose a new password:</p>
 				
 				<div style="text-align: center; margin: 30px 0;">
-					<a href="\${resetLink}" style="background-color: #dc2626; color: #ffffff; text-decoration: none; padding: 12px 24px; font-weight: bold; border-radius: 12px; display: inline-block;">Reset Password</a>
+					<a href="${resetLink}" style="background-color: #dc2626; color: #ffffff; text-decoration: none; padding: 12px 24px; font-weight: bold; border-radius: 12px; display: inline-block;">Reset Password</a>
 				</div>
 				
 				<p style="font-size: 13px; color: #6b7280;">If the button above does not work, copy and paste this URL into your browser:</p>
-				<p style="font-size: 13px; word-break: break-all; color: #dc2626;"><a href="\${resetLink}" style="color: #dc2626;">\${resetLink}</a></p>
+				<p style="font-size: 13px; word-break: break-all; color: #dc2626;"><a href="${resetLink}" style="color: #dc2626;">${resetLink}</a></p>
 				
 				<p style="font-size: 13px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 15px; margin-top: 30px;">
 					This reset link is valid for 15 minutes and can only be used once. If you did not request a password reset, please ignore this email.

@@ -201,20 +201,27 @@
 	}
 </script>
 
-<div class="min-h-screen flex items-center justify-center p-4 sm:p-6 relative bg-baby-pink">
+<div class="min-h-screen flex items-center justify-center p-4 sm:p-6 relative bg-baby-pink overflow-hidden">
 	<BloodWaveBackground />
 	<!-- Ambient Background glows -->
 	<div class="absolute top-1/4 left-1/4 w-72 h-72 bg-red-400/5 rounded-full blur-3xl pointer-events-none"></div>
 
-	<div class="bg-white border border-slate-100 p-6 sm:p-8 rounded-[32px] shadow-2xl w-full max-w-2xl space-y-6 relative z-10 animate-fade-in-up">
-		<!-- Header -->
-		<div class="text-center space-y-2">
-			<a href="/" class="inline-flex items-center gap-2.5 mb-1">
-				<img src="/logo.png" alt="LifeLink Logo" class="h-9 w-9 object-contain" />
-				<span class="text-2xl font-black text-slate-900 tracking-tight">LifeLink</span>
-			</a>
-			<h2 class="text-xl font-bold text-slate-800">Create Your Account</h2>
-			<p class="text-slate-400 text-xs">Join our network to donate blood or request emergency support.</p>
+	<!-- Centered Glassmorphic Card -->
+	<div class="w-full max-w-xl bg-white/75 backdrop-blur-xl border border-white/20 p-6 sm:p-8 rounded-[32px] shadow-2xl relative z-10 space-y-6 animate-fade-in-up">
+		
+		<!-- Heartbeat Logo Header -->
+		<div class="flex flex-col items-center gap-2 group text-center mb-2">
+			<div class="relative inline-block animate-heartbeat">
+				<img src="/logo.png" alt="LifeLink Logo" class="h-14 w-14 object-contain" />
+				<div class="absolute -inset-1.5 rounded-full bg-red-500/10 -z-10 blur-sm scale-105"></div>
+			</div>
+			<span class="text-2xl font-black text-slate-900 tracking-tight">LifeLink</span>
+		</div>
+
+		<!-- Subheading -->
+		<div class="text-center space-y-1">
+			<h2 class="text-xl font-bold text-slate-800 font-sans">Create Your Account</h2>
+			<p class="text-slate-500 text-xs">Join our network to donate blood or request emergency support.</p>
 		</div>
 
 		{#if errorMessage}
@@ -247,7 +254,7 @@
 			</div>
 
 			{#if role === 'donor'}
-				<div class="p-3 bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold rounded-2xl">
+				<div class="p-3 bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold rounded-2xl animate-fade-in-up">
 					⚠️ <strong>Donor Eligibility Required:</strong> Your email address must have an approved eligibility request from the Admin. If you haven't taken the questionnaire, please do so <a href="/eligibility" class="text-red-700 underline font-bold">here</a>.
 				</div>
 			{/if}
@@ -407,7 +414,7 @@
 						</button>
 					</div>
 					{#if passwordError}
-						<span class="text-[10px] text-red-650 font-semibold leading-tight">⚠️ {passwordError}</span>
+						<span class="text-[10px] text-red-650 font-semibold leading-tight mt-1 inline-block">⚠️ {passwordError}</span>
 					{/if}
 
 					<!-- Dynamic Password Strength Bar -->
@@ -422,7 +429,7 @@
 									style="width: {(passwordStrength / 5) * 100}%"
 								></div>
 							</div>
-							<div class="flex justify-between text-[9px] font-bold text-slate-500">
+							<div class="flex justify-between text-[9px] font-bold text-slate-500 font-sans">
 								<span>Strength: {
 									passwordStrength <= 2 ? 'Weak' :
 									passwordStrength <= 4 ? 'Fair' : 'Strong'
@@ -511,7 +518,7 @@
 			Continue with Google
 		</button>
 
-		<div class="text-center text-xs text-slate-450 mt-4">
+		<div class="text-center text-xs text-slate-455 mt-2">
 			Already have an account?
 			<a href="/login" class="text-red-700 font-bold hover:underline ml-1">Sign In</a>
 		</div>
@@ -520,4 +527,24 @@
 
 {#if showOtp}
 	<OtpVerification email={registeredEmail} onVerified={() => goto('/login')} />
-{/if}
+{/if}
+
+<style>
+	@keyframes heartbeat {
+		0%, 100% {
+			transform: scale(1);
+		}
+		25% {
+			transform: scale(1.08);
+		}
+		40% {
+			transform: scale(1.02);
+		}
+		60% {
+			transform: scale(1.06);
+		}
+	}
+	.animate-heartbeat {
+		animation: heartbeat 1.6s ease-in-out infinite;
+	}
+</style>
