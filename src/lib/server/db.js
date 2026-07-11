@@ -144,6 +144,36 @@ export const database = {
 				stats: { activeDonors: 0, resolvedRequests: 0, partnerBanks: 0, totalDonations: 0 }
 			};
 		}
+	},
+	async getRequestResponses(requestId) {
+		try {
+			return await getCollection(`blood_requests/${requestId}/responses`);
+		} catch (err) {
+			console.error(`Error getting responses for request ${requestId}:`, err);
+			return [];
+		}
+	},
+	async getDonorResponse(requestId, donorId) {
+		try {
+			return await getDocument(`blood_requests/${requestId}/responses`, donorId);
+		} catch (err) {
+			console.error(`Error getting donor response for req ${requestId}, donor ${donorId}:`, err);
+			return null;
+		}
+	},
+	async saveDonorResponse(requestId, donorId, donorName, status) {
+		const path = `blood_requests/${requestId}/responses`;
+		const responseData = {
+			donorId,
+			donorName,
+			status,
+			respondedAt: new Date().toISOString()
+		};
+		if (status === 'Accepted') {
+			responseData.acceptedAt = new Date().toISOString();
+		}
+		await createDocument(path, donorId, responseData);
+		return responseData;
 	}
 };
 

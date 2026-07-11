@@ -21,9 +21,19 @@ export async function load({ locals }) {
 		d => d.donorId === locals.user.id || d.donorName.toLowerCase() === locals.user.name.toLowerCase()
 	);
 
-	// Load pending blood requests that match donor's blood group
-	const requests = bloodRequests.filter(
-		r => r.status === 'Pending' && r.bloodGroup === locals.user.bloodGroup
+	// Load pending or accepted blood requests that match donor's blood group
+	const matchedRequests = bloodRequests.filter(
+		r => (r.status === 'Pending' || r.status === 'Accepted') && r.bloodGroup === locals.user.bloodGroup
+	);
+
+	const requests = await Promise.all(
+		matchedRequests.map(async (r) => {
+			const donorResponse = await database.getDonorResponse(r.id, locals.user.id);
+			return {
+				...r,
+				donorResponse
+			};
+		})
 	);
 
 	const donationsCount = history.length;

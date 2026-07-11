@@ -263,6 +263,46 @@
 			showDeleteConfirm = false;
 		}
 	}
+
+	// Polling and notifications for donor responses
+	let notifiedResponses = new Map();
+	let isFirstLoad = true;
+
+	$effect(() => {
+		// Periodically invalidate data to fetch updates (polling every 5 seconds)
+		const interval = setInterval(() => {
+			invalidateAll();
+		}, 5000);
+
+		return () => clearInterval(interval);
+	});
+
+	$effect(() => {
+		if (!data.myRequests) return;
+
+		data.myRequests.forEach(req => {
+			req.donorResponses.forEach(dr => {
+				if (dr.status !== 'Waiting') {
+					const key = `${req.id}_${dr.donorId}`;
+					if (!notifiedResponses.has(key)) {
+						notifiedResponses.set(key, dr.status);
+						// Don't show toast on initial page load to avoid spamming existing responses
+						if (!isFirstLoad) {
+							if (dr.status === 'Accepted') {
+								db.addToast(`Accepted by ${dr.donorName}`, 'success');
+							} else if (dr.status === 'Rejected') {
+								db.addToast(`Rejected by ${dr.donorName}`, 'error');
+							}
+						}
+					}
+				}
+			});
+		});
+
+		if (isFirstLoad && data.myRequests.length > 0) {
+			isFirstLoad = false;
+		}
+	});
 </script>
 
 <div class="space-y-6">
@@ -324,6 +364,98 @@
 					</div>
 				{/each}
 			</div>
+		</div>
+
+		<!-- Track Donor Responses Dashboard Section -->
+		<div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm mt-6 text-left">
+			<div class="flex items-center gap-3 mb-4 border-b border-slate-50 pb-2">
+				<span class="text-2xl">📋</span>
+				<div>
+					<h3 class="text-lg font-bold text-slate-900">Track Donor Responses</h3>
+					<p class="text-xs text-slate-500">Real-time status of responses from compatible matched donors.</p>
+				</div>
+			</div>
+
+			{#if !data.myRequests || data.myRequests.length === 0}
+				<div class="border border-slate-100 p-8 rounded-3xl text-center bg-slate-50/50">
+					<span class="text-3xl block mb-2">📢</span>
+					<p class="text-slate-550 font-bold text-slate-600">No blood requests published yet</p>
+					<p class="text-slate-400 text-xs mt-1">Submit a request under "Request Blood" to start matching with donors.</p>
+				</div>
+			{:else}
+				<div class="space-y-6">
+					{#each data.myRequests as req}
+						<div class="bg-slate-50/30 border border-slate-100 rounded-2xl p-6 space-y-4">
+							<div class="flex justify-between items-start border-b border-slate-100 pb-3 flex-wrap gap-2">
+								<div>
+									<h4 class="font-extrabold text-slate-800 text-sm">
+										Patient: {req.patientName} ({req.bloodGroup})
+									</h4>
+									<p class="text-[10px] text-slate-400 mt-0.5">
+										🏥 {req.hospital} • {req.city} • Required Units: {req.units}
+									</p>
+								</div>
+								<div class="flex items-center gap-2">
+									<span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider
+										{req.urgency === 'Critical' ? 'bg-red-50 text-red-700 border border-red-150 animate-pulse' : ''}
+										{req.urgency === 'Urgent' ? 'bg-amber-50 text-amber-700 border border-amber-200' : ''}
+										{req.urgency === 'Normal' ? 'bg-slate-150 text-slate-655 text-slate-600' : ''}">
+										{req.urgency}
+									</span>
+									<span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider
+										{req.status === 'Pending' ? 'bg-amber-50 text-amber-700 border border-amber-250' : ''}
+										{req.status === 'Accepted' ? 'bg-emerald-50 text-emerald-700 border border-emerald-250' : ''}
+										{req.status === 'Rejected' ? 'bg-red-50 text-red-700 border border-red-150' : ''}
+										{req.status === 'Completed' ? 'bg-emerald-50 text-emerald-750 text-emerald-700' : ''}">
+										{req.status}
+									</span>
+								</div>
+							</div>
+
+							<!-- Donor Responses List -->
+							<div class="space-y-3">
+								<h5 class="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Donor Responses ({req.donorResponses.length} compatible matched)</h5>
+								
+								{#if req.donorResponses.length === 0}
+									<p class="text-xs text-slate-400 italic">No compatible active and available donors found for this blood group.</p>
+								{:else}
+									<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+										{#each req.donorResponses as dr}
+											<div class="bg-white border border-slate-100 rounded-xl p-4 flex flex-col justify-between shadow-xs hover:shadow-sm transition">
+												<div class="flex justify-between items-start">
+													<div>
+														<h6 class="font-bold text-slate-800 text-xs">{dr.donorName}</h6>
+														<span class="text-[9px] uppercase font-bold tracking-widest mt-1 inline-block
+															{dr.status === 'Accepted' ? 'text-emerald-700' : ''}
+															{dr.status === 'Rejected' ? 'text-red-700' : ''}
+															{dr.status === 'Waiting' ? 'text-slate-400' : ''}">
+															{dr.status === 'Accepted' ? 'Accepted ✓' : dr.status === 'Rejected' ? 'Rejected by donor' : 'Waiting for donor response...'}
+														</span>
+													</div>
+												</div>
+
+												{#if dr.status === 'Accepted' && dr.donorDetails}
+													<div class="mt-3 pt-2.5 border-t border-slate-50 text-[10px] text-slate-500 space-y-1 bg-slate-50/50 p-2 rounded-lg">
+														<p><strong>Blood Group:</strong> {dr.donorDetails.bloodGroup}</p>
+														<p><strong>City:</strong> {dr.donorDetails.location || 'Not Specified'}</p>
+														<p><strong>Phone:</strong> {dr.donorDetails.phone || 'Not Provided'}</p>
+														<p><strong>Email:</strong> {dr.donorDetails.email}</p>
+														{#if dr.donorDetails.phone}
+															<a href="tel:{dr.donorDetails.phone}" class="mt-2 block w-full text-center bg-primary hover:bg-red-700 text-white font-bold py-1 rounded-md text-[9px] transition">
+																Call Donor
+															</a>
+														{/if}
+													</div>
+												{/if}
+											</div>
+										{/each}
+									</div>
+								{/if}
+							</div>
+						</div>
+					{/each}
+				</div>
+			{/if}
 		</div>
 
 	<!-- TAB 2: REQUEST BLOOD -->

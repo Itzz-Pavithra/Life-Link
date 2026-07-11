@@ -18,6 +18,7 @@
 
 	let reqSearchQuery = $state('');
 	let reqFilterStatus = $state('all');
+	let selectedRequestForResponses = $state(null);
 
 	let bankSearchQuery = $state('');
 
@@ -782,6 +783,7 @@
 								<th class="py-3 px-4">Request Details</th>
 								<th class="py-3 px-4">Hospital Location</th>
 								<th class="py-3 px-4">Urgency</th>
+								<th class="py-3 px-4">Donor Responses</th>
 								<th class="py-3 px-4">Status</th>
 								<th class="py-3 px-4 text-right">Administrative Updates</th>
 							</tr>
@@ -812,12 +814,29 @@
 											{req.urgency}
 										</span>
 									</td>
+									<td class="py-3 px-4 font-semibold text-slate-700">
+										<div class="space-y-1">
+											<span class="block text-[10px] text-slate-500">
+												Matched: <strong>{req.matchingDonorsCount}</strong>
+											</span>
+											<span class="block text-[9px] text-slate-400 font-medium">
+												Acc: <strong class="text-emerald-700">{req.acceptedCount}</strong> | Rej: <strong class="text-red-700">{req.rejectedCount}</strong> | Wtg: <strong class="text-slate-600">{req.waitingCount}</strong>
+											</span>
+											<button
+												class="text-[9px] bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-2 py-0.5 rounded transition cursor-pointer"
+												onclick={() => selectedRequestForResponses = req}
+											>
+												View Responses
+											</button>
+										</div>
+									</td>
 									<td class="py-3 px-4">
 										<span class="px-2 py-0.5 rounded font-bold text-[9px] uppercase
 											{req.status === 'Pending' ? 'bg-amber-50 text-amber-700 border border-amber-250' : ''}
 											{req.status === 'Approved' ? 'bg-blue-50 text-blue-700 border border-blue-200' : ''}
 											{req.status === 'Rejected' ? 'bg-red-50 text-red-700 border border-red-150' : ''}
-											{req.status === 'Completed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-250' : ''}">
+											{req.status === 'Completed' ? 'bg-emerald-50 text-emerald-700 border border-emerald-250' : ''}
+											{req.status === 'Accepted' ? 'bg-emerald-50 text-emerald-700 border border-emerald-250' : ''}">
 											{req.status}
 										</span>
 									</td>
@@ -1374,3 +1393,63 @@
 		</div>
 	{/if}
 </div>
+
+{#if selectedRequestForResponses}
+	<div class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+		<div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6 text-left">
+			<div class="flex justify-between items-start border-b border-slate-100 pb-3">
+				<div>
+					<h3 class="text-lg font-black text-slate-900">Donor Responses</h3>
+					<p class="text-xs text-slate-500 mt-1">
+						Patient: <strong>{selectedRequestForResponses.patientName}</strong> • Blood Group: <span class="text-red-700 font-bold">{selectedRequestForResponses.bloodGroup}</span>
+					</p>
+					<p class="text-[10px] text-slate-400">
+						Recipient: {selectedRequestForResponses.submittedBy}
+					</p>
+				</div>
+				<button onclick={() => selectedRequestForResponses = null} class="text-slate-400 hover:text-slate-655 text-lg cursor-pointer">
+					✕
+				</button>
+			</div>
+
+			<!-- List Responses -->
+			<div class="space-y-3 max-h-80 overflow-y-auto pr-1">
+				{#if selectedRequestForResponses.donorResponses.length === 0}
+					<p class="text-xs text-slate-400 italic">No compatible active and available donors matched this request.</p>
+				{:else}
+					{#each selectedRequestForResponses.donorResponses as dr}
+						<div class="flex justify-between items-center border border-slate-100 bg-slate-50/50 p-3 rounded-2xl">
+							<div>
+								<span class="font-bold text-slate-800 text-xs block">{dr.donorName}</span>
+								<span class="text-[9px] text-slate-450">
+									{#if dr.status === 'Accepted'}
+										Accepted
+									{:else if dr.status === 'Rejected'}
+										Rejected
+									{:else}
+										Waiting for response
+									{/if}
+								</span>
+							</div>
+							<span class="px-2.5 py-0.5 rounded font-black text-[9px] uppercase
+								{dr.status === 'Accepted' ? 'bg-emerald-50 text-emerald-700 border border-emerald-250' : ''}
+								{dr.status === 'Rejected' ? 'bg-red-50 text-red-700 border border-red-150' : ''}
+								{dr.status === 'Waiting' ? 'bg-slate-100 text-slate-500 border border-slate-200' : ''}">
+								{dr.status}
+							</span>
+						</div>
+					{/each}
+				{/if}
+			</div>
+
+			<div class="flex justify-end pt-3 border-t border-slate-50">
+				<button
+					onclick={() => selectedRequestForResponses = null}
+					class="bg-slate-100 hover:bg-slate-200 text-secondary font-bold px-5 py-2.5 rounded-xl text-xs transition cursor-pointer"
+				>
+					Close View
+				</button>
+			</div>
+		</div>
+	</div>
+{/if}

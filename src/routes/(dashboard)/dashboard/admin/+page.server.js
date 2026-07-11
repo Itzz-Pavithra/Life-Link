@@ -25,6 +25,42 @@ export async function load({ locals }) {
 	const donations = await database.getDonations();
 	const logs = await database.getSystemLogs();
 
+	const requestsWithResponses = await Promise.all(
+		bloodRequests.map(async (req) => {
+			const responses = await database.getRequestResponses(req.id);
+			
+			// Find all matching donors for this request
+			const matchingDonors = users.filter(u => 
+				u.role === 'donor' && 
+				u.status === 'active' && 
+				u.isAvailable !== false &&
+				u.emailVerified === true &&
+				u.bloodGroup === req.bloodGroup
+			);
+
+			// Map matching donors to their responses or 'Waiting' status
+			const donorResponses = matchingDonors.map(donor => {
+				const resp = responses.find(r => r.donorId === donor.id);
+				return {
+					donorId: donor.id,
+					donorName: donor.name,
+					status: resp ? resp.status : 'Waiting',
+					respondedAt: resp ? (resp.respondedAt || resp.acceptedAt) : null,
+					acceptedAt: resp ? resp.acceptedAt : null
+				};
+			});
+
+			return {
+				...req,
+				donorResponses,
+				matchingDonorsCount: matchingDonors.length,
+				acceptedCount: donorResponses.filter(dr => dr.status === 'Accepted').length,
+				rejectedCount: donorResponses.filter(dr => dr.status === 'Rejected').length,
+				waitingCount: donorResponses.filter(dr => dr.status === 'Waiting').length
+			};
+		})
+	);
+
 	// Helper function for last 6 months stats
 	const getLast6MonthsStats = (requests, donations) => {
 		const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -96,7 +132,7 @@ export async function load({ locals }) {
 		receivers: users.filter(u => u.role === 'recipient'),
 		eligibilityRequests: [],
 		bloodBanks,
-		requests: bloodRequests,
+		requests: requestsWithResponses,
 		donations,
 		systemLogs: logs,
 		analytics,

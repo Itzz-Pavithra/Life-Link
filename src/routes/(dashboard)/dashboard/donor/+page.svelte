@@ -140,21 +140,26 @@
 		}
 	}
 
-	async function handleAcceptEmergency(id) {
-		const req = data.requests.find(r => r.id === id);
-		if (req) {
-			const response = await fetch('/api/requests', {
+	async function handleDonorResponse(requestId, status) {
+		try {
+			const response = await fetch('/api/requests/respond', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ id, status: 'Accepted' })
+				body: JSON.stringify({ requestId, status })
 			});
 			const res = await response.json();
 			if (res.success) {
-				db.addToast(`🚨 You have ACCEPTED the emergency request for ${req.patientName}. The coordinate details have been sent to your phone.`, 'success');
+				if (status === 'Accepted') {
+					db.addToast(`🚨 You have ACCEPTED the emergency request. Recipient has been notified.`, 'success');
+				} else {
+					db.addToast(`You have rejected the request.`, 'info');
+				}
 				await invalidateAll();
 			} else {
-				db.addToast(res.error || 'Failed to accept request', 'error');
+				db.addToast(res.error || 'Failed to submit response', 'error');
 			}
+		} catch (err) {
+			db.addToast('Error communicating with server.', 'error');
 		}
 	}
 
@@ -280,13 +285,13 @@
 			</div>
 		</div>
 
-		<!-- Active Emergency Requests section on main Dashboard -->
+		<!-- Incoming Blood Requests section on main Dashboard -->
 		<div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm mt-6 text-left">
 			<div class="flex items-center gap-3 mb-4">
 				<span class="text-2xl">🚨</span>
 				<div>
-					<h3 class="font-bold text-lg text-slate-900">🚨 Emergency Blood Requests</h3>
-					<p class="text-xs text-slate-500">Pending requests matching your blood group type.</p>
+					<h3 class="font-bold text-lg text-slate-900">🚨 Incoming Blood Requests</h3>
+					<p class="text-xs text-slate-500">Matching blood requests for your blood type.</p>
 				</div>
 			</div>
 
@@ -311,31 +316,67 @@
 									</span>
 									<div class="text-left">
 										<h4 class="font-bold text-slate-900 text-sm">Patient: {req.patientName}</h4>
-										<p class="text-[10px] text-gray-500">🏥 {req.hospital} • {req.city}</p>
+										<p class="text-[10px] text-gray-550">🏥 {req.hospital} • {req.city}</p>
 									</div>
 								</div>
 
 								<div class="bg-slate-50/50 border border-slate-100 p-3 rounded-2xl text-[10px] text-slate-500 space-y-1">
-									<p><strong>Required Units:</strong> {req.units} units</p>
-									<p><strong>Contact Email:</strong> {req.submittedBy}</p>
+									<p><strong>Patient Name:</strong> {req.patientName}</p>
+									<p><strong>Blood Group:</strong> {req.bloodGroup}</p>
+									<p><strong>Units Required:</strong> {req.units} units</p>
+									<p><strong>Hospital:</strong> {req.hospital}</p>
+									<p><strong>City:</strong> {req.city}</p>
 									{#if req.contact}
-										<p><strong>Contact Phone:</strong> {req.contact}</p>
+										<p><strong>Contact Number:</strong> {req.contact}</p>
 									{/if}
+									<p><strong>Urgency Level:</strong> <span class="font-bold uppercase tracking-wider text-[9px]
+										{req.urgency === 'Critical' ? 'text-red-700' : ''}
+										{req.urgency === 'Urgent' ? 'text-amber-700' : ''}
+										{req.urgency === 'Normal' ? 'text-slate-500' : ''}">{req.urgency}</span></p>
+									<p><strong>Request Time:</strong> {req.createdAt || req.date}</p>
 									<p><strong>Current Status:</strong> <span class="font-bold text-red-750 text-red-700">{req.status}</span></p>
 								</div>
 							</div>
 
-							<div class="mt-4">
-								{#if req.status !== 'Accepted'}
-									<button
-										class="w-full bg-primary hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition cursor-pointer"
-										onclick={() => handleAcceptEmergency(req.id)}
-									>
-										Accept Emergency Drive
-									</button>
-								{:else}
-									<span class="w-full block text-center bg-emerald-50 border border-emerald-250 text-emerald-750 text-emerald-700 font-extrabold py-2.5 rounded-xl text-xs">
+							<div class="mt-4 flex flex-col gap-2">
+								{#if !req.donorResponse}
+									<div class="grid grid-cols-2 gap-2">
+										<button
+											class="bg-primary hover:bg-red-700 text-white font-bold py-2.5 rounded-xl text-xs transition cursor-pointer"
+											onclick={() => handleDonorResponse(req.id, 'Accepted')}
+										>
+											Accept Request
+										</button>
+										<button
+											class="bg-white border border-red-250 text-primary hover:bg-red-50 font-bold py-2.5 rounded-xl text-xs transition cursor-pointer"
+											onclick={() => handleDonorResponse(req.id, 'Rejected')}
+										>
+											Reject Request
+										</button>
+									</div>
+								{:else if req.donorResponse.status === 'Accepted'}
+									<div class="grid grid-cols-2 gap-2 opacity-50">
+										<button class="bg-primary text-white font-bold py-2.5 rounded-xl text-xs cursor-not-allowed" disabled>
+											Accept Request
+										</button>
+										<button class="bg-white border border-red-250 text-primary font-bold py-2.5 rounded-xl text-xs cursor-not-allowed" disabled>
+											Reject Request
+										</button>
+									</div>
+									<span class="w-full block text-center bg-emerald-50 border border-emerald-250 text-emerald-700 font-extrabold py-2.5 rounded-xl text-xs">
 										Accepted ✓
+									</span>
+								{:else if req.donorResponse.status === 'Rejected'}
+									<div class="grid grid-cols-2 gap-2 opacity-50">
+										<button class="bg-primary text-white font-bold py-2.5 rounded-xl text-xs cursor-not-allowed" disabled>
+											Accept Request
+										</button>
+										<button class="bg-white border border-red-250 text-primary font-bold py-2.5 rounded-xl text-xs cursor-not-allowed" disabled>
+											Reject Request
+										</button>
+									</div>
+									<span class="w-full block text-center bg-red-50 border border-red-200 text-red-700 font-extrabold py-2.5 rounded-xl text-xs">
+										Rejected ✕
 									</span>
 								{/if}
 							</div>
