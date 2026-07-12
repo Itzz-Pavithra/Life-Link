@@ -99,26 +99,26 @@ VITE_FIREBASE_MEASUREMENT_ID=your-measurement-id
 ### Admin
 
 Email:
-admin@lifelink.org
+pavithra.workss@gmail.com
 
 Password:
-DemoPassword123!
+Pavi@2004
 
 ### Recipient
 
 Email:
-recipient@lifelink.org
+subhasriraman2@gmail.com
 
 Password:
-DemoPassword123!
+Dhar@2008
 
 ### Donor
 
 Email:
-donor@lifelink.org
+pavithramongodb@gmail.com
 
 Password:
-DemoPassword123!
+Pavi@2004
 
 *Note: The system generates an administrator account on the first initialization check. The credentials above are placeholders that should be set up during initial registration.*
 
