@@ -1,6 +1,7 @@
 <script>
 	import { db } from '$lib/auth.svelte.js';
 	import axios from 'axios';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let { email, onVerified } = $props();
 
@@ -103,7 +104,7 @@
 <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-6 z-[9999]">
 	<div class="bg-white border border-slate-100 p-6 sm:p-8 rounded-[32px] shadow-2xl w-full max-w-md space-y-6 relative hover-card-premium">
 		<div class="text-center space-y-2">
-			<span class="text-4xl block mb-2 animate-pulse">✉️</span>
+			<span class="text-4xl block mb-2 animate-pulse text-red-650 flex justify-center"><Icon name="mail" size={40} /></span>
 			<h3 class="text-xl font-bold text-slate-800">Verify Your Email</h3>
 			<p class="text-slate-655 font-medium text-xs leading-relaxed">
 				We have sent a 6-digit verification code to <br />
@@ -112,14 +113,14 @@
 		</div>
 
 		{#if errorMsg}
-			<div class="p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl">
-				⚠️ {errorMsg}
+			<div class="p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl flex items-center gap-2">
+				<Icon name="alert-triangle" class="w-4 h-4" /> {errorMsg}
 			</div>
 		{/if}
 
 		{#if successMsg}
-			<div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-2xl">
-				✓ {successMsg}
+			<div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-2xl flex items-center gap-2">
+				<Icon name="check-circle" class="w-4 h-4" /> {successMsg}
 			</div>
 		{/if}
 
@@ -146,8 +147,8 @@
 					<span>Attempts Left: <strong class="text-red-700">{remainingAttempts}</strong></span>
 				</div>
 			{:else}
-				<div class="text-center text-xs font-semibold text-red-655 p-1">
-					⚠️ Code has expired or attempts limit exceeded. Please request a new OTP.
+				<div class="text-center text-xs font-semibold text-red-655 p-1 flex items-center justify-center gap-1.5">
+					<Icon name="alert-triangle" class="w-3.5 h-3.5" /> Code has expired or attempts limit exceeded. Please request a new OTP.
 				</div>
 			{/if}
 

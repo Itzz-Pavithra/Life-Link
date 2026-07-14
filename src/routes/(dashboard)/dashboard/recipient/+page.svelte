@@ -1,12 +1,10 @@
 <script>
 	import { invalidateAll } from '$app/navigation';
 	import { db } from '$lib/auth.svelte.js';
-	import ImageCropper from '$lib/components/ImageCropper.svelte';
+	import Icon from '$lib/components/Icon.svelte';
+	import { getInitials, getAvatarColor } from '$lib/avatar.js';
 
 	let { data } = $props();
-
-	let showCropper = $state(false);
-	let rawImageSrc = $state('');
 
 	// Request Blood form states
 	let patientName = $state('');
@@ -40,7 +38,7 @@
 
 		const res = await response.json();
 		if (res.success) {
-			db.addToast(`🚨 Emergency Blood Request submitted for ${patientName}! Matching donors are being calculated.`, 'success');
+			db.addToast(`Emergency Blood Request submitted for ${patientName}! Matching donors are being calculated.`, 'success');
 			
 			// Reset inputs
 			patientName = '';
@@ -64,9 +62,6 @@
 	let profileLocation = $state(data.user?.location || '');
 	let profileAddress = $state(data.user?.address || '');
 	let profileBloodGroup = $state(data.user?.bloodGroup || '');
-	let profileAvatar = $state(data.user?.avatar || '');
-
-	let imageValidationError = $state('');
 
 	// Keep states in sync when data updates
 	$effect(() => {
@@ -77,34 +72,9 @@
 				profileLocation = data.user.location || '';
 				profileAddress = data.user.address || '';
 				profileBloodGroup = data.user.bloodGroup || '';
-				profileAvatar = data.user.avatar || '';
 			}
 		}
 	});
-
-	function handleFileChange(e) {
-		const file = e.target.files[0];
-		if (!file) return;
-
-		const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-		const fileExtension = file.name.split('.').pop().toLowerCase();
-		const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
-
-		if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
-			imageValidationError = 'Only image files are allowed';
-			db.addToast('Only image files are allowed', 'error');
-			e.target.value = '';
-			return;
-		}
-
-		imageValidationError = '';
-		const reader = new FileReader();
-		reader.onload = (event) => {
-			rawImageSrc = event.target.result;
-			showCropper = true;
-		};
-		reader.readAsDataURL(file);
-	}
 
 	async function handleSaveProfile(e) {
 		if (e) e.preventDefault();
@@ -122,8 +92,7 @@
 					phone: profilePhone,
 					location: profileLocation,
 					address: profileAddress,
-					bloodGroup: profileBloodGroup,
-					avatar: profileAvatar
+					bloodGroup: profileBloodGroup
 				})
 			});
 			const result = await res.json();
@@ -141,14 +110,12 @@
 
 	function cancelEditing() {
 		isEditing = false;
-		imageValidationError = '';
 		if (data.user) {
 			profileName = data.user.name || '';
 			profilePhone = data.user.phone || '';
 			profileLocation = data.user.location || '';
 			profileAddress = data.user.address || '';
 			profileBloodGroup = data.user.bloodGroup || '';
-			profileAvatar = data.user.avatar || '';
 		}
 	}
 
@@ -323,7 +290,7 @@
 			});
 			const res = await response.json();
 			if (res.success) {
-				db.addToast('🎉 Blood request marked as successfully completed!', 'success');
+				db.addToast('Blood request marked as successfully completed!', 'success');
 				await invalidateAll();
 			} else {
 				db.addToast(res.error || 'Failed to complete request', 'error');
@@ -338,7 +305,7 @@
 	<!-- Page Header -->
 	<div class="flex justify-between items-center">
 		<h1 class="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-			📋 Recipient Services
+			<Icon name="clipboard-list" class="w-7 h-7 text-red-600" /> Recipient Services
 		</h1>
 		<span class="text-xs font-bold text-red-700 bg-red-50 border border-red-200 px-3 py-1 rounded-full uppercase tracking-wider">
 			Role: Recipient
@@ -363,7 +330,7 @@
 			<div class="flex items-center justify-between mb-4 border-b border-slate-50 pb-2">
 				<div>
 					<h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-						📊 Active Blood Inventory Analytics
+						<Icon name="bar-chart" class="w-5 h-5 text-red-600" /> Active Blood Inventory Analytics
 					</h3>
 					<p class="text-xs text-slate-500">Live compatible donor supply counts based on real network availability.</p>
 				</div>
@@ -398,7 +365,7 @@
 		<!-- Track Donor Responses Dashboard Section -->
 		<div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm mt-6 text-left">
 			<div class="flex items-center gap-3 mb-4 border-b border-slate-50 pb-2">
-				<span class="text-2xl">📋</span>
+				<Icon name="clipboard-list" class="w-6 h-6 text-red-600" />
 				<div>
 					<h3 class="text-lg font-bold text-slate-900">Track Donor Responses</h3>
 					<p class="text-xs text-slate-500">Real-time status of responses from compatible matched donors.</p>
@@ -407,7 +374,7 @@
 
 			{#if !data.myRequests || data.myRequests.length === 0}
 				<div class="border border-slate-100 p-8 rounded-3xl text-center bg-slate-50/50">
-					<span class="text-3xl block mb-2">📢</span>
+					<span class="text-3xl block mb-2 text-slate-400 flex justify-center"><Icon name="megaphone" size={32} /></span>
 					<p class="text-slate-550 font-bold text-slate-600">No blood requests published yet</p>
 					<p class="text-slate-400 text-xs mt-1">Submit a request under "Request Blood" to start matching with donors.</p>
 				</div>
@@ -420,8 +387,8 @@
 									<h4 class="font-extrabold text-slate-800 text-sm">
 										Patient: {req.patientName} ({req.bloodGroup})
 									</h4>
-									<p class="text-[10px] text-slate-400 mt-0.5">
-										🏥 {req.hospital} • {req.city} • Required Units: {req.units}
+									<p class="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
+										<Icon name="hospital" class="w-3.5 h-3.5" /> {req.hospital} • {req.city} • Required Units: {req.units}
 									</p>
 								</div>
 								<div class="flex items-center gap-2">
@@ -442,8 +409,8 @@
 							</div>
 
 							{#if req.status === 'Completed'}
-								<div class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl text-center">
-									<span class="font-extrabold text-emerald-700 text-sm block">✔ Blood Successfully Received</span>
+								<div class="bg-emerald-50 border border-emerald-200 p-4 rounded-xl text-center flex items-center justify-center gap-2">
+									<span class="font-extrabold text-emerald-700 text-sm flex items-center gap-1.5"><Icon name="check-circle" class="w-4 h-4" /> Blood Successfully Received</span>
 									<p class="text-[10px] text-emerald-650 mt-1">This request has been successfully resolved.</p>
 								</div>
 							{:else}
@@ -456,9 +423,9 @@
 										{#if req.donorResponses.some(dr => dr.status === 'Accepted')}
 											<button
 												onclick={() => handleCompleteRequest(req.id)}
-												class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-xl text-[10px] transition cursor-pointer"
+												class="bg-emerald-600 hover:bg-emerald-700 text-white font-bold px-3 py-1.5 rounded-xl text-[10px] transition cursor-pointer flex items-center gap-1"
 											>
-												✅ Blood Received / Mark as Completed
+												<Icon name="check-circle" class="w-3.5 h-3.5" /> Blood Received / Mark as Completed
 											</button>
 										{/if}
 									</div>
@@ -472,11 +439,12 @@
 													<div class="flex justify-between items-start">
 														<div>
 															<h6 class="font-bold text-slate-800 text-xs">{dr.donorName}</h6>
-															<span class="text-[9px] uppercase font-bold tracking-widest mt-1 inline-block
+															<span class="text-[9px] uppercase font-bold tracking-widest mt-1 flex items-center gap-1
 																{dr.status === 'Accepted' ? 'text-emerald-700' : ''}
 																{dr.status === 'Rejected' ? 'text-red-700' : ''}
 																{dr.status === 'Waiting' ? 'text-slate-400' : ''}">
-																{dr.status === 'Accepted' ? 'Accepted ✓' : dr.status === 'Rejected' ? 'Rejected by donor' : 'Waiting for donor response...'}
+																{dr.status === 'Accepted' ? 'Accepted' : dr.status === 'Rejected' ? 'Rejected by donor' : 'Waiting for donor response...'}
+																{#if dr.status === 'Accepted'}<Icon name="check" class="w-3 h-3" />{/if}
 															</span>
 														</div>
 													</div>
@@ -510,7 +478,7 @@
 	{:else if db.activeTab === 'request-blood'}
 		<div class="max-w-3xl mx-auto bg-white border border-slate-100 rounded-3xl p-8 shadow-lg">
 			<div class="text-center mb-6">
-				<span class="text-4xl block mb-2">🚨</span>
+				<span class="text-4xl block mb-2 text-red-600 flex justify-center"><Icon name="alert-octagon" size={40} /></span>
 				<h2 class="text-2xl font-bold text-slate-800">Create Blood Request</h2>
 				<p class="text-slate-400 text-xs mt-1">This matches you automatically with registered nearby donors.</p>
 			</div>
@@ -690,16 +658,16 @@
 						<button
 							onclick={sendEmergencyAlert}
 							disabled={sendingAlert}
-							class="bg-primary hover:bg-red-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer disabled:opacity-50"
+							class="bg-primary hover:bg-red-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer disabled:opacity-50 flex items-center gap-1.5"
 						>
-							🚨 {sendingAlert ? 'Sending Alert...' : 'Send Emergency Alert'}
+							<Icon name="alert-octagon" class="w-3.5 h-3.5" /> {sendingAlert ? 'Sending Alert...' : 'Send Emergency Alert'}
 						</button>
 					{/if}
 				</div>
 
 				{#if filteredDonors.length === 0}
 					<div class="text-center p-8 bg-slate-50 border border-slate-100 rounded-2xl">
-						<span class="text-3xl block mb-2">🔍</span>
+						<span class="text-3xl block mb-2 text-slate-400 flex justify-center"><Icon name="search" size={32} /></span>
 						<p class="text-slate-550 font-bold text-slate-600">No compatible donors found</p>
 						<p class="text-slate-400 text-xs mt-1">Try adjusting the blood group, location search query, or availability toggle parameters.</p>
 					</div>
@@ -708,36 +676,29 @@
 						{#each filteredDonors as donor}
 							<div class="bg-white border border-slate-100 p-5 rounded-2xl shadow-xs flex flex-col justify-between hover:shadow-md transition">
 								<div class="flex items-center gap-3">
-									{#if donor.avatar}
-										<img
-											src={donor.avatar}
-											alt="Avatar"
-											class="w-12 h-12 rounded-full object-cover border border-slate-200"
-										/>
-									{:else}
-										<span class="w-12 h-12 bg-red-100 text-red-700 font-extrabold text-sm rounded-xl flex items-center justify-center border border-red-200">
-											{donor.bloodGroup}
-										</span>
-									{/if}
+									<div class="w-12 h-12 rounded-full border flex items-center justify-center font-bold text-sm uppercase shrink-0 {getAvatarColor(donor.name)}">
+										{getInitials(donor.name)}
+									</div>
 									<div>
 										<h4 class="font-bold text-slate-900 text-sm">{donor.name}</h4>
-										<p class="text-[10px] text-gray-500">📍 {donor.location || 'Not Specified'}</p>
+										<p class="text-[10px] text-gray-550 flex items-center gap-1"><Icon name="map-pin" class="w-3 h-3 text-gray-400" /> {donor.location || 'Not Specified'}</p>
 									</div>
 								</div>
 
 								<div class="mt-4 pt-3 border-t border-slate-50 flex items-center justify-between text-xs">
 									<span class="font-bold text-red-700">Group: {donor.bloodGroup}</span>
-									<span class="px-2.5 py-1 rounded-full text-[10px] font-bold 
+									<span class="px-2.5 py-1 rounded-full text-[10px] font-bold flex items-center gap-1
 										{donor.isAvailable !== false ? 'bg-emerald-50 text-emerald-700 border border-emerald-250' : 'bg-slate-100 text-slate-500 border border-slate-200'}">
-										{donor.isAvailable !== false ? 'Available ✓' : 'Unavailable ✕'}
+										<Icon name={donor.isAvailable !== false ? 'check' : 'x'} class="w-3 h-3" />
+										{donor.isAvailable !== false ? 'Available' : 'Unavailable'}
 									</span>
 								</div>
 
 								<div class="mt-3 bg-slate-50 border border-slate-100 p-2.5 rounded-xl space-y-1 text-xs text-slate-700">
-									<p class="flex items-center gap-1.5">✉️ Email: <strong>{donor.email}</strong></p>
+									<p class="flex items-center gap-1.5"><Icon name="mail" class="w-3.5 h-3.5 text-gray-400" /> Email: <strong>{donor.email}</strong></p>
 									{#if donor.phone}
 										<p class="flex items-center justify-between gap-1.5">
-											<span>📞 Phone: <strong>{donor.phone}</strong></span>
+											<span class="flex items-center gap-1.5"><Icon name="phone" class="w-3.5 h-3.5 text-gray-400" /> Phone: <strong>{donor.phone}</strong></span>
 											<a href="tel:{donor.phone}" class="bg-primary hover:bg-red-700 text-white font-bold px-3 py-0.5 rounded-lg text-[10px] transition">
 												Call
 											</a>
@@ -759,46 +720,25 @@
 				{#if !isEditing}
 					<button
 						onclick={() => isEditing = true}
-						class="bg-primary hover:bg-red-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer"
+						class="bg-primary hover:bg-red-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer flex items-center gap-1.5"
 					>
-						✏️ Edit Profile
+						<Icon name="edit" class="w-3.5 h-3.5" /> Edit Profile
 					</button>
 				{/if}
 			</div>
 
 			<form onsubmit={handleSaveProfile} class="space-y-6">
-				<!-- Avatar Section -->
-				<div class="flex flex-col items-center gap-4 border-b border-slate-50 pb-6">
-					<div class="relative group">
-						<img
-							src={profileAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80'}
-							alt="Profile Avatar"
-							class="w-24 h-24 rounded-full object-cover border-2 border-red-100 shadow-md"
-						/>
-						{#if isEditing}
-							<label
-								for="avatar-upload-rec"
-								class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center text-white text-xs font-bold opacity-0 group-hover:opacity-100 transition cursor-pointer"
-							>
-								Change Photo
-							</label>
-							<input
-								id="avatar-upload-rec"
-								type="file"
-								accept="image/*"
-								onchange={handleFileChange}
-								class="hidden"
-							/>
-						{/if}
+				<!-- Initials Avatar Section -->
+				<div class="flex items-center gap-5 border-b border-slate-50 pb-6 w-full">
+					<div class="w-20 h-20 rounded-full border-2 shadow-md flex items-center justify-center text-2xl font-black uppercase tracking-wider shrink-0 {getAvatarColor(profileName)}">
+						{getInitials(profileName)}
 					</div>
-					{#if isEditing}
-						<div class="text-center">
-							<p class="text-[10px] text-slate-400">Allowed formats: JPG, JPEG, PNG, WEBP</p>
-							{#if imageValidationError}
-								<p class="text-red-700 font-bold text-[10px] mt-1">{imageValidationError}</p>
-							{/if}
-						</div>
-					{/if}
+					<div class="space-y-1 text-left">
+						<h3 class="text-lg font-bold text-slate-850">{profileName}</h3>
+						<span class="inline-block bg-red-100 text-primary border border-red-200 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md">
+							{data.user?.role}
+						</span>
+					</div>
 				</div>
 
 				<!-- Form Inputs Grid -->
@@ -917,38 +857,25 @@
 	<div class="bg-white border border-red-100 rounded-3xl p-6 shadow-sm">
 		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 			<div>
-				<h3 class="text-base font-bold text-red-700 flex items-center gap-2">⚠️ Danger Zone</h3>
+				<h3 class="text-base font-bold text-red-700 flex items-center gap-2"><Icon name="alert-triangle" class="w-5 h-5" /> Danger Zone</h3>
 				<p class="text-xs text-slate-500 mt-1">Permanently delete your LifeLink account and all associated data.</p>
 			</div>
 			<button
 				onclick={() => showDeleteConfirm = true}
-				class="bg-white border border-red-250 text-primary font-bold px-5 py-2.5 rounded-xl hover:bg-red-50 transition text-sm cursor-pointer whitespace-nowrap"
+				class="bg-white border border-red-250 text-primary font-bold px-5 py-2.5 rounded-xl hover:bg-red-50 transition text-sm cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5"
 			>
-				🗑️ Delete My Account
+				<Icon name="trash" class="w-4 h-4" /> Delete My Account
 			</button>
 		</div>
 	</div>
 </div>
-
-{#if showCropper}
-	<ImageCropper
-		imageSrc={rawImageSrc}
-		onCrop={(croppedDataUrl) => {
-			profileAvatar = croppedDataUrl;
-			showCropper = false;
-		}}
-		onCancel={() => {
-			showCropper = false;
-		}}
-	/>
-{/if}
 
 {#if showDeleteConfirm}
 	<!-- Delete Account Confirmation Modal -->
 	<div class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
 		<div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6">
 			<div class="text-center">
-				<span class="text-5xl block mb-4">⚠️</span>
+				<span class="text-5xl block mb-4 text-amber-500 flex justify-center"><Icon name="alert-triangle" size={48} /></span>
 				<h3 class="text-xl font-extrabold text-slate-900 mb-2">Delete Account</h3>
 				<p class="text-sm text-slate-500 leading-relaxed">
 					Are you sure you want to permanently delete your LifeLink account? All your data will be removed. This action <strong>cannot be undone</strong>.

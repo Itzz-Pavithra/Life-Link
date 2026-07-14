@@ -3,6 +3,7 @@
 	import { auth } from '$lib/firebase.client.js';
 	import { signOut } from 'firebase/auth';
 	import axios from 'axios';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let { data, sidebarOpen = $bindable(false) } = $props();
 
@@ -34,27 +35,27 @@
 	// Define all sidebar items for each role
 	const menuItems = {
 		recipient: [
-			{ id: 'dashboard', label: 'Dashboard', icon: '🏠' },
-			{ id: 'request-blood', label: 'Request Blood', icon: '📝' },
-			{ id: 'search-donors', label: 'Search Donors', icon: '🔍' },
-			{ id: 'profile', label: 'Profile', icon: '👤' }
+			{ id: 'dashboard', label: 'Dashboard', icon: 'home' },
+			{ id: 'request-blood', label: 'Request Blood', icon: 'file-text' },
+			{ id: 'search-donors', label: 'Search Donors', icon: 'search' },
+			{ id: 'profile', label: 'Profile', icon: 'user' }
 		],
 		donor: [
-			{ id: 'dashboard', label: 'Dashboard', icon: '🏠' },
-			{ id: 'donation-history', label: 'Donation History', icon: '🕒' },
-			{ id: 'availability', label: 'Availability', icon: '⚡' },
-			{ id: 'profile', label: 'Profile', icon: '👤' }
+			{ id: 'dashboard', label: 'Dashboard', icon: 'home' },
+			{ id: 'donation-history', label: 'Donation History', icon: 'clock' },
+			{ id: 'availability', label: 'Availability', icon: 'zap' },
+			{ id: 'profile', label: 'Profile', icon: 'user' }
 		],
 		admin: [
-			{ id: 'dashboard', label: 'Overview', icon: '🏠' },
-			{ id: 'users', label: 'All Users', icon: '👥' },
-			{ id: 'donors', label: 'Donors List', icon: '🩸' },
-			{ id: 'receivers', label: 'Receivers List', icon: '📋' },
-			{ id: 'blood-requests', label: 'Blood Requests', icon: '📋' },
-			{ id: 'blood-banks', label: 'Blood Banks', icon: '🏥' },
-			{ id: 'donation-history', label: 'Donation History', icon: '🕒' },
-			{ id: 'reports', label: 'System Reports', icon: '📈' },
-			{ id: 'settings', label: 'Settings', icon: '⚙️' }
+			{ id: 'dashboard', label: 'Overview', icon: 'home' },
+			{ id: 'users', label: 'All Users', icon: 'users' },
+			{ id: 'donors', label: 'Donors List', icon: 'droplet' },
+			{ id: 'receivers', label: 'Receivers List', icon: 'clipboard-list' },
+			{ id: 'blood-requests', label: 'Blood Requests', icon: 'clipboard-list' },
+			{ id: 'blood-banks', label: 'Blood Banks', icon: 'hospital' },
+			{ id: 'donation-history', label: 'Donation History', icon: 'clock' },
+			{ id: 'reports', label: 'System Reports', icon: 'trending-up' },
+			{ id: 'settings', label: 'Settings', icon: 'settings' }
 		]
 	};
 
@@ -78,10 +79,10 @@
 			<!-- Close button for mobile -->
 			<button
 				onclick={() => sidebarOpen = false}
-				class="md:hidden text-slate-400 hover:text-white p-1 rounded-lg text-lg cursor-pointer"
+				class="md:hidden text-slate-400 hover:text-white p-1 rounded-lg text-lg cursor-pointer flex items-center justify-center"
 				aria-label="Close sidebar panel"
 			>
-				✕
+				<Icon name="x" class="w-5 h-5" />
 			</button>
 		</div>
 
@@ -95,7 +96,7 @@
 						: 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}"
 					onclick={() => { db.activeTab = item.id; sidebarOpen = false; }}
 				>
-					<span class="text-base" aria-hidden="true">{item.icon}</span>
+					<Icon name={item.icon} class="w-4 h-4" />
 					<span>{item.label}</span>
 				</button>
 			{/each}
@@ -108,7 +109,7 @@
 			onclick={handleLogout}
 			class="w-full flex items-center gap-3 px-4 py-2.5 rounded-2xl text-xs font-bold text-slate-400 hover:bg-red-950/20 hover:text-red-400 border border-slate-800 hover:border-red-950/40 transition cursor-pointer text-left"
 		>
-			<span aria-hidden="true">🚪</span>
+			<Icon name="log-out" class="w-4 h-4" />
 			<span>Sign Out</span>
 		</button>
 	</div>

@@ -77,7 +77,7 @@ export async function POST({ request }) {
 				subject: 'LifeLink Email Verification OTP',
 				html: `
 					<div style="font-family: sans-serif; max-width: 500px; margin: auto; padding: 20px; border: 1px solid #f1f5f9; border-radius: 16px;">
-						<h2 style="color: #dc2626; margin-bottom: 20px; text-align: center;">Welcome to LifeLink ❤️</h2>
+						<h2 style="color: #dc2626; margin-bottom: 20px; text-align: center;">Welcome to LifeLink</h2>
 						<p>Hello ${fullName},</p>
 						<p>Thank you for signing up. Please verify your email address to activate your account using the code below:</p>
 						<div style="text-align: center; margin: 30px 0;">

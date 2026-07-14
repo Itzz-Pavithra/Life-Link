@@ -1,12 +1,10 @@
 <script>
 	import { invalidateAll } from '$app/navigation';
 	import { db } from '$lib/auth.svelte.js';
-	import ImageCropper from '$lib/components/ImageCropper.svelte';
+	import Icon from '$lib/components/Icon.svelte';
+	import { getInitials, getAvatarColor } from '$lib/avatar.js';
 
 	let { data } = $props();
-
-	let showCropper = $state(false);
-	let rawImageSrc = $state('');
 
 	// Availability state
 	let isAvailable = $state(data.user?.isAvailable !== false);
@@ -20,10 +18,7 @@
 	let profileLocation = $state(data.user?.location || '');
 	let profileAddress = $state(data.user?.address || '');
 	let profileBloodGroup = $state(data.user?.bloodGroup || '');
-	let profileAvatar = $state(data.user?.avatar || '');
 	let profileIsAvailable = $state(data.user?.isAvailable !== false);
-
-	let imageValidationError = $state('');
 
 	// Keep states in sync when data updates
 	$effect(() => {
@@ -35,7 +30,6 @@
 				profileLocation = data.user.location || '';
 				profileAddress = data.user.address || '';
 				profileBloodGroup = data.user.bloodGroup || '';
-				profileAvatar = data.user.avatar || '';
 				profileIsAvailable = data.user.isAvailable !== false;
 			}
 		}
@@ -68,30 +62,6 @@
 		}
 	}
 
-	function handleFileChange(e) {
-		const file = e.target.files[0];
-		if (!file) return;
-
-		const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
-		const fileExtension = file.name.split('.').pop().toLowerCase();
-		const allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
-
-		if (!allowedTypes.includes(file.type) && !allowedExtensions.includes(fileExtension)) {
-			imageValidationError = 'Only image files are allowed';
-			db.addToast('Only image files are allowed', 'error');
-			e.target.value = '';
-			return;
-		}
-
-		imageValidationError = '';
-		const reader = new FileReader();
-		reader.onload = (event) => {
-			rawImageSrc = event.target.result;
-			showCropper = true;
-		};
-		reader.readAsDataURL(file);
-	}
-
 	async function handleSaveProfile(e) {
 		if (e) e.preventDefault();
 		if (!profileName || !profilePhone || !profileLocation) {
@@ -109,8 +79,7 @@
 					location: profileLocation,
 					address: profileAddress,
 					bloodGroup: profileBloodGroup,
-					isAvailable: profileIsAvailable,
-					avatar: profileAvatar
+					isAvailable: profileIsAvailable
 				})
 			});
 			const result = await res.json();
@@ -128,14 +97,12 @@
 
 	function cancelEditing() {
 		isEditing = false;
-		imageValidationError = '';
 		if (data.user) {
 			profileName = data.user.name || '';
 			profilePhone = data.user.phone || '';
 			profileLocation = data.user.location || '';
 			profileAddress = data.user.address || '';
 			profileBloodGroup = data.user.bloodGroup || '';
-			profileAvatar = data.user.avatar || '';
 			profileIsAvailable = data.user.isAvailable !== false;
 		}
 	}
@@ -150,7 +117,7 @@
 			const res = await response.json();
 			if (res.success) {
 				if (status === 'Accepted') {
-					db.addToast(`🚨 You have ACCEPTED the emergency request. Recipient has been notified.`, 'success');
+					db.addToast(`You have ACCEPTED the emergency request. Recipient has been notified.`, 'success');
 				} else {
 					db.addToast(`You have rejected the request.`, 'info');
 				}
@@ -266,7 +233,11 @@
 				</div>
 
 				<p class="text-[10px] text-slate-450 italic">
-					{isAvailable ? '✔ Nearby recipients can find and matching requests can auto-route to you.' : '✕ You are currently hidden from query engines.'}
+					{#if isAvailable}
+						<span class="inline-flex items-center gap-1 text-emerald-600"><Icon name="check" class="w-3 h-3" /> Nearby recipients can find and matching requests can auto-route to you.</span>
+					{:else}
+						<span class="inline-flex items-center gap-1 text-slate-400"><Icon name="x" class="w-3 h-3" /> You are currently hidden from query engines.</span>
+					{/if}
 				</p>
 			</div>
 
@@ -275,13 +246,13 @@
 				<h3 class="font-bold text-slate-900">Donor Statistics</h3>
 				<div class="grid grid-cols-2 gap-4">
 					<div class="bg-red-50/50 border border-red-100 p-4 rounded-2xl text-center">
-						<span class="text-2xl block mb-1">🩸</span>
+						<span class="text-2xl block mb-1 text-red-600 flex justify-center"><Icon name="droplet" size={24} /></span>
 						<h4 class="text-2xl font-black text-red-750 text-red-700">{data.stats.donationsCount}</h4>
 						<p class="text-[10px] text-slate-500">Donations Done</p>
 					</div>
 
 					<div class="bg-emerald-50/50 border border-emerald-100 p-4 rounded-2xl text-center">
-						<span class="text-2xl block mb-1">💖</span>
+						<span class="text-2xl block mb-1 text-red-500 flex justify-center"><Icon name="heart" size={24} /></span>
 						<h4 class="text-2xl font-black text-emerald-750 text-emerald-700">{data.stats.livesSavedCount}</h4>
 						<p class="text-[10px] text-slate-500">Lives Saved</p>
 					</div>
@@ -291,17 +262,17 @@
 
 		<!-- Incoming Blood Requests section on main Dashboard -->
 		<div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm mt-6 text-left">
-			<div class="flex items-center gap-3 mb-4">
-				<span class="text-2xl">🚨</span>
+			<div class="flex items-center gap-3 mb-4 border-b border-slate-50 pb-2">
+				<Icon name="alert-octagon" class="w-6 h-6 text-red-600 animate-pulse" />
 				<div>
-					<h3 class="font-bold text-lg text-slate-900">🚨 Incoming Blood Requests</h3>
+					<h3 class="font-bold text-lg text-slate-900">Incoming Blood Requests</h3>
 					<p class="text-xs text-slate-500">Matching blood requests for your blood type.</p>
 				</div>
 			</div>
 
 			{#if data.requests.length === 0}
 				<div class="border border-slate-100 p-8 rounded-3xl text-center bg-slate-50/50">
-					<span class="text-3xl block mb-2">📋</span>
+					<span class="text-3xl block mb-2 text-slate-400 flex justify-center"><Icon name="clipboard-list" size={32} /></span>
 					<p class="text-slate-550 font-bold text-slate-600">No emergency requests found</p>
 					<p class="text-slate-400 text-xs mt-1">There are no pending blood requests for your blood type at this moment.</p>
 				</div>
@@ -320,7 +291,7 @@
 									</span>
 									<div class="text-left">
 										<h4 class="font-bold text-slate-900 text-sm">Patient: {req.patientName}</h4>
-										<p class="text-[10px] text-gray-550">🏥 {req.hospital} • {req.city}</p>
+										<p class="text-[10px] text-gray-550 flex items-center gap-1"><Icon name="hospital" class="w-3.5 h-3.5" /> {req.hospital} • {req.city}</p>
 									</div>
 								</div>
 
@@ -345,7 +316,7 @@
 							<div class="mt-4 flex flex-col gap-2">
 								{#if req.status === 'Completed'}
 									<span class="w-full block text-center bg-emerald-50 border border-emerald-250 text-emerald-700 font-extrabold py-2.5 rounded-xl text-xs">
-										✔ Blood Donation Completed
+										<span class="flex items-center justify-center gap-1.5"><Icon name="check-circle" class="w-4 h-4" /> Blood Donation Completed</span>
 									</span>
 								{:else if !req.donorResponse}
 									<div class="grid grid-cols-2 gap-2">
@@ -371,8 +342,8 @@
 											Reject Request
 										</button>
 									</div>
-									<span class="w-full block text-center bg-emerald-50 border border-emerald-250 text-emerald-700 font-extrabold py-2.5 rounded-xl text-xs">
-										Accepted ✓
+									<span class="w-full flex items-center justify-center gap-1.5 bg-emerald-50 border border-emerald-250 text-emerald-700 font-extrabold py-2.5 rounded-xl text-xs">
+										<Icon name="check-circle" class="w-3.5 h-3.5" /> Accepted
 									</span>
 								{:else if req.donorResponse.status === 'Rejected'}
 									<div class="grid grid-cols-2 gap-2 opacity-50">
@@ -383,8 +354,8 @@
 											Reject Request
 										</button>
 									</div>
-									<span class="w-full block text-center bg-red-50 border border-red-200 text-red-700 font-extrabold py-2.5 rounded-xl text-xs">
-										Rejected ✕
+									<span class="w-full flex items-center justify-center gap-1.5 bg-red-50 border border-red-200 text-red-700 font-extrabold py-2.5 rounded-xl text-xs">
+										<Icon name="x-circle" class="w-3.5 h-3.5" /> Rejected
 									</span>
 								{/if}
 							</div>
@@ -468,46 +439,25 @@
 				{#if !isEditing}
 					<button
 						onclick={() => isEditing = true}
-						class="bg-primary hover:bg-red-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer"
+						class="bg-primary hover:bg-red-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition cursor-pointer flex items-center gap-1.5"
 					>
-						✏️ Edit Profile
+						<Icon name="edit" class="w-3.5 h-3.5" /> Edit Profile
 					</button>
 				{/if}
 			</div>
 
 			<form onsubmit={handleSaveProfile} class="space-y-6">
-				<!-- Avatar Section -->
-				<div class="flex flex-col items-center gap-4 border-b border-slate-50 pb-6">
-					<div class="relative group">
-						<img
-							src={profileAvatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&h=150&q=80'}
-							alt="Profile Avatar"
-							class="w-24 h-24 rounded-full object-cover border-2 border-red-100 shadow-md"
-						/>
-						{#if isEditing}
-							<label
-								for="avatar-upload"
-								class="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center text-white text-xs font-bold opacity-0 group-hover:opacity-100 transition cursor-pointer"
-							>
-								Change Photo
-							</label>
-							<input
-								id="avatar-upload"
-								type="file"
-								accept="image/*"
-								onchange={handleFileChange}
-								class="hidden"
-							/>
-						{/if}
+				<!-- Initials Avatar Section -->
+				<div class="flex items-center gap-5 border-b border-slate-50 pb-6 w-full">
+					<div class="w-20 h-20 rounded-full border-2 shadow-md flex items-center justify-center text-2xl font-black uppercase tracking-wider shrink-0 {getAvatarColor(profileName)}">
+						{getInitials(profileName)}
 					</div>
-					{#if isEditing}
-						<div class="text-center">
-							<p class="text-[10px] text-slate-400">Allowed formats: JPG, JPEG, PNG, WEBP</p>
-							{#if imageValidationError}
-								<p class="text-red-700 font-bold text-[10px] mt-1">{imageValidationError}</p>
-							{/if}
-						</div>
-					{/if}
+					<div class="space-y-1 text-left">
+						<h3 class="text-lg font-bold text-slate-850">{profileName}</h3>
+						<span class="inline-block bg-red-100 text-primary border border-red-200 text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md">
+							{data.user?.role}
+						</span>
+					</div>
 				</div>
 
 				<!-- Form Inputs Grid -->
@@ -639,38 +589,25 @@
 	<div class="bg-white border border-red-100 rounded-3xl p-6 shadow-sm">
 		<div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
 			<div>
-				<h3 class="text-base font-bold text-red-700 flex items-center gap-2">⚠️ Danger Zone</h3>
+				<h3 class="text-base font-bold text-red-700 flex items-center gap-2"><Icon name="alert-triangle" class="w-5 h-5" /> Danger Zone</h3>
 				<p class="text-xs text-slate-500 mt-1">Permanently delete your LifeLink account and all associated data.</p>
 			</div>
 			<button
 				onclick={() => showDeleteConfirm = true}
-				class="bg-white border border-red-250 text-primary font-bold px-5 py-2.5 rounded-xl hover:bg-red-50 transition text-sm cursor-pointer whitespace-nowrap"
+				class="bg-white border border-red-250 text-primary font-bold px-5 py-2.5 rounded-xl hover:bg-red-50 transition text-sm cursor-pointer whitespace-nowrap flex items-center justify-center gap-1.5"
 			>
-				🗑️ Delete My Account
+				<Icon name="trash" class="w-4 h-4" /> Delete My Account
 			</button>
 		</div>
 	</div>
 </div>
-
-{#if showCropper}
-	<ImageCropper
-		imageSrc={rawImageSrc}
-		onCrop={(croppedDataUrl) => {
-			profileAvatar = croppedDataUrl;
-			showCropper = false;
-		}}
-		onCancel={() => {
-			showCropper = false;
-		}}
-	/>
-{/if}
 
 {#if showDeleteConfirm}
 	<!-- Delete Account Confirmation Modal -->
 	<div class="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
 		<div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl space-y-6">
 			<div class="text-center">
-				<span class="text-5xl block mb-4">⚠️</span>
+				<span class="text-5xl block mb-4 text-amber-500 flex justify-center"><Icon name="alert-triangle" size={48} /></span>
 				<h3 class="text-xl font-extrabold text-slate-900 mb-2">Delete Account</h3>
 				<p class="text-sm text-slate-500 leading-relaxed">
 					Are you sure you want to permanently delete your LifeLink account? All your data will be removed. This action <strong>cannot be undone</strong>.

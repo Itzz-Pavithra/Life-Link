@@ -1,3 +1,7 @@
+<script>
+	import Icon from '$lib/components/Icon.svelte';
+</script>
+
 <footer class="bg-gray-950 text-gray-400 border-t border-gray-900 mt-auto">
 	<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
 		<div class="grid sm:grid-cols-2 md:grid-cols-4 gap-8">
@@ -28,15 +32,15 @@
 				<h4 class="text-sm font-bold text-white uppercase tracking-wider mb-4">Emergency Support</h4>
 				<ul class="space-y-2 text-sm">
 					<li class="flex items-center gap-2">
-						<span>📞</span>
+						<Icon name="phone" class="w-4 h-4 text-red-500" />
 						<span class="text-white font-bold">+91 93455 81448</span>
 					</li>
 					<li class="flex items-center gap-2">
-						<span>✉️</span>
+						<Icon name="mail" class="w-4 h-4 text-red-500" />
 						<span>lifelinklifelink2@gmail.com</span>
 					</li>
 					<li class="flex items-center gap-2">
-						<span>📍</span>
+						<Icon name="map-pin" class="w-4 h-4 text-red-500" />
 						<span>Salem, Tamil Nadu, India</span>
 					</li>
 				</ul>

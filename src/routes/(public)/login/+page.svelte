@@ -5,6 +5,7 @@
 	import { GoogleAuthProvider, signInWithPopup, onAuthStateChanged } from 'firebase/auth';
 	import { onMount } from 'svelte';
 	import BloodWaveBackground from '$lib/components/BloodWaveBackground.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let { data } = $props();
 
@@ -224,8 +225,8 @@
 				</div>
 
 				{#if errorMessage}
-					<div class="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl animate-pulse">
-						⚠️ {errorMessage}
+					<div class="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl animate-pulse flex items-center gap-2">
+						<Icon name="alert-triangle" class="w-4 h-4" /> {errorMessage}
 					</div>
 				{/if}
 
@@ -319,7 +320,9 @@
 							</button>
 						</div>
 						{#if setupPasswordError}
-							<span class="text-[10px] text-red-600 font-semibold">⚠️ {setupPasswordError}</span>
+							<span class="text-[10px] text-red-650 font-semibold flex items-center gap-1.5 mt-1">
+								<Icon name="alert-triangle" class="w-3.5 h-3.5" /> {setupPasswordError}
+							</span>
 						{/if}
 					</div>
 
@@ -340,8 +343,8 @@
 				</div>
 
 				{#if errorMessage}
-					<div class="p-3 bg-red-50 border border-red-200 text-red-750 text-xs font-semibold rounded-2xl">
-						⚠️ {errorMessage}
+					<div class="p-3 bg-red-50 border border-red-200 text-red-750 text-xs font-semibold rounded-2xl flex items-center gap-2">
+						<Icon name="alert-triangle" class="w-4 h-4 text-red-700" /> {errorMessage}
 					</div>
 				{/if}
 

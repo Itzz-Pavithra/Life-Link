@@ -109,14 +109,14 @@ export const database = {
 
 			return {
 				steps: [
-					{ step: '01', title: 'Eligibility Checker', desc: 'Prospective donors take our standard questionnaire.', icon: '📋' },
-					{ step: '02', title: 'Register & Match', desc: 'Create a donor profile immediately after passing the check.', icon: '⚡' },
-					{ step: '03', title: 'Save Lives', desc: 'Donate blood, log history, and rescue patient emergencies.', icon: '🩸' }
+					{ step: '01', title: 'Eligibility Checker', desc: 'Prospective donors take our standard questionnaire.', icon: 'clipboard-list' },
+					{ step: '02', title: 'Register & Match', desc: 'Create a donor profile immediately after passing the check.', icon: 'zap' },
+					{ step: '03', title: 'Save Lives', desc: 'Donate blood, log history, and rescue patient emergencies.', icon: 'droplet' }
 				],
 				benefits: [
-					{ title: 'Zero Latency Matching', desc: 'Instantly coordinates compatibility matches for urgent blood requests.', icon: '⚡' },
-					{ title: 'Strict Eligibility Rules', desc: 'Enforces clinical verification criteria for donor safety.', icon: '🛡️' },
-					{ title: 'Hospital Inventory Alerts', desc: 'Monitors real-time blood bank units by group to prevent deficits.', icon: '📊' }
+					{ title: 'Zero Latency Matching', desc: 'Instantly coordinates compatibility matches for urgent blood requests.', icon: 'zap' },
+					{ title: 'Strict Eligibility Rules', desc: 'Enforces clinical verification criteria for donor safety.', icon: 'shield' },
+					{ title: 'Hospital Inventory Alerts', desc: 'Monitors real-time blood bank units by group to prevent deficits.', icon: 'bar-chart' }
 				],
 				faqs: [
 					{ q: 'Who can register as a blood donor on LifeLink?', a: 'Any user between 18 and 65 years old who passes our Eligibility Checker can register immediately and receive emergency requests.' },

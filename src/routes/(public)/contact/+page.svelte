@@ -1,5 +1,6 @@
 <script>
 	import { db } from "$lib/auth.svelte.js";
+	import Icon from "$lib/components/Icon.svelte";
 
 	let name = $state("");
 	let email = $state("");
@@ -178,9 +179,9 @@
 						class="absolute -top-12 -right-12 w-24 h-24 bg-red-500/10 rounded-full blur-xl"
 					></div>
 					<h4
-						class="text-red-500 text-xs font-bold uppercase tracking-wider mb-2"
+						class="text-red-500 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5"
 					>
-						🚨 EMERGENCY HOTLINE
+						<Icon name="alert-octagon" class="w-4 h-4 animate-pulse" /> EMERGENCY HOTLINE
 					</h4>
 					<p class="text-2xl font-bold mb-3">+91 93455 81448</p>
 					<p class="text-xs text-gray-400 leading-relaxed">
@@ -200,17 +201,16 @@
 					<div
 						class="space-y-3 text-xs text-slate-500 leading-relaxed"
 					>
-						<div class="flex gap-2">
-							<span>📍</span>
-							<span>Salem, Tamil Nadu, India.</span
-							>
+						<div class="flex gap-2 items-center">
+							<span class="text-slate-500"><Icon name="map-pin" class="w-4 h-4" /></span>
+							<span>Salem, Tamil Nadu, India.</span>
 						</div>
-						<div class="flex gap-2">
-							<span>✉️</span>
+						<div class="flex gap-2 items-center">
+							<span class="text-slate-500"><Icon name="mail" class="w-4 h-4" /></span>
 							<span>lifelinklifelink2@gmail.com</span>
 						</div>
-						<div class="flex gap-2">
-							<span>⏰</span>
+						<div class="flex gap-2 items-center">
+							<span class="text-slate-500"><Icon name="clock" class="w-4 h-4" /></span>
 							<span>Monday - Friday: 09:00 AM - 05:00 PM</span>
 						</div>
 					</div>

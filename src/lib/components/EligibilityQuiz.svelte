@@ -1,5 +1,6 @@
 <script>
 	import { db } from '$lib/auth.svelte.js';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let step = $state(0);
 	let errorMsg = $state('');
@@ -165,15 +166,15 @@
 	<div class="absolute -top-16 -right-16 w-32 h-32 bg-red-50 rounded-full blur-2xl pointer-events-none"></div>
 
 	{#if errorMsg}
-		<div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl">
-			⚠️ {errorMsg}
+		<div class="mb-6 p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl flex items-center gap-2">
+			<Icon name="alert-triangle" class="w-4 h-4" /> {errorMsg}
 		</div>
 	{/if}
 
 	{#if step === 0}
 		<!-- Start View -->
 		<div class="text-center py-6">
-			<div class="text-5xl mb-4 animate-bounce">📋</div>
+			<div class="text-5xl mb-4 animate-bounce text-red-600 flex justify-center"><Icon name="clipboard-list" size={48} /></div>
 			<h3 class="text-2xl font-bold text-gray-900 mb-2">
 				Blood Donor Eligibility Quiz
 			</h3>
@@ -269,7 +270,9 @@
 						class="border {ageError ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-red-500'} p-3 rounded-xl focus:ring-2 focus:outline-none text-sm"
 					/>
 					{#if ageError}
-						<span class="text-xs text-red-650 mt-1">⚠️ {ageError}</span>
+						<span class="text-xs text-red-650 mt-1 flex items-center gap-1">
+							<Icon name="alert-triangle" class="w-3.5 h-3.5" /> {ageError}
+						</span>
 					{/if}
 				</div>
 
@@ -282,7 +285,9 @@
 						class="border {weightError ? 'border-red-500 focus:ring-red-500' : 'border-gray-200 focus:ring-red-500'} p-3 rounded-xl focus:ring-2 focus:outline-none text-sm"
 					/>
 					{#if weightError}
-						<span class="text-xs text-red-650 mt-1">⚠️ {weightError}</span>
+						<span class="text-xs text-red-650 mt-1 flex items-center gap-1">
+							<Icon name="alert-triangle" class="w-3.5 h-3.5" /> {weightError}
+						</span>
 					{/if}
 				</div>
 
@@ -590,9 +595,9 @@
 		<!-- Results Pending View -->
 		<div class="text-center py-6 space-y-4">
 			{#if isEligible}
-				<div class="text-6xl mb-4 animate-bounce">❤️</div>
-				<h3 class="text-3xl font-extrabold text-slate-900">
-					You are eligible to donate blood ❤️
+				<div class="text-6xl mb-4 animate-bounce text-red-600 flex justify-center"><Icon name="heart" size={64} /></div>
+				<h3 class="text-3xl font-extrabold text-slate-900 flex items-center justify-center gap-2">
+					You are eligible to donate blood <Icon name="heart" class="w-7 h-7 text-primary" />
 				</h3>
 				<p class="text-emerald-700 bg-emerald-50 border border-emerald-200 p-4 rounded-2xl text-sm font-semibold max-w-md mx-auto">
 					You meet all safety and clinical criteria for whole blood donation.
@@ -610,13 +615,15 @@
 					</a>
 				</div>
 			{:else}
-				<div class="text-6xl mb-4 animate-bounce">❌</div>
+				<div class="text-6xl mb-4 animate-bounce text-red-600 flex justify-center"><Icon name="x-circle" size={64} /></div>
 				<h3 class="text-3xl font-extrabold text-slate-900">
 					Sorry, you are currently not eligible to donate blood
 				</h3>
 				<div class="bg-red-50 border border-red-200 p-4 rounded-2xl text-sm font-semibold max-w-md mx-auto text-red-700 space-y-2">
 					{#each eligibilityReasons as reason}
-						<p>⚠️ {reason}</p>
+						<p class="flex items-center gap-1.5 justify-center">
+							<Icon name="alert-triangle" class="w-4 h-4 text-red-700" /> {reason}
+						</p>
 					{/each}
 				</div>
 				<p class="text-gray-600 text-sm max-w-md mx-auto leading-relaxed">

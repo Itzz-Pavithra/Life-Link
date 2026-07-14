@@ -3,6 +3,7 @@
 	import BloodWaveBackground from '$lib/components/BloodWaveBackground.svelte';
 	import HeartbeatPulse from '$lib/components/HeartbeatPulse.svelte';
 	import { db } from '$lib/auth.svelte.js';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let { data } = $props();
 
@@ -55,7 +56,7 @@
 		<div class="relative z-10 max-w-7xl mx-auto px-6 w-full text-center text-slate-900 space-y-6 flex flex-col items-center">
 			<HeartbeatPulse>
 				<div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-500/10 border border-red-500/25 text-red-700 text-xs font-bold uppercase tracking-wider">
-					❤️ Emergency Life Saving Network
+					<Icon name="heart" class="w-3.5 h-3.5 text-red-750 fill-red-700" /> Emergency Life Saving Network
 				</div>
 			</HeartbeatPulse>
 			
@@ -151,8 +152,8 @@
 							<span class="absolute top-6 right-6 text-4xl font-black text-white/5 group-hover:text-red-500/10 transition">
 								{step.step}
 							</span>
-							<div class="w-14 h-14 rounded-2xl bg-red-950/50 border border-red-500/20 flex items-center justify-center text-3xl mb-8">
-								{step.icon}
+							<div class="w-14 h-14 rounded-2xl bg-red-950/50 border border-red-500/20 flex items-center justify-center mb-8">
+								<Icon name={step.icon} class="w-6 h-6 text-red-500" />
 							</div>
 							<h4 class="text-lg font-bold text-white mb-3">{step.title}</h4>
 							<p class="text-xs text-slate-400 leading-relaxed">{step.desc}</p>
@@ -183,7 +184,7 @@
 					<div class="grid gap-4">
 						{#each benefits as benefit}
 							<div class="glass-card-light p-5 rounded-2xl border flex gap-4 items-start shadow-sm">
-								<div class="text-2xl bg-red-100 p-2.5 rounded-xl border border-red-200">{benefit.icon}</div>
+								<div class="bg-red-100 p-2.5 rounded-xl border border-red-200 text-red-700 flex items-center justify-center"><Icon name={benefit.icon} class="w-5 h-5" /></div>
 								<div>
 									<h4 class="font-bold text-slate-900 text-sm mb-1">{benefit.title}</h4>
 									<p class="text-xs text-slate-550 text-slate-500 leading-relaxed">{benefit.desc}</p>
@@ -284,7 +285,7 @@
 					<!-- Hotline -->
 					<div class="bg-slate-900 text-white p-8 rounded-[32px] shadow-lg relative overflow-hidden">
 						<div class="absolute -top-12 -right-12 w-24 h-24 bg-red-500/10 rounded-full blur-xl"></div>
-						<h4 class="text-red-500 text-xs font-bold uppercase tracking-wider mb-2">🚨 EMERGENCY HOTLINE</h4>
+						<h4 class="text-red-500 text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5"><Icon name="alert-octagon" class="w-4 h-4 animate-pulse" /> EMERGENCY HOTLINE</h4>
 						<p class="text-3xl font-extrabold mb-4">+91 93455 81448</p>
 						<p class="text-xs text-slate-400 leading-relaxed">
 							Call our emergency coordinator directly if you require immediate matching support outside standard response loops.
@@ -295,16 +296,16 @@
 					<div class="glass-card-light p-8 rounded-[32px] border shadow-sm space-y-6">
 						<h4 class="text-base font-bold text-slate-900">Coordination Hub</h4>
 						<div class="space-y-4 text-xs text-slate-650 leading-relaxed">
-							<div class="flex gap-3">
-								<span class="text-lg">📍</span>
+							<div class="flex gap-3 items-center">
+								<span class="text-lg text-slate-500 flex items-center"><Icon name="map-pin" class="w-4 h-4" /></span>
 								<span>Salem, Tamil Nadu, India.</span>
 							</div>
-							<div class="flex gap-3">
-								<span class="text-lg">✉️</span>
+							<div class="flex gap-3 items-center">
+								<span class="text-lg text-slate-500 flex items-center"><Icon name="mail" class="w-4 h-4" /></span>
 								<span>lifelinklifelink2@gmail.com</span>
 							</div>
-							<div class="flex gap-3">
-								<span class="text-lg">⏰</span>
+							<div class="flex gap-3 items-center">
+								<span class="text-lg text-slate-500 flex items-center"><Icon name="clock" class="w-4 h-4" /></span>
 								<span>Monday - Friday: 09:00 AM - 05:00 PM</span>
 							</div>
 						</div>

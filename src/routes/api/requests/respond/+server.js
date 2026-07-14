@@ -43,10 +43,10 @@ export async function POST({ request, locals }) {
 			try {
 				await sendEmail({
 					to: req.submittedBy,
-					subject: `🩸 LifeLink Match: Request Accepted by ${locals.user.name}`,
+					subject: `LifeLink Match: Request Accepted by ${locals.user.name}`,
 					html: `
 						<div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #f1f5f9; border-radius: 16px;">
-							<h2 style="color: #10b981; border-bottom: 2px solid #ecfdf5; padding-bottom: 10px; text-align: center;">🩸 Emergency Request Accepted</h2>
+							<h2 style="color: #10b981; border-bottom: 2px solid #ecfdf5; padding-bottom: 10px; text-align: center;">Emergency Request Accepted</h2>
 							<p>Hello,</p>
 							<p>Great news! A verified active donor has <strong>ACCEPTED</strong> your blood request for <strong>${req.patientName}</strong>.</p>
 							

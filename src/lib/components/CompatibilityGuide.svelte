@@ -1,4 +1,5 @@
 <script>
+	import Icon from '$lib/components/Icon.svelte';
 	const groups = [
 		'O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+',
 		'A1+', 'A1-', 'A2+', 'A2-',
@@ -59,7 +60,7 @@
 		<!-- Can Give To -->
 		<div class="bg-gray-800/40 border border-gray-800 rounded-2xl p-5">
 			<h4 class="text-sm font-bold uppercase tracking-wider text-emerald-400 mb-4 flex items-center gap-2">
-				🎁 Can Donate To (Give)
+				<Icon name="gift" class="w-4 h-4" /> Can Donate To (Give)
 			</h4>
 			<div class="flex flex-wrap gap-2">
 				{#each groups as bg}
@@ -78,7 +79,7 @@
 		<!-- Can Receive From -->
 		<div class="bg-gray-800/40 border border-gray-800 rounded-2xl p-5">
 			<h4 class="text-sm font-bold uppercase tracking-wider text-sky-400 mb-4 flex items-center gap-2">
-				📥 Can Receive From (Receive)
+				<Icon name="inbox" class="w-4 h-4" /> Can Receive From (Receive)
 			</h4>
 			<div class="flex flex-wrap gap-2">
 				{#each groups as bg}

@@ -2,6 +2,8 @@
 	import { db } from "$lib/auth.svelte.js";
 	import { goto } from "$app/navigation";
 	import Sidebar from "$lib/components/Sidebar.svelte";
+	import Icon from "$lib/components/Icon.svelte";
+	import { getInitials, getAvatarColor } from "$lib/avatar.js";
 	import { auth } from '$lib/firebase.client.js';
 	import { signOut } from 'firebase/auth';
 	import axios from 'axios';
@@ -89,11 +91,11 @@
 					<!-- Hamburger button (visible on mobile only) -->
 					<button
 						onclick={() => (sidebarOpen = !sidebarOpen)}
-						class="md:hidden p-2 rounded-xl hover:bg-slate-50 text-slate-700 transition cursor-pointer"
+						class="md:hidden p-2 rounded-xl hover:bg-slate-50 text-slate-700 transition cursor-pointer flex items-center justify-center"
 						aria-expanded={sidebarOpen}
 						aria-label="Toggle navigation drawer"
 					>
-						<span class="text-xl">☰</span>
+						<Icon name="menu" class="w-5 h-5" />
 					</button>
 
 					<div>
@@ -109,12 +111,9 @@
 				<div class="flex items-center gap-4">
 					<!-- User Info Summary -->
 					<div class="flex items-center gap-2.5">
-						<img
-							src={db.user.avatar ||
-								"https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=100&h=100&q=80"}
-							alt="Profile Avatar"
-							class="w-9 h-9 rounded-full border border-slate-200 object-cover"
-						/>
+						<div class="w-9 h-9 rounded-full border flex items-center justify-center font-bold text-xs uppercase shrink-0 {getAvatarColor(db.user.name)}">
+							{getInitials(db.user.name)}
+						</div>
 						<div class="hidden sm:block text-left">
 							<p class="text-xs font-bold text-slate-900 leading-none">
 								{db.user.name}

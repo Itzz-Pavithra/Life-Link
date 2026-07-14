@@ -94,10 +94,10 @@ export async function sendEmergencyBloodAlert({ donorEmails, bloodGroup, city, r
 	for (const donor of donorsToProcess) {
 		lastResult = await sendEmail({
 			to: donor.email,
-			subject: "🚨 Emergency Blood Request Alert",
+			subject: "Emergency Blood Request Alert",
 			html: `
 				<div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #f1f5f9; border-radius: 16px;">
-					<h2 style="color: #b91c1c; margin-bottom: 20px;">🚨 Emergency Blood Request</h2>
+					<h2 style="color: #b91c1c; margin-bottom: 20px;">Emergency Blood Request</h2>
 					<p>Dear ${donor.name},</p>
 					<p>An emergency blood request has been posted on LifeLink. Please respond quickly as a life is at stake!</p>
 					
@@ -140,10 +140,10 @@ export async function sendEmergencyBloodAlert({ donorEmails, bloodGroup, city, r
 export async function sendPasswordResetEmail({ to, name, resetLink }) {
 	return await sendEmail({
 		to,
-		subject: "🔑 Reset Your LifeLink Password",
+		subject: "Reset Your LifeLink Password",
 		html: `
 			<div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #f1f5f9; border-radius: 16px;">
-				<h2 style="color: #dc2626; margin-bottom: 20px; text-align: center;">LifeLink Password Reset ❤️</h2>
+				<h2 style="color: #dc2626; margin-bottom: 20px; text-align: center;">LifeLink Password Reset</h2>
 				<p>Hello <strong>${name}</strong>,</p>
 				<p>We received a request to reset your password for your LifeLink account. Click the button below to choose a new password:</p>
 				

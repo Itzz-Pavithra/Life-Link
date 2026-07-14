@@ -2,6 +2,7 @@
 	import { enhance } from '$app/forms';
 	import { db } from '$lib/auth.svelte.js';
 	import BloodWaveBackground from '$lib/components/BloodWaveBackground.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let { form } = $props();
 
@@ -35,14 +36,14 @@
 		</div>
 
 		{#if form?.error}
-			<div class="p-4 bg-red-50 border border-red-200 text-red-750 text-xs font-semibold rounded-2xl">
-				⚠️ {form.error}
+			<div class="p-4 bg-red-50 border border-red-200 text-red-755 text-xs font-semibold rounded-2xl flex items-center gap-2">
+				<Icon name="alert-triangle" class="w-4 h-4 text-red-700" /> {form.error}
 			</div>
 		{/if}
 
 		{#if form?.success}
-			<div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-2xl text-center space-y-2">
-				<p>✔️ {form.message}</p>
+			<div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-2xl text-center space-y-2 flex flex-col items-center">
+				<p class="flex items-center gap-1.5"><Icon name="check-circle" class="w-4 h-4" /> {form.message}</p>
 				<p class="text-[10px] text-slate-500 font-normal">You can close this tab and check your email inbox.</p>
 			</div>
 		{/if}

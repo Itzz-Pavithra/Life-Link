@@ -1,6 +1,7 @@
 <script>
 	import axios from 'axios';
 	import { db } from '$lib/auth.svelte.js';
+	import Icon from '$lib/components/Icon.svelte';
 	import { page } from '$app/stores';
 	import { auth } from '$lib/firebase.client.js';
 	import { signOut } from 'firebase/auth';
@@ -84,7 +85,13 @@
 				aria-controls="mobile-menu"
 				aria-label="Toggle Navigation Menu"
 			>
-				<span class="text-2xl" aria-hidden="true">{mobileMenuOpen ? '✕' : '☰'}</span>
+				<span class="flex items-center justify-center" aria-hidden="true">
+					{#if mobileMenuOpen}
+						<Icon name="x" class="w-6 h-6" />
+					{:else}
+						<Icon name="menu" class="w-6 h-6" />
+					{/if}
+				</span>
 			</button>
 		</div>
 	</div>

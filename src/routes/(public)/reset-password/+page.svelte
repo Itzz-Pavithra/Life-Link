@@ -3,6 +3,7 @@
 	import { db } from '$lib/auth.svelte.js';
 	import { goto } from '$app/navigation';
 	import BloodWaveBackground from '$lib/components/BloodWaveBackground.svelte';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let { data, form } = $props();
 
@@ -57,21 +58,21 @@
 		</div>
 
 		{#if !data.isValid}
-			<div class="p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl text-center space-y-4">
-				<p>⚠️ {data.error || 'Invalid or expired password reset link.'}</p>
+			<div class="p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl text-center space-y-4 flex flex-col items-center">
+				<p class="flex items-center gap-1.5"><Icon name="alert-triangle" class="w-4 h-4 text-red-700 animate-pulse" /> {data.error || 'Invalid or expired password reset link.'}</p>
 				<a href="/forgot-password" class="inline-block bg-primary hover:bg-red-700 text-white font-bold px-4 py-2 rounded-xl text-xs transition">
 					Request New Reset Link
 				</a>
 			</div>
 		{:else if form?.success}
-			<div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-2xl text-center space-y-2">
-				<p>✔️ {form.message}</p>
+			<div class="p-4 bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-semibold rounded-2xl text-center space-y-2 flex flex-col items-center">
+				<p class="flex items-center gap-1.5"><Icon name="check-circle" class="w-4 h-4" /> {form.message}</p>
 				<p class="text-[10px] text-slate-500 font-normal">Redirecting you to Sign In...</p>
 			</div>
 		{:else}
 			{#if form?.error}
-				<div class="p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl">
-					⚠️ {form.error}
+				<div class="p-4 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl flex items-center gap-2">
+					<Icon name="alert-triangle" class="w-4 h-4 text-red-700" /> {form.error}
 				</div>
 			{/if}
 
@@ -126,7 +127,9 @@
 						</button>
 					</div>
 					{#if passwordError}
-						<span class="text-[10px] text-red-600 font-semibold mt-1">⚠️ {passwordError}</span>
+						<span class="text-[10px] text-red-655 font-semibold mt-1 flex items-center gap-1.5">
+							<Icon name="alert-triangle" class="w-3.5 h-3.5 text-red-650" /> {passwordError}
+						</span>
 					{/if}
 				</div>
 

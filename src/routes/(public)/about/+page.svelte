@@ -1,3 +1,7 @@
+<script>
+	import Icon from '$lib/components/Icon.svelte';
+</script>
+
 <div class="min-h-screen bg-baby-pink py-16 px-6">
 	<div class="max-w-4xl mx-auto space-y-12">
 		<!-- Header -->
@@ -16,7 +20,7 @@
 		<!-- Team & Vision -->
 		<div class="grid md:grid-cols-2 gap-8 pt-6">
 			<div class="bg-white border border-slate-100 p-8 rounded-3xl shadow-sm space-y-4">
-				<div class="text-3xl">🎯</div>
+				<div class="text-red-700"><Icon name="target" size={32} /></div>
 				<h3 class="text-xl font-bold text-slate-900">Our Mission</h3>
 				<p class="text-slate-500 text-sm leading-relaxed">
 					To minimize matching latency in critical environments by leveraging algorithmic compatibility grids, real-time availability filters, and automated notification loops.
@@ -24,7 +28,7 @@
 			</div>
 
 			<div class="bg-white border border-slate-100 p-8 rounded-3xl shadow-sm space-y-4">
-				<div class="text-3xl">🚀</div>
+				<div class="text-red-700"><Icon name="rocket" size={32} /></div>
 				<h3 class="text-xl font-bold text-slate-900">Emergency Matching</h3>
 				<p class="text-slate-500 text-sm leading-relaxed">
 					Operating on real-time availability filters, dynamic regional inventory controls, and immediate notification routing to ensure blood reaches patients without latency.

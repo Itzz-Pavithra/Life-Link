@@ -7,6 +7,7 @@
 	import BloodWaveBackground from '$lib/components/BloodWaveBackground.svelte';
 	import OtpVerification from '$lib/components/OtpVerification.svelte';
 	import { onMount } from 'svelte';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let showOtp = $state(false);
 	let registeredEmail = $state('');
@@ -225,8 +226,8 @@
 		</div>
 
 		{#if errorMessage}
-			<div class="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl">
-				⚠️ {errorMessage}
+			<div class="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl flex items-center gap-2">
+				<Icon name="alert-triangle" class="w-4 h-4" /> {errorMessage}
 			</div>
 		{/if}
 
@@ -254,8 +255,9 @@
 			</div>
 
 			{#if role === 'donor'}
-				<div class="p-3 bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold rounded-2xl animate-fade-in-up">
-					⚠️ <strong>Donor Eligibility Required:</strong> Your email address must have an approved eligibility request from the Admin. If you haven't taken the questionnaire, please do so <a href="/eligibility" class="text-red-700 underline font-bold">here</a>.
+				<div class="p-3 bg-amber-50 border border-amber-200 text-amber-900 text-xs font-semibold rounded-2xl animate-fade-in-up flex items-start gap-2">
+					<Icon name="alert-triangle" class="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+					<span><strong>Donor Eligibility Required:</strong> Your email address must have an approved eligibility request from the Admin. If you haven't taken the questionnaire, please do so <a href="/eligibility" class="text-red-700 underline font-bold">here</a>.</span>
 				</div>
 			{/if}
 
@@ -422,7 +424,9 @@
 						</button>
 					</div>
 					{#if passwordError}
-						<span class="text-[10px] text-red-650 font-semibold leading-tight mt-1 inline-block">⚠️ {passwordError}</span>
+						<span class="text-[10px] text-red-650 font-semibold leading-tight mt-1 flex items-center gap-1.5">
+							<Icon name="alert-triangle" class="w-3.5 h-3.5 text-red-600" /> {passwordError}
+						</span>
 					{/if}
 
 					<!-- Dynamic Password Strength Bar -->

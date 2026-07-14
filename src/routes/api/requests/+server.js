@@ -54,10 +54,10 @@ export async function POST({ request, locals }) {
 				try {
 					await sendEmail({
 						to: donor.email,
-						subject: `🚨 LifeLink Emergency: Blood Request for ${body.bloodGroup}`,
+						subject: `LifeLink Emergency: Blood Request for ${body.bloodGroup}`,
 						html: `
 							<div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #f1f5f9; border-radius: 16px;">
-								<h2 style="color: #dc2626; border-bottom: 2px solid #fee2e2; padding-bottom: 10px; text-align: center;">🚨 Emergency Blood Request</h2>
+								<h2 style="color: #dc2626; border-bottom: 2px solid #fee2e2; padding-bottom: 10px; text-align: center;">Emergency Blood Request</h2>
 								<p>Hello <strong>${donor.name}</strong>,</p>
 								<p>An emergency blood request matching your blood group (<strong>${body.bloodGroup}</strong>) has been submitted to the LifeLink network.</p>
 								

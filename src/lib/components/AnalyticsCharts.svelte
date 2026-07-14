@@ -1,4 +1,5 @@
 <script>
+	import Icon from '$lib/components/Icon.svelte';
 	let { chartData } = $props();
 
 	// Reactive data sets derived from props
@@ -40,7 +41,7 @@
 	<div class="bg-white border border-gray-100 rounded-3xl p-6 shadow-lg relative min-h-80 flex flex-col justify-between">
 		<div>
 			<h3 class="text-lg font-bold text-gray-800 mb-4 flex items-center gap-2">
-				📈 Requests vs Donations
+				<Icon name="trending-up" class="w-5 h-5 text-red-600" /> Requests vs Donations
 			</h3>
 		</div>
 		

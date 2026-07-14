@@ -3,6 +3,8 @@
 	import { db } from '$lib/auth.svelte.js';
 	import AnalyticsCharts from '$lib/components/AnalyticsCharts.svelte';
 	import { onMount } from 'svelte';
+	import Icon from '$lib/components/Icon.svelte';
+	import { getInitials, getAvatarColor } from '$lib/avatar.js';
 
 	let { data, form } = $props();
 
@@ -698,7 +700,7 @@
 	<div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
 		<div>
 			<h1 class="text-3xl font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-				🏥 System Administration
+				<Icon name="shield" class="w-7 h-7 text-red-600" /> System Administration
 			</h1>
 			<p class="text-slate-500 text-xs mt-1">Configure parameters, verify questionnaires, manage repositories, and audit logs.</p>
 		</div>
@@ -737,7 +739,7 @@
 			<div class="flex items-center justify-between mb-4 border-b border-slate-50 pb-2">
 				<div>
 					<h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
-						📊 Live Blood Supply Analytics (Available Donors)
+						<Icon name="bar-chart" class="w-5 h-5 text-red-650" /> Live Blood Supply Analytics (Available Donors)
 					</h3>
 					<p class="text-xs text-slate-500">Inventory counts calculated dynamically from active, available donor records.</p>
 				</div>
@@ -861,7 +863,9 @@
 								<tr class="hover:bg-slate-50/30 transition text-xs">
 									<td class="py-3 px-4">
 										<div class="flex items-center gap-2">
-											<img src={user.avatar} alt={user.name} class="w-7 h-7 rounded-full border" />
+											<div class="w-7 h-7 rounded-full border flex items-center justify-center font-bold text-[10px] uppercase shrink-0 {getAvatarColor(user.name)}">
+												{getInitials(user.name)}
+											</div>
 											<div>
 												<span class="font-bold text-slate-900 block">{user.name}</span>
 												<span class="text-[9px] text-slate-400">{user.phone} • {user.location}</span>
@@ -980,13 +984,13 @@
 								</span>
 								<div>
 									<h4 class="font-bold text-slate-900 text-sm">{donor.name}</h4>
-									<span class="text-[9px] text-slate-400">📍 {donor.location}</span>
+									<span class="text-[9px] text-slate-400 flex items-center gap-1"><Icon name="map-pin" class="w-3.5 h-3.5 text-gray-400" /> {donor.location}</span>
 								</div>
 							</div>
 							<div class="text-[10px] space-y-1 text-slate-500 bg-slate-50 p-3 rounded-xl">
-								<p>📞 <strong>Phone:</strong> {donor.phone}</p>
-								<p>✉️ <strong>Email:</strong> {donor.email}</p>
-								<p>🛡️ <strong>Status:</strong> <span class="font-bold uppercase text-emerald-600">{donor.status}</span></p>
+								<p class="flex items-center gap-1.5"><Icon name="phone" class="w-3.5 h-3.5 text-gray-405" /> <strong>Phone:</strong> {donor.phone}</p>
+								<p class="flex items-center gap-1.5"><Icon name="mail" class="w-3.5 h-3.5 text-gray-405" /> <strong>Email:</strong> {donor.email}</p>
+								<p class="flex items-center gap-1.5"><Icon name="shield" class="w-3.5 h-3.5 text-gray-405" /> <strong>Status:</strong> <span class="font-bold uppercase text-emerald-600">{donor.status}</span></p>
 							</div>
 						</div>
 					{/each}
@@ -1017,16 +1021,18 @@
 					{#each filteredReceivers as rec}
 						<div class="border border-slate-100 p-5 rounded-3xl shadow-sm bg-white space-y-3">
 							<div class="flex items-center gap-3">
-								<img src={rec.avatar} alt={rec.name} class="w-10 h-10 rounded-full border" />
+								<div class="w-10 h-10 rounded-full border flex items-center justify-center font-bold text-sm uppercase shrink-0 {getAvatarColor(rec.name)}">
+									{getInitials(rec.name)}
+								</div>
 								<div>
 									<h4 class="font-bold text-slate-900 text-sm">{rec.name}</h4>
-									<span class="text-[9px] text-slate-400">📍 {rec.location}</span>
+									<span class="text-[9px] text-slate-400 flex items-center gap-1"><Icon name="map-pin" class="w-3.5 h-3.5 text-gray-400" /> {rec.location}</span>
 								</div>
 							</div>
 							<div class="text-[10px] space-y-1 text-slate-500 bg-slate-50 p-3 rounded-xl">
-								<p>🩸 <strong>Group:</strong> {rec.bloodGroup || 'Not Specified'}</p>
-								<p>📞 <strong>Phone:</strong> {rec.phone}</p>
-								<p>✉️ <strong>Email:</strong> {rec.email}</p>
+								<p class="flex items-center gap-1.5"><Icon name="droplet" class="w-3.5 h-3.5 text-red-600" /> <strong>Group:</strong> {rec.bloodGroup || 'Not Specified'}</p>
+								<p class="flex items-center gap-1.5"><Icon name="phone" class="w-3.5 h-3.5 text-gray-405" /> <strong>Phone:</strong> {rec.phone}</p>
+								<p class="flex items-center gap-1.5"><Icon name="mail" class="w-3.5 h-3.5 text-gray-405" /> <strong>Email:</strong> {rec.email}</p>
 							</div>
 						</div>
 					{/each}
@@ -1201,36 +1207,36 @@
 							<div class="border border-slate-100 p-5 rounded-3xl bg-white space-y-4 hover:shadow-md transition">
 								<div class="flex justify-between items-start">
 									<div class="flex items-center gap-3">
-										<span class="text-3xl">🏥</span>
+										<span class="text-3xl text-red-650 flex items-center justify-center"><Icon name="hospital" size={32} /></span>
 										<div>
 											<h4 class="font-bold text-slate-900 text-sm">{bank.name}</h4>
-											<p class="text-[10px] text-gray-500">📍 {bank.address}</p>
+											<p class="text-[10px] text-gray-550 flex items-center gap-1"><Icon name="map-pin" class="w-3.5 h-3.5 text-gray-400" /> {bank.address}</p>
 										</div>
 									</div>
 									<div class="flex gap-2">
 										<button
-											class="bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold p-1.5 rounded-lg text-xs transition cursor-pointer"
+											class="bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold p-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-center"
 											title="Edit"
 											onclick={() => startEditBank(bank)}
 										>
-											✏️
+											<Icon name="edit" class="w-4 h-4" />
 										</button>
 										<button
-											class="bg-white border border-red-200 text-primary hover:bg-red-50 font-bold p-1.5 rounded-lg text-xs transition cursor-pointer"
+											class="bg-white border border-red-200 text-primary hover:bg-red-50 font-bold p-1.5 rounded-lg text-xs transition cursor-pointer flex items-center justify-center"
 											title="Delete"
 											onclick={() => handleBankDelete(bank.id, bank.name)}
 										>
-											🗑️
+											<Icon name="trash" class="w-4 h-4" />
 										</button>
 									</div>
 								</div>
 
 								<div class="text-[10px] grid grid-cols-2 gap-4 text-slate-500 bg-slate-50/50 p-3 border border-slate-100 rounded-xl">
-									<p>📞 <strong>Phone:</strong> {bank.phone}</p>
-									<p>📧 <strong>Email:</strong> {bank.email}</p>
-									<p>🕒 <strong>Hours:</strong> {bank.workingHours}</p>
+									<p class="flex items-center gap-1.5"><Icon name="phone" class="w-3.5 h-3.5 text-gray-405" /> <strong>Phone:</strong> {bank.phone}</p>
+									<p class="flex items-center gap-1.5"><Icon name="mail" class="w-3.5 h-3.5 text-gray-405" /> <strong>Email:</strong> {bank.email}</p>
+									<p class="flex items-center gap-1.5"><Icon name="clock" class="w-3.5 h-3.5 text-gray-405" /> <strong>Hours:</strong> {bank.workingHours}</p>
 									{#if bank.mapLink}
-										<p>🌐 <a href={bank.mapLink} target="_blank" class="text-red-700 underline font-bold">Directions Map</a></p>
+										<p class="flex items-center gap-1.5"><Icon name="map" class="w-3.5 h-3.5 text-gray-405" /> <a href={bank.mapLink} target="_blank" class="text-red-700 underline font-bold">Directions Map</a></p>
 									{/if}
 								</div>
 
@@ -1514,22 +1520,22 @@
 				<!-- Export Row -->
 				<div class="flex flex-wrap gap-2">
 					<button
-						class="bg-primary hover:bg-red-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer"
+						class="bg-primary hover:bg-red-700 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer flex items-center gap-1"
 						onclick={() => exportToCSV(data.users, ['id', 'name', 'email', 'phone', 'location', 'role', 'status', 'bloodGroup', 'createdAt'], 'lifelink_users.csv')}
 					>
-						📥 Export Users CSV
+						<Icon name="download" class="w-3.5 h-3.5" /> Export Users CSV
 					</button>
 					<button
-						class="bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer"
+						class="bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer flex items-center gap-1"
 						onclick={() => exportToCSV(data.requests, ['id', 'patientName', 'bloodGroup', 'units', 'hospital', 'city', 'urgency', 'status', 'submittedAt'], 'lifelink_requests.csv')}
 					>
-						📥 Export Requests CSV
+						<Icon name="download" class="w-3.5 h-3.5" /> Export Requests CSV
 					</button>
 					<button
-						class="bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer"
+						class="bg-white border border-slate-200 text-secondary hover:bg-baby-pink font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer flex items-center gap-1"
 						onclick={() => exportToCSV(data.bloodBanks, ['id', 'name', 'address', 'phone', 'email', 'workingHours'], 'lifelink_bloodbanks.csv')}
 					>
-						📥 Export Blood Banks CSV
+						<Icon name="download" class="w-3.5 h-3.5" /> Export Blood Banks CSV
 					</button>
 				</div>
 			</div>
@@ -1882,15 +1888,15 @@
 					<div class="flex gap-2">
 						<button
 							onclick={exportLogsToCSV}
-							class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer"
+							class="bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer flex items-center gap-1"
 						>
-							📥 Export CSV
+							<Icon name="download" class="w-3.5 h-3.5" /> Export CSV
 						</button>
 						<button
 							onclick={exportLogsToPDF}
-							class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer"
+							class="bg-slate-900 hover:bg-slate-800 text-white font-bold px-3 py-1.5 rounded-xl text-xs transition cursor-pointer flex items-center gap-1"
 						>
-							📄 Export PDF
+							<Icon name="file-text" class="w-3.5 h-3.5" /> Export PDF
 						</button>
 					</div>
 
@@ -1924,8 +1930,8 @@
 			<h3 class="text-lg font-bold text-slate-900 border-b border-slate-50 pb-4">Operator Settings</h3>
 
 			<div class="bg-purple-50 border border-purple-200 p-5 rounded-3xl text-purple-900 text-xs space-y-2 font-semibold">
-				<p>🚨 <strong>Admin account is locked:</strong> There must be ONLY ONE admin account. Creation of secondary administrators is strictly blocked at the database API model layer.</p>
-				<p>⚙️ <strong>Configuration Instance ID:</strong> lifelink_system_server_instance_v1</p>
+				<p class="flex items-center gap-1.5"><Icon name="alert-octagon" class="w-4 h-4 text-purple-700 animate-pulse" /> <strong>Admin account is locked:</strong> There must be ONLY ONE admin account. Creation of secondary administrators is strictly blocked at the database API model layer.</p>
+				<p class="flex items-center gap-1.5"><Icon name="settings" class="w-4 h-4 text-purple-700 animate-spin-slow" /> <strong>Configuration Instance ID:</strong> lifelink_system_server_instance_v1</p>
 			</div>
 
 			<div class="space-y-4 max-w-md">
@@ -1955,14 +1961,14 @@
 						Recipient: {selectedRequestForResponses.submittedBy}
 					</p>
 				</div>
-				<button onclick={() => selectedRequestForResponses = null} class="text-slate-400 hover:text-slate-655 text-lg cursor-pointer">
-					✕
+				<button onclick={() => selectedRequestForResponses = null} class="text-slate-400 hover:text-slate-655 text-lg cursor-pointer flex items-center justify-center" aria-label="Close responses view">
+					<Icon name="x" class="w-5 h-5" />
 				</button>
 			</div>
 
 			{#if selectedRequestForResponses.status === 'Completed'}
 				<div class="bg-emerald-50 border border-emerald-150 p-4 rounded-2xl text-[11px] text-emerald-800 space-y-1.5 font-semibold">
-					<p class="text-emerald-700 font-extrabold text-xs mb-1 flex items-center gap-1">✔ Blood Successfully Received</p>
+					<p class="text-emerald-700 font-extrabold text-xs mb-1 flex items-center gap-1"><Icon name="check-circle" class="w-3.5 h-3.5" /> Blood Successfully Received</p>
 					<p><strong>Completed Date:</strong> {selectedRequestForResponses.completedAt ? new Date(selectedRequestForResponses.completedAt).toLocaleString() : 'N/A'}</p>
 					<p><strong>Recipient:</strong> {selectedRequestForResponses.submittedBy}</p>
 					{#if selectedRequestForResponses.donorResponses.find(dr => dr.status === 'Accepted')}
@@ -2021,8 +2027,8 @@
 					<h3 class="text-sm font-black text-slate-900">System Log Audit Details</h3>
 					<p class="text-[10px] text-slate-400 mt-1">Log ID: {selectedSystemLog.id}</p>
 				</div>
-				<button onclick={() => selectedSystemLog = null} class="text-slate-400 hover:text-slate-655 text-lg cursor-pointer">
-					✕
+				<button onclick={() => selectedSystemLog = null} class="text-slate-400 hover:text-slate-655 text-lg cursor-pointer flex items-center justify-center" aria-label="Close audit details">
+					<Icon name="x" class="w-5 h-5" />
 				</button>
 			</div>
 			

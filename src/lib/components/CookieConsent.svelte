@@ -1,6 +1,7 @@
 <script>
 	import { onMount } from 'svelte';
 	import { db } from '$lib/auth.svelte.js';
+	import Icon from '$lib/components/Icon.svelte';
 
 	let visible = $state(false);
 
@@ -39,7 +40,9 @@
 {#if visible}
 	<div class="fixed bottom-6 left-6 right-6 md:left-auto md:max-w-md bg-white/90 backdrop-blur-md border border-red-100 rounded-3xl p-5 shadow-2xl z-[9999] flex flex-col gap-4 animate-slide-up hover-card-premium">
 		<div class="flex items-start gap-3">
-			<span class="text-2xl mt-0.5" role="img" aria-label="cookie">🍪</span>
+			<span class="flex items-center justify-center w-8 h-8 rounded-full bg-amber-50 text-amber-700 mt-0.5" role="img" aria-label="cookie">
+				<Icon name="cookie" class="w-5 h-5" />
+			</span>
 			<div class="space-y-1">
 				<h4 class="font-bold text-slate-800 text-sm">Cookie Preferences</h4>
 				<p class="text-xs text-slate-655 font-medium leading-relaxed">
