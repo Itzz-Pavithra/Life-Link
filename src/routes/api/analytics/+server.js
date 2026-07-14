@@ -35,9 +35,15 @@ export async function GET() {
 	if (totalDonors > 0) {
 		const colors = {
 			'O+': '#b91c1c', 'A+': '#dc2626', 'B+': '#ef4444', 'AB+': '#f87171',
-			'O-': '#fca5a5', 'A-': '#fecaca', 'B-': '#fee2e2', 'AB-': '#fef2f2'
+			'O-': '#fca5a5', 'A-': '#fecaca', 'B-': '#fee2e2', 'AB-': '#fef2f2',
+			'A1+': '#e11d48', 'A1-': '#fb7185', 'A2+': '#f43f5e', 'A2-': '#fda4af',
+			'A1B+': '#be123c', 'A1B-': '#f43f5e', 'A2B+': '#9f1239', 'A2B-': '#fb7185'
 		};
-		const bloodGroups = ['O+', 'A+', 'B+', 'AB+', 'O-', 'A-', 'B-', 'AB-'];
+		const bloodGroups = [
+			'O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-',
+			'A1+', 'A1-', 'A2+', 'A2-',
+			'A1B+', 'A1B-', 'A2B+', 'A2B-'
+		];
 		bloodGroups.forEach(bg => {
 			const count = donors.filter(u => u.bloodGroup === bg).length;
 			if (count > 0) {

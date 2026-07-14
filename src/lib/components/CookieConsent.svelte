@@ -1,15 +1,27 @@
 <script>
 	import { onMount } from 'svelte';
+	import { db } from '$lib/auth.svelte.js';
 
 	let visible = $state(false);
 
 	onMount(() => {
 		const consent = localStorage.getItem('lifelink_cookie_consent');
-		if (!consent) {
+		if (!consent && !db.user) {
 			// Show banner with a slight delay for smooth entrance
 			setTimeout(() => {
-				visible = true;
+				if (!db.user) {
+					visible = true;
+				}
 			}, 1000);
+		}
+	});
+
+	$effect(() => {
+		if (db.user) {
+			visible = false;
+			if (typeof window !== 'undefined' && !localStorage.getItem('lifelink_cookie_consent')) {
+				localStorage.setItem('lifelink_cookie_consent', 'accepted');
+			}
 		}
 	});
 

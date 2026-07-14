@@ -12,7 +12,11 @@
 		if (e) e.preventDefault();
 		try {
 			await signOut(auth);
+			const consent = localStorage.getItem('lifelink_cookie_consent');
 			localStorage.clear();
+			if (consent !== null) {
+				localStorage.setItem('lifelink_cookie_consent', consent);
+			}
 			sessionStorage.clear();
 			db.user = null;
 			try {

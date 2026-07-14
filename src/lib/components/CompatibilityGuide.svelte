@@ -1,15 +1,27 @@
 <script>
-	const groups = ['O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+'];
+	const groups = [
+		'O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+',
+		'A1+', 'A1-', 'A2+', 'A2-',
+		'A1B+', 'A1B-', 'A2B+', 'A2B-'
+	];
 	
 	const compatibility = {
-		'O-': { give: ['O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+'], receive: ['O-'] },
-		'O+': { give: ['O+', 'A+', 'B+', 'AB+'], receive: ['O-', 'O+'] },
-		'A-': { give: ['A-', 'A+', 'AB-', 'AB+'], receive: ['O-', 'A-'] },
-		'A+': { give: ['A+', 'AB+'], receive: ['O-', 'O+', 'A-', 'A+'] },
-		'B-': { give: ['B-', 'B+', 'AB-', 'AB+'], receive: ['O-', 'B-'] },
-		'B+': { give: ['B+', 'AB+'], receive: ['O-', 'O+', 'B-', 'B+'] },
-		'AB-': { give: ['AB-', 'AB+'], receive: ['O-', 'A-', 'B-', 'AB-'] },
-		'AB+': { give: ['AB+'], receive: ['O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+'] }
+		'O-': { give: ['O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+', 'A1+', 'A1-', 'A2+', 'A2-', 'A1B+', 'A1B-', 'A2B+', 'A2B-'], receive: ['O-'] },
+		'O+': { give: ['O+', 'A+', 'B+', 'AB+', 'A1+', 'A2+', 'A1B+', 'A2B+'], receive: ['O-', 'O+'] },
+		'A-': { give: ['A-', 'A+', 'AB-', 'AB+', 'A1+', 'A1-', 'A2+', 'A2-', 'A1B+', 'A1B-', 'A2B+', 'A2B-'], receive: ['O-', 'A-', 'A1-', 'A2-'] },
+		'A+': { give: ['A+', 'AB+', 'A1+', 'A2+', 'A1B+', 'A2B+'], receive: ['O-', 'O+', 'A-', 'A+', 'A1+', 'A1-', 'A2+', 'A2-'] },
+		'B-': { give: ['B-', 'B+', 'AB-', 'AB+', 'A1B+', 'A1B-', 'A2B+', 'A2B-'], receive: ['O-', 'B-'] },
+		'B+': { give: ['B+', 'AB+', 'A1B+', 'A2B+'], receive: ['O-', 'O+', 'B-', 'B+'] },
+		'AB-': { give: ['AB-', 'AB+', 'A1B+', 'A1B-', 'A2B+', 'A2B-'], receive: ['O-', 'A-', 'B-', 'AB-', 'A1-', 'A2-', 'A1B-', 'A2B-'] },
+		'AB+': { give: ['AB+', 'A1B+', 'A2B+'], receive: ['O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+', 'A1+', 'A1-', 'A2+', 'A2-', 'A1B+', 'A1B-', 'A2B+', 'A2B-'] },
+		'A1+': { give: ['A1+', 'AB+', 'A1B+'], receive: ['O-', 'O+', 'A-', 'A+', 'A1-', 'A1+', 'A2-', 'A2+'] },
+		'A1-': { give: ['A1+', 'A1-', 'AB+', 'AB-', 'A1B+', 'A1B-'], receive: ['O-', 'A-', 'A1-', 'A2-'] },
+		'A2+': { give: ['A1+', 'A2+', 'AB+', 'A1B+', 'A2B+'], receive: ['O-', 'O+', 'A-', 'A+', 'A2-', 'A2+'] },
+		'A2-': { give: ['A1+', 'A1-', 'A2+', 'A2-', 'AB+', 'AB-', 'A1B+', 'A1B-', 'A2B+', 'A2B-'], receive: ['O-', 'A-', 'A2-'] },
+		'A1B+': { give: ['A1B+', 'AB+'], receive: ['O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'AB-', 'AB+', 'A1+', 'A1-', 'A2+', 'A2-', 'A1B+', 'A1B-', 'A2B+', 'A2B-'] },
+		'A1B-': { give: ['A1B+', 'A1B-', 'AB+', 'AB-'], receive: ['O-', 'A-', 'B-', 'AB-', 'A1-', 'A2-', 'A1B-', 'A2B-'] },
+		'A2B+': { give: ['A1B+', 'A2B+', 'AB+'], receive: ['O-', 'O+', 'A-', 'A+', 'B-', 'B+', 'A2-', 'A2+', 'A2B-', 'A2B+'] },
+		'A2B-': { give: ['A1B+', 'A1B-', 'A2B+', 'A2B-', 'AB+', 'AB-'], receive: ['O-', 'A-', 'B-', 'A2-', 'A2B-'] }
 	};
 
 	let selectedGroup = $state('O-');

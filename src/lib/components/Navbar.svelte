@@ -16,7 +16,11 @@
 		if (e) e.preventDefault();
 		try {
 			await signOut(auth);
+			const consent = localStorage.getItem('lifelink_cookie_consent');
 			localStorage.clear();
+			if (consent !== null) {
+				localStorage.setItem('lifelink_cookie_consent', consent);
+			}
 			sessionStorage.clear();
 			db.user = null;
 			try {
@@ -60,18 +64,7 @@
 				{#if db.authLoading}
 					<div class="w-5 h-5 border-2 border-red-200 border-t-red-700 rounded-full animate-spin" aria-label="Authenticating session"></div>
 				{:else if db.user}
-					<a
-						href="/dashboard/{db.user.role}"
-						class="text-sm font-bold text-primary bg-baby-pink hover:bg-red-100 px-4 py-2 rounded-xl transition"
-					>
-						💻 Dashboard
-					</a>
-					<button
-						onclick={handleLogout}
-						class="text-sm font-bold text-slate-700 hover:text-primary transition cursor-pointer bg-transparent border-none"
-					>
-						Logout
-					</button>
+					<!-- Hidden after login -->
 				{:else}
 					<a href="/login" class="text-sm font-semibold text-gray-700 hover:text-red-700 transition">Login</a>
 					<a
@@ -130,19 +123,7 @@
 				<div class="w-5 h-5 border-2 border-red-200 border-t-red-700 rounded-full animate-spin" aria-label="Authenticating session"></div>
 			</div>
 		{:else if db.user}
-			<a
-				href="/dashboard/{db.user.role}"
-				class="block text-sm font-bold text-primary bg-baby-pink hover:bg-red-100 px-4 py-3 rounded-xl transition"
-				onclick={() => mobileMenuOpen = false}
-			>
-				💻 Dashboard
-			</a>
-			<button
-				onclick={(e) => { mobileMenuOpen = false; handleLogout(e); }}
-				class="block w-full text-left text-sm font-bold text-slate-700 hover:text-primary hover:bg-rose-50/50 px-3 py-2 rounded-xl transition cursor-pointer"
-			>
-				Logout
-			</button>
+			<!-- Hidden after login -->
 		{:else}
 			<a
 				href="/login"

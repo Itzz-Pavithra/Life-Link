@@ -353,14 +353,22 @@
 								class="w-full border border-slate-200 p-3 pl-10 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none text-sm bg-white font-semibold text-slate-800"
 								required
 							>
-								<option value="O+">O+</option>
 								<option value="A+">A+</option>
-								<option value="B+">B+</option>
-								<option value="AB+">AB+</option>
-								<option value="O-">O-</option>
 								<option value="A-">A-</option>
+								<option value="B+">B+</option>
 								<option value="B-">B-</option>
+								<option value="AB+">AB+</option>
 								<option value="AB-">AB-</option>
+								<option value="O+">O+</option>
+								<option value="O-">O-</option>
+								<option value="A1+">A1+</option>
+								<option value="A1-">A1-</option>
+								<option value="A2+">A2+</option>
+								<option value="A2-">A2-</option>
+								<option value="A1B+">A1B+</option>
+								<option value="A1B-">A1B-</option>
+								<option value="A2B+">A2B+</option>
+								<option value="A2B-">A2B-</option>
 							</select>
 						</div>
 					</div>

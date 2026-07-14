@@ -400,8 +400,9 @@ export async function addBloodBank(bank, operatorEmail) {
 		phone: bank.phone,
 		email: bank.email,
 		inventory: bank.inventory || {
-			'A+': 0, 'B+': 0, 'O+': 0, 'AB+': 0,
-			'A-': 0, 'B-': 0, 'O-': 0, 'AB-': 0
+			'A+': 0, 'A-': 0, 'B+': 0, 'B-': 0, 'AB+': 0, 'AB-': 0, 'O+': 0, 'O-': 0,
+			'A1+': 0, 'A1-': 0, 'A2+': 0, 'A2-': 0,
+			'A1B+': 0, 'A1B-': 0, 'A2B+': 0, 'A2B-': 0
 		},
 		workingHours: bank.workingHours || '9:00 AM - 5:00 PM',
 		mapLink: bank.mapLink || ''
@@ -440,7 +441,12 @@ export async function updateInventory(bloodGroup, units, userEmail) {
 
 	const bank = bloodBanks[0];
 	
-	if (bank.inventory[bloodGroup] !== undefined) {
+	const validBloodGroups = [
+		'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-',
+		'A1+', 'A1-', 'A2+', 'A2-',
+		'A1B+', 'A1B-', 'A2B+', 'A2B-'
+	];
+	if (validBloodGroups.includes(bloodGroup)) {
 		const newInventory = { ...bank.inventory };
 		newInventory[bloodGroup] = Number(units);
 		await updateDocument('blood_banks', bank.id, { inventory: newInventory });

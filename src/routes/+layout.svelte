@@ -2,7 +2,6 @@
 	import Footer from '$lib/components/Footer.svelte';
 	import Navbar from '$lib/components/Navbar.svelte';
 	import Toast from '$lib/components/Toast.svelte';
-	import AccessibilityPanel from '$lib/components/AccessibilityPanel.svelte';
 	import CookieConsent from '$lib/components/CookieConsent.svelte';
 	import './layout.css';
 	import favicon from '$lib/assets/favicon.svg';
@@ -12,6 +11,7 @@
 	import { onMount } from 'svelte';
 	import axios from 'axios';
 	import { invalidateAll } from '$app/navigation';
+	import { page } from '$app/stores';
 
 	let { children, data } = $props();
 
@@ -49,7 +49,11 @@
 	function clearLocalStorage() {
 		if (typeof window !== 'undefined') {
 			try {
+				const consent = localStorage.getItem('lifelink_cookie_consent');
 				localStorage.clear();
+				if (consent !== null) {
+					localStorage.setItem('lifelink_cookie_consent', consent);
+				}
 				sessionStorage.clear();
 			} catch (e) {
 				// ignore
@@ -67,13 +71,16 @@
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
-<Navbar {data} />
+{#if !$page.url.pathname.startsWith('/dashboard')}
+	<Navbar {data} />
+{/if}
 <Toast />
-<AccessibilityPanel />
 <div class="flex flex-col min-h-screen">
 	<main class="flex-grow">
 		{@render children()}
 	</main>
 </div>
-<Footer />
+{#if !$page.url.pathname.startsWith('/dashboard')}
+	<Footer />
+{/if}
 <CookieConsent />

@@ -174,16 +174,20 @@
 	});
 
 	// Blood Availability Analytics
-	const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+	const bloodGroups = [
+		'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-',
+		'A1+', 'A1-', 'A2+', 'A2-',
+		'A1B+', 'A1B-', 'A2B+', 'A2B-'
+	];
 	
-	let availabilityAnalytics = $derived.by(() => {
-		const counts = {};
-		bloodGroups.forEach(bg => {
-			counts[bg] = 0;
-		});
-		
+	const availabilityAnalytics = $derived.by(() => {
+		let counts = {
+			'A+': 0, 'A-': 0, 'B+': 0, 'B-': 0, 'AB+': 0, 'AB-': 0, 'O+': 0, 'O-': 0,
+			'A1+': 0, 'A1-': 0, 'A2+': 0, 'A2-': 0,
+			'A1B+': 0, 'A1B-': 0, 'A2B+': 0, 'A2B-': 0
+		};
 		(data.donors || []).forEach(d => {
-			const isAvail = d.isAvailable !== false && d.status === 'active';
+			let isAvail = d.isAvailable !== false && d.status === 'active';
 			if (isAvail && d.bloodGroup && counts[d.bloodGroup] !== undefined) {
 				counts[d.bloodGroup]++;
 			}
@@ -249,7 +253,11 @@
 					const { signOut } = await import('firebase/auth');
 					await signOut(firebaseAuth);
 				} catch (e) { /* ignore */ }
+				const consent = localStorage.getItem('lifelink_cookie_consent');
 				localStorage.clear();
+				if (consent !== null) {
+					localStorage.setItem('lifelink_cookie_consent', consent);
+				}
 				sessionStorage.clear();
 				window.location.href = '/';
 			} else {
@@ -534,6 +542,14 @@
 						<option>AB-</option>
 						<option>O+</option>
 						<option>O-</option>
+						<option>A1+</option>
+						<option>A1-</option>
+						<option>A2+</option>
+						<option>A2-</option>
+						<option>A1B+</option>
+						<option>A1B-</option>
+						<option>A2B+</option>
+						<option>A2B-</option>
 					</select>
 				</div>
 
@@ -632,6 +648,14 @@
 						<option>AB-</option>
 						<option>O+</option>
 						<option>O-</option>
+						<option>A1+</option>
+						<option>A1-</option>
+						<option>A2+</option>
+						<option>A2-</option>
+						<option>A1B+</option>
+						<option>A1B-</option>
+						<option>A2B+</option>
+						<option>A2B-</option>
 					</select>
 				</div>
 
@@ -855,6 +879,14 @@
 							<option>AB-</option>
 							<option>O+</option>
 							<option>O-</option>
+							<option>A1+</option>
+							<option>A1-</option>
+							<option>A2+</option>
+							<option>A2-</option>
+							<option>A1B+</option>
+							<option>A1B-</option>
+							<option>A2B+</option>
+							<option>A2B-</option>
 						</select>
 					</div>
 				</div>

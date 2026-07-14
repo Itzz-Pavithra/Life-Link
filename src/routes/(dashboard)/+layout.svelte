@@ -2,9 +2,35 @@
 	import { db } from "$lib/auth.svelte.js";
 	import { goto } from "$app/navigation";
 	import Sidebar from "$lib/components/Sidebar.svelte";
+	import { auth } from '$lib/firebase.client.js';
+	import { signOut } from 'firebase/auth';
+	import axios from 'axios';
 
 	let { children, data } = $props();
 	let sidebarOpen = $state(false);
+
+	async function handleLogout(e) {
+		if (e) e.preventDefault();
+		try {
+			await signOut(auth);
+			const consent = localStorage.getItem('lifelink_cookie_consent');
+			localStorage.clear();
+			if (consent !== null) {
+				localStorage.setItem('lifelink_cookie_consent', consent);
+			}
+			sessionStorage.clear();
+			db.user = null;
+			try {
+				await axios.post('/api/auth/logout');
+			} catch (err) {
+				// Ignore
+			}
+			db.addToast('Logged out successfully.', 'info');
+			window.location.href = '/';
+		} catch (err) {
+			db.addToast('Failed to logout. Please try again.', 'error');
+		}
+	}
 
 	$effect(() => {
 		// Only act when auth loading is fully complete
@@ -98,6 +124,13 @@
 							>
 						</div>
 					</div>
+					<!-- Logout Button -->
+					<button
+						onclick={handleLogout}
+						class="px-4 py-2 border border-slate-200 hover:bg-rose-50 text-slate-700 hover:text-red-700 rounded-xl text-xs font-bold transition cursor-pointer"
+					>
+						Logout
+					</button>
 				</div>
 			</header>
 

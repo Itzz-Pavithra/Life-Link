@@ -180,7 +180,11 @@
 					const { signOut } = await import('firebase/auth');
 					await signOut(firebaseAuth);
 				} catch (e) { /* ignore */ }
+				const consent = localStorage.getItem('lifelink_cookie_consent');
 				localStorage.clear();
+				if (consent !== null) {
+					localStorage.setItem('lifelink_cookie_consent', consent);
+				}
 				sessionStorage.clear();
 				window.location.href = '/';
 			} else {
@@ -584,6 +588,14 @@
 							<option>AB-</option>
 							<option>O+</option>
 							<option>O-</option>
+							<option>A1+</option>
+							<option>A1-</option>
+							<option>A2+</option>
+							<option>A2-</option>
+							<option>A1B+</option>
+							<option>A1B-</option>
+							<option>A2B+</option>
+							<option>A2B-</option>
 						</select>
 					</div>
 

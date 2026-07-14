@@ -524,21 +524,24 @@
 	const paginatedBanks = $derived(filteredBanks.slice((bankPage - 1) * PAGE_SIZE, bankPage * PAGE_SIZE));
 
 	// Blood Availability Analytics
-	const bloodGroupsList = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+	const bloodGroupsList = [
+		'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-',
+		'A1+', 'A1-', 'A2+', 'A2-',
+		'A1B+', 'A1B-', 'A2B+', 'A2B-'
+	];
 	
 	const availabilityAnalytics = $derived.by(() => {
-		const counts = {};
-		bloodGroupsList.forEach(bg => {
-			counts[bg] = 0;
-		});
-		
-		(data.donors || []).forEach(d => {
-			const isAvail = d.isAvailable !== false && d.status === 'active';
+		let counts = {
+			'A+': 0, 'A-': 0, 'B+': 0, 'B-': 0, 'AB+': 0, 'AB-': 0, 'O+': 0, 'O-': 0,
+			'A1+': 0, 'A1-': 0, 'A2+': 0, 'A2-': 0,
+			'A1B+': 0, 'A1B-': 0, 'A2B+': 0, 'A2B-': 0
+		};
+		data.donors.forEach(d => {
+			let isAvail = d.isAvailable !== false && d.status === 'active';
 			if (isAvail && d.bloodGroup && counts[d.bloodGroup] !== undefined) {
 				counts[d.bloodGroup]++;
 			}
 		});
-		
 		return bloodGroupsList.map(bg => {
 			const count = counts[bg];
 			return {
@@ -602,7 +605,11 @@
 		const newRecipients = (data.users || []).filter(u => u.role === 'recipient' && u.createdAt && u.createdAt.startsWith(todayDateStr)).length;
 
 		// Available donors by blood group
-		const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+		const bloodGroups = [
+			'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-',
+			'A1+', 'A1-', 'A2+', 'A2-',
+			'A1B+', 'A1B-', 'A2B+', 'A2B-'
+		];
 		const availableDonorsByGroup = {};
 		bloodGroups.forEach(bg => {
 			availableDonorsByGroup[bg] = 0;
@@ -655,11 +662,17 @@
 		// Blood group distribution among all donors
 		const colors = {
 			'O+': '#b91c1c', 'A+': '#dc2626', 'B+': '#ef4444', 'AB+': '#f87171',
-			'O-': '#fca5a5', 'A-': '#fecaca', 'B-': '#fee2e2', 'AB-': '#fef2f2'
+			'O-': '#fca5a5', 'A-': '#fecaca', 'B-': '#fee2e2', 'AB-': '#fef2f2',
+			'A1+': '#e11d48', 'A1-': '#fb7185', 'A2+': '#f43f5e', 'A2-': '#fda4af',
+			'A1B+': '#be123c', 'A1B-': '#f43f5e', 'A2B+': '#9f1239', 'A2B-': '#fb7185'
 		};
 		const distribution = [];
 		if (totalDonors > 0) {
-			const bloodGroups = ['O+', 'A+', 'B+', 'AB+', 'O-', 'A-', 'B-', 'AB-'];
+			const bloodGroups = [
+				'O+', 'O-', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-',
+				'A1+', 'A1-', 'A2+', 'A2-',
+				'A1B+', 'A1B-', 'A2B+', 'A2B-'
+			];
 			bloodGroups.forEach(bg => {
 				const count = donors.filter(u => u.bloodGroup === bg).length;
 				if (count > 0) {
@@ -935,14 +948,22 @@
 						class="border border-slate-200 px-3 py-1.5 rounded-xl text-xs bg-white focus:outline-none"
 					>
 						<option value="all">All Groups</option>
-						<option value="O+">O+</option>
 						<option value="A+">A+</option>
-						<option value="B+">B+</option>
-						<option value="AB+">AB+</option>
-						<option value="O-">O-</option>
 						<option value="A-">A-</option>
+						<option value="B+">B+</option>
 						<option value="B-">B-</option>
+						<option value="AB+">AB+</option>
 						<option value="AB-">AB-</option>
+						<option value="O+">O+</option>
+						<option value="O-">O-</option>
+						<option value="A1+">A1+</option>
+						<option value="A1-">A1-</option>
+						<option value="A2+">A2+</option>
+						<option value="A2-">A2-</option>
+						<option value="A1B+">A1B+</option>
+						<option value="A1B-">A1B-</option>
+						<option value="A2B+">A2B+</option>
+						<option value="A2B-">A2B-</option>
 					</select>
 				</div>
 			</div>
@@ -1418,14 +1439,22 @@
 							class="border border-slate-200 p-2.5 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none bg-white font-semibold"
 							required
 						>
-							<option value="O+">O+</option>
 							<option value="A+">A+</option>
-							<option value="B+">B+</option>
-							<option value="AB+">AB+</option>
-							<option value="O-">O-</option>
 							<option value="A-">A-</option>
+							<option value="B+">B+</option>
 							<option value="B-">B-</option>
+							<option value="AB+">AB+</option>
 							<option value="AB-">AB-</option>
+							<option value="O+">O+</option>
+							<option value="O-">O-</option>
+							<option value="A1+">A1+</option>
+							<option value="A1-">A1-</option>
+							<option value="A2+">A2+</option>
+							<option value="A2-">A2-</option>
+							<option value="A1B+">A1B+</option>
+							<option value="A1B-">A1B-</option>
+							<option value="A2B+">A2B+</option>
+							<option value="A2B-">A2B-</option>
 						</select>
 					</div>
 
@@ -1756,14 +1785,22 @@
 							class="border border-slate-200 px-3 py-2 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none bg-white font-semibold"
 						>
 							<option value="all">All Groups</option>
-							<option value="O+">O+</option>
 							<option value="A+">A+</option>
-							<option value="B+">B+</option>
-							<option value="AB+">AB+</option>
-							<option value="O-">O-</option>
 							<option value="A-">A-</option>
+							<option value="B+">B+</option>
 							<option value="B-">B-</option>
+							<option value="AB+">AB+</option>
 							<option value="AB-">AB-</option>
+							<option value="O+">O+</option>
+							<option value="O-">O-</option>
+							<option value="A1+">A1+</option>
+							<option value="A1-">A1-</option>
+							<option value="A2+">A2+</option>
+							<option value="A2-">A2-</option>
+							<option value="A1B+">A1B+</option>
+							<option value="A1B-">A1B-</option>
+							<option value="A2B+">A2B+</option>
+							<option value="A2B-">A2B-</option>
 						</select>
 					</div>
 
