@@ -37,6 +37,7 @@
 		recipient: [
 			{ id: 'dashboard', label: 'Dashboard', icon: 'home' },
 			{ id: 'request-blood', label: 'Request Blood', icon: 'file-text' },
+			{ id: 'map', label: 'Nearby Map', icon: 'map-pin' },
 			{ id: 'search-donors', label: 'Search Donors', icon: 'search' },
 			{ id: 'profile', label: 'Profile', icon: 'user' }
 		],
@@ -51,6 +52,7 @@
 			{ id: 'users', label: 'All Users', icon: 'users' },
 			{ id: 'donors', label: 'Donors List', icon: 'droplet' },
 			{ id: 'receivers', label: 'Receivers List', icon: 'clipboard-list' },
+			{ id: 'chats', label: 'Emergency Chats', icon: 'message-square' },
 			{ id: 'blood-requests', label: 'Blood Requests', icon: 'clipboard-list' },
 			{ id: 'blood-banks', label: 'Blood Banks', icon: 'hospital' },
 			{ id: 'donation-history', label: 'Donation History', icon: 'clock' },

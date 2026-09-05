@@ -205,6 +205,16 @@ export const database = {
 					date: completedAt.split('T')[0]
 				};
 				await createDocument('donations', newDonation.id, newDonation);
+				// Update donor's user doc with lastDonationDate to start recovery cooldown!
+				if (acceptedResponse.donorId && acceptedResponse.donorId !== 'MATCHED_DONOR') {
+					try {
+						await updateDocument('users', acceptedResponse.donorId, {
+							lastDonationDate: completedAt.split('T')[0]
+						});
+					} catch (uErr) {
+						console.error(`Failed to set lastDonationDate for donor ${acceptedResponse.donorId}:`, uErr);
+					}
+				}
 			} else {
 				// Fallback to Voluntary Donor if no matching accepted donor was logged
 				const newDonation = {
@@ -218,12 +228,158 @@ export const database = {
 				};
 				await createDocument('donations', newDonation.id, newDonation);
 			}
+
+			// Archive any active chat sessions associated with this blood request
+			await this.archiveChatsForRequest(requestId);
 		} catch (donationErr) {
 			console.error('Error logging donation automatically upon request completion:', donationErr);
 		}
 
 		await addLog(completedByEmail, `Blood Request completed for ${req.patientName}`);
 		return true;
+	},
+
+	// Chat Session Helpers
+	async createChatSession(chatData) {
+		const chatId = `${chatData.requestId}_${chatData.donorId}`;
+		const now = new Date().toISOString();
+		const session = {
+			id: chatId,
+			requestId: chatData.requestId,
+			patientName: chatData.patientName,
+			bloodGroup: chatData.bloodGroup,
+			urgency: chatData.urgency || 'Normal',
+			hospital: chatData.hospital || 'Hospital',
+			recipientEmail: (chatData.recipientEmail || '').toLowerCase(),
+			recipientName: chatData.recipientName || 'Recipient',
+			donorId: chatData.donorId,
+			donorEmail: (chatData.donorEmail || '').toLowerCase(),
+			donorName: chatData.donorName || 'Donor',
+			status: 'active', // 'active' | 'archived'
+			lastMessage: 'Emergency chat opened.',
+			lastMessageAt: now,
+			unreadRecipient: 0,
+			unreadDonor: 0,
+			reported: false,
+			reportReason: '',
+			createdAt: now,
+			updatedAt: now
+		};
+		await createDocument('chats', chatId, session);
+		return session;
+	},
+
+	async getChatById(chatId) {
+		try {
+			return await getDocument('chats', chatId);
+		} catch (err) {
+			return null;
+		}
+	},
+
+	async getChatsForUser(userEmail, userId) {
+		try {
+			const chats = await getCollection('chats');
+			const email = (userEmail || '').toLowerCase();
+			return chats.filter(c => 
+				(c.recipientEmail && c.recipientEmail.toLowerCase() === email) || 
+				(c.donorEmail && c.donorEmail.toLowerCase() === email) || 
+				c.donorId === userId
+			).sort((a, b) => new Date(b.lastMessageAt || b.createdAt) - new Date(a.lastMessageAt || a.createdAt));
+		} catch (err) {
+			console.error('Error getting user chats:', err);
+			return [];
+		}
+	},
+
+	async addChatMessage(chatId, messageData) {
+		const chat = await getDocument('chats', chatId);
+		if (!chat) throw new Error('Chat session not found.');
+		if (chat.status === 'archived') throw new Error('This emergency blood request is completed. Conversation is archived and read-only.');
+
+		const messageId = `MSG${Date.now()}`;
+		const now = new Date().toISOString();
+		const msg = {
+			id: messageId,
+			chatId,
+			senderId: messageData.senderId,
+			senderEmail: (messageData.senderEmail || '').toLowerCase(),
+			senderRole: messageData.senderRole,
+			senderName: messageData.senderName,
+			text: messageData.text,
+			timestamp: now,
+			read: false
+		};
+
+		await createDocument(`chats/${chatId}/messages`, messageId, msg);
+
+		const isRecipient = (messageData.senderEmail || '').toLowerCase() === (chat.recipientEmail || '').toLowerCase();
+		const updates = {
+			lastMessage: messageData.text,
+			lastMessageAt: now,
+			updatedAt: now,
+			unreadRecipient: isRecipient ? (chat.unreadRecipient || 0) : (chat.unreadRecipient || 0) + 1,
+			unreadDonor: !isRecipient ? (chat.unreadDonor || 0) : (chat.unreadDonor || 0) + 1
+		};
+
+		await updateDocument('chats', chatId, updates);
+		return msg;
+	},
+
+	async getChatMessages(chatId) {
+		try {
+			const msgs = await getCollection(`chats/${chatId}/messages`);
+			return msgs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+		} catch (err) {
+			return [];
+		}
+	},
+
+	async markChatRead(chatId, userEmail) {
+		const chat = await getDocument('chats', chatId);
+		if (!chat) return false;
+		const email = (userEmail || '').toLowerCase();
+		if (email === (chat.recipientEmail || '').toLowerCase()) {
+			await updateDocument('chats', chatId, { unreadRecipient: 0 });
+		} else if (email === (chat.donorEmail || '').toLowerCase()) {
+			await updateDocument('chats', chatId, { unreadDonor: 0 });
+		}
+		return true;
+	},
+
+	async reportChat(chatId, reason, userEmail) {
+		const chat = await getDocument('chats', chatId);
+		if (!chat) return false;
+		await updateDocument('chats', chatId, {
+			reported: true,
+			reportReason: reason || 'Suspicious behavior reported by user',
+			reportedBy: userEmail,
+			reportedAt: new Date().toISOString()
+		});
+		await addLog(userEmail, `Reported Emergency Chat session ${chatId}: ${reason}`);
+		return true;
+	},
+
+	async archiveChatsForRequest(requestId) {
+		try {
+			const chats = await getCollection('chats');
+			const reqChats = chats.filter(c => c.requestId === requestId);
+			for (const c of reqChats) {
+				await updateDocument('chats', c.id, { status: 'archived', updatedAt: new Date().toISOString() });
+			}
+		} catch (err) {
+			console.error(`Error archiving chats for request ${requestId}:`, err);
+		}
+	},
+
+	async getAdminChats() {
+		try {
+			const chats = await getCollection('chats');
+			return chats.sort((a, b) => new Date(b.lastMessageAt || b.createdAt) - new Date(a.lastMessageAt || a.createdAt));
+		} catch (err) {
+			console.error('Error getting admin chats:', err);
+			return [];
+		}
 	}
 };
 
@@ -483,6 +639,19 @@ export async function addDonation(donation, operatorEmail) {
 	};
 
 	await createDocument('donations', newId, newDonation);
+
+	// Try updating the donor's lastDonationDate if donor exists
+	try {
+		const users = await getCollection('users');
+		const donor = users.find(u => u.id === donation.donorId || u.name.toLowerCase() === donation.donorName.toLowerCase());
+		if (donor) {
+			await updateDocument('users', donor.id, {
+				lastDonationDate: donation.date || new Date().toISOString().split('T')[0]
+			});
+		}
+	} catch (dErr) {
+		console.error('Error syncing donor recovery date in addDonation:', dErr);
+	}
 
 	await addLog(operatorEmail, `Log Donation: ${donation.units} units of ${donation.bloodGroup} by ${donation.donorName}`);
 	return newDonation;

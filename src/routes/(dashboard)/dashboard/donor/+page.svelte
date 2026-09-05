@@ -3,11 +3,13 @@
 	import { db } from '$lib/auth.svelte.js';
 	import Icon from '$lib/components/Icon.svelte';
 	import { getInitials, getAvatarColor } from '$lib/avatar.js';
+	import EmergencyChat from '$lib/components/EmergencyChat.svelte';
 
 	let { data } = $props();
 
 	// Availability state
 	let isAvailable = $state(data.user?.isAvailable !== false);
+	let activeChatId = $state(null);
 
 	// Edit Mode State
 	let isEditing = $state(false);
@@ -17,6 +19,7 @@
 	let profilePhone = $state(data.user?.phone || '');
 	let profileLocation = $state(data.user?.location || '');
 	let profileAddress = $state(data.user?.address || '');
+	let profileGender = $state(data.user?.gender || 'male');
 	let profileBloodGroup = $state(data.user?.bloodGroup || '');
 	let profileIsAvailable = $state(data.user?.isAvailable !== false);
 
@@ -29,6 +32,7 @@
 				profilePhone = data.user.phone || '';
 				profileLocation = data.user.location || '';
 				profileAddress = data.user.address || '';
+				profileGender = data.user.gender || 'male';
 				profileBloodGroup = data.user.bloodGroup || '';
 				profileIsAvailable = data.user.isAvailable !== false;
 			}
@@ -36,6 +40,11 @@
 	});
 
 	async function toggleAvailability() {
+		if (data.recovery?.inRecovery) {
+			db.addToast(`You are currently in donation recovery (${data.recovery.daysRemaining} days remaining). Availability cannot be enabled during recovery.`, 'error');
+			return;
+		}
+
 		const newStatus = !isAvailable;
 		isAvailable = newStatus;
 		profileIsAvailable = newStatus;
@@ -78,6 +87,7 @@
 					phone: profilePhone,
 					location: profileLocation,
 					address: profileAddress,
+					gender: profileGender,
 					bloodGroup: profileBloodGroup,
 					isAvailable: profileIsAvailable
 				})
@@ -102,6 +112,7 @@
 			profilePhone = data.user.phone || '';
 			profileLocation = data.user.location || '';
 			profileAddress = data.user.address || '';
+			profileGender = data.user.gender || 'male';
 			profileBloodGroup = data.user.bloodGroup || '';
 			profileIsAvailable = data.user.isAvailable !== false;
 		}
@@ -117,7 +128,8 @@
 			const res = await response.json();
 			if (res.success) {
 				if (status === 'Accepted') {
-					db.addToast(`You have ACCEPTED the emergency request. Recipient has been notified.`, 'success');
+					db.addToast(`Emergency request ACCEPTED! Private Emergency Chat is now open.`, 'success');
+					activeChatId = `${requestId}_${data.user.id}`;
 				} else {
 					db.addToast(`You have rejected the request.`, 'info');
 				}
@@ -181,33 +193,60 @@
 	<!-- TAB 1: DASHBOARD OVERVIEW -->
 	{#if db.activeTab === 'dashboard'}
 		<div class="grid md:grid-cols-3 gap-6">
-			<!-- Profile Card -->
-			<div class="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm space-y-4">
-				<h3 class="font-bold text-slate-900">My Donor Identity</h3>
-				<div class="flex items-center gap-4">
-					{#if data.user?.avatar}
-						<img
-							src={data.user.avatar}
-							alt="Profile Avatar"
-							class="w-16 h-16 rounded-3xl object-cover border border-slate-200 shadow-md"
-						/>
+			<!-- 🩸 DONATION RECOVERY CARD -->
+			<div class="bg-white border border-slate-100 p-6 rounded-3xl shadow-sm space-y-4 text-left border-l-4 border-l-red-600">
+				<div class="flex items-center justify-between">
+					<h3 class="font-extrabold text-slate-900 text-sm flex items-center gap-2">
+						🩸 DONATION RECOVERY
+					</h3>
+					{#if data.recovery?.inRecovery}
+						<span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-red-100 text-red-700 uppercase tracking-wider animate-pulse">
+							Recovery Active
+						</span>
 					{:else}
-						<span class="w-16 h-16 rounded-3xl bg-red-700 text-white font-black text-2xl flex items-center justify-center shadow-lg shadow-red-700/20">
-							{data.user?.bloodGroup || 'O+'}
+						<span class="px-2.5 py-0.5 rounded-full text-[10px] font-extrabold bg-emerald-100 text-emerald-700 uppercase tracking-wider">
+							Eligible to Donate
 						</span>
 					{/if}
-					<div class="text-left">
-						<h4 class="font-bold text-slate-800 text-base">{data.user?.name}</h4>
-						<p class="text-[10px] text-gray-550 text-slate-500">{data.user?.email}</p>
-						<p class="text-[10px] text-gray-500">Voluntary blood donor</p>
+				</div>
+
+				<div class="grid grid-cols-3 gap-2 text-center bg-slate-50 p-3 rounded-2xl border border-slate-100">
+					<div>
+						<span class="text-[9px] text-slate-400 font-bold uppercase block">Last Donation</span>
+						<span class="text-xs font-extrabold text-slate-800 block mt-0.5">{data.recovery?.lastDonationDate || 'None'}</span>
+					</div>
+					<div>
+						<span class="text-[9px] text-slate-400 font-bold uppercase block">Recovery Period</span>
+						<span class="text-xs font-extrabold text-red-700 block mt-0.5">{data.recovery?.totalDays || 90} Days</span>
+					</div>
+					<div>
+						<span class="text-[9px] text-slate-400 font-bold uppercase block">Eligible Again</span>
+						<span class="text-xs font-extrabold text-emerald-700 block mt-0.5">{data.recovery?.nextEligibleDate || 'Today'}</span>
 					</div>
 				</div>
-				<hr class="border-slate-50" />
-				<div class="space-y-2 text-xs text-slate-500">
-					<p><strong>Mobile:</strong> {data.user?.phone || 'Not Provided'}</p>
-					<p><strong>Region:</strong> {data.user?.location || 'Not Provided'}</p>
-					<p><strong>Last Donation:</strong> {data.history && data.history.length > 0 ? data.history[0].date : 'No donations logged'}</p>
-				</div>
+
+				{#if data.recovery?.inRecovery}
+					<div class="space-y-1.5">
+						<div class="flex justify-between items-center text-[10px] font-bold text-slate-600">
+							<span>Recovery in progress</span>
+							<span class="text-red-700 font-black">{data.recovery.daysRemaining} days remaining</span>
+						</div>
+						<div class="h-2.5 w-full bg-slate-100 rounded-full overflow-hidden flex">
+							<div
+								class="h-full bg-gradient-to-r from-red-500 to-red-700 transition-all duration-500"
+								style="width: {Math.min(100, Math.max(5, Math.round(((data.recovery.totalDays - data.recovery.daysRemaining) / data.recovery.totalDays) * 100)))}%"
+							></div>
+						</div>
+						<p class="text-[10px] text-slate-500 italic mt-1">
+							You can donate again in <strong>{data.recovery.daysRemaining} days</strong>. You are temporarily unavailable for new blood donation requests.
+						</p>
+					</div>
+				{:else}
+					<div class="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl text-center space-y-1">
+						<span class="text-xs font-extrabold text-emerald-800 block">🟢 You are eligible to donate again.</span>
+						<p class="text-[10px] text-emerald-700">You can now manually select Available or Unavailable below.</p>
+					</div>
+				{/if}
 			</div>
 
 			<!-- Availability Status Widget -->
@@ -218,22 +257,27 @@
 				</div>
 
 				<div class="flex items-center justify-between border border-slate-105 bg-slate-50 p-4 rounded-2xl my-4">
-					<span class="text-sm font-semibold text-slate-800">Available for matches</span>
+					<span class="text-sm font-semibold text-slate-800">
+						{data.recovery?.inRecovery ? 'Temporarily Locked (Recovery)' : 'Available for matches'}
+					</span>
 					<!-- Styled Toggle Switch -->
 					<button
 						class="w-12 h-6 rounded-full p-1 transition-colors duration-300 relative cursor-pointer
-						{isAvailable ? 'bg-red-700' : 'bg-slate-200'}"
+						{isAvailable && !data.recovery?.inRecovery ? 'bg-red-700' : 'bg-slate-300 opacity-60'}"
 						onclick={toggleAvailability}
+						disabled={data.recovery?.inRecovery}
 					>
 						<span
 							class="block w-4 h-4 rounded-full bg-white transition-transform duration-300 transform
-							{isAvailable ? 'translate-x-6' : 'translate-x-0'}"
+							{isAvailable && !data.recovery?.inRecovery ? 'translate-x-6' : 'translate-x-0'}"
 						></span>
 					</button>
 				</div>
 
 				<p class="text-[10px] text-slate-450 italic">
-					{#if isAvailable}
+					{#if data.recovery?.inRecovery}
+						<span class="inline-flex items-center gap-1 text-red-600 font-semibold"><Icon name="clock" class="w-3 h-3" /> Recovery mode takes priority over availability.</span>
+					{:else if isAvailable}
 						<span class="inline-flex items-center gap-1 text-emerald-600"><Icon name="check" class="w-3 h-3" /> Nearby recipients can find and matching requests can auto-route to you.</span>
 					{:else}
 						<span class="inline-flex items-center gap-1 text-slate-400"><Icon name="x" class="w-3 h-3" /> You are currently hidden from query engines.</span>
@@ -259,6 +303,37 @@
 				</div>
 			</div>
 		</div>
+
+		<!-- Active Emergency Chats Banner Section -->
+		{#if data.chats && data.chats.length > 0}
+			<div class="bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-3xl p-6 shadow-md mt-6 text-left space-y-4 border border-slate-800">
+				<div class="flex items-center justify-between">
+					<h3 class="font-extrabold text-base flex items-center gap-2">
+						💬 Active Emergency Conversations ({data.chats.length})
+					</h3>
+					<span class="text-[9px] bg-red-950 text-red-300 font-bold uppercase tracking-widest px-2.5 py-1 rounded-md border border-red-800">
+						In-App Emergency Chat Active
+					</span>
+				</div>
+				<div class="grid sm:grid-cols-2 gap-4">
+					{#each data.chats as chat}
+						<div class="bg-slate-800/80 border border-slate-700/80 p-4 rounded-2xl flex items-center justify-between hover:bg-slate-800 transition">
+							<div>
+								<h4 class="font-extrabold text-white text-xs">Request #{chat.requestId} • {chat.bloodGroup}</h4>
+								<p class="text-[10px] text-slate-400">Patient: {chat.patientName} • {chat.hospital}</p>
+								<p class="text-[10px] text-slate-400 italic truncate max-w-48 mt-1">"{chat.lastMessage}"</p>
+							</div>
+							<button
+								onclick={() => activeChatId = chat.id}
+								class="bg-primary hover:bg-red-700 text-white font-bold px-3.5 py-2 rounded-xl text-xs transition cursor-pointer flex items-center gap-1 shrink-0"
+							>
+								<Icon name="message-square" class="w-3.5 h-3.5" /> Open Chat
+							</button>
+						</div>
+					{/each}
+				</div>
+			</div>
+		{/if}
 
 		<!-- Incoming Blood Requests section on main Dashboard -->
 		<div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm mt-6 text-left">
@@ -301,9 +376,6 @@
 									<p><strong>Units Required:</strong> {req.units} units</p>
 									<p><strong>Hospital:</strong> {req.hospital}</p>
 									<p><strong>City:</strong> {req.city}</p>
-									{#if req.contact}
-										<p><strong>Contact Number:</strong> {req.contact}</p>
-									{/if}
 									<p><strong>Urgency Level:</strong> <span class="font-bold uppercase tracking-wider text-[9px]
 										{req.urgency === 'Critical' ? 'text-red-700' : ''}
 										{req.urgency === 'Urgent' ? 'text-amber-700' : ''}
@@ -334,26 +406,13 @@
 										</button>
 									</div>
 								{:else if req.donorResponse.status === 'Accepted'}
-									<div class="grid grid-cols-2 gap-2 opacity-50">
-										<button class="bg-primary text-white font-bold py-2.5 rounded-xl text-xs cursor-not-allowed" disabled>
-											Accept Request
-										</button>
-										<button class="bg-white border border-red-250 text-primary font-bold py-2.5 rounded-xl text-xs cursor-not-allowed" disabled>
-											Reject Request
-										</button>
-									</div>
-									<span class="w-full flex items-center justify-center gap-1.5 bg-emerald-50 border border-emerald-250 text-emerald-700 font-extrabold py-2.5 rounded-xl text-xs">
-										<Icon name="check-circle" class="w-3.5 h-3.5" /> Accepted
-									</span>
+									<button
+										onclick={() => activeChatId = `${req.id}_${data.user.id}`}
+										class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-2.5 rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-2 shadow-md"
+									>
+										<Icon name="message-square" class="w-4 h-4" /> 💬 Open Emergency Chat
+									</button>
 								{:else if req.donorResponse.status === 'Rejected'}
-									<div class="grid grid-cols-2 gap-2 opacity-50">
-										<button class="bg-primary text-white font-bold py-2.5 rounded-xl text-xs cursor-not-allowed" disabled>
-											Accept Request
-										</button>
-										<button class="bg-white border border-red-250 text-primary font-bold py-2.5 rounded-xl text-xs cursor-not-allowed" disabled>
-											Reject Request
-										</button>
-									</div>
 									<span class="w-full flex items-center justify-center gap-1.5 bg-red-50 border border-red-200 text-red-700 font-extrabold py-2.5 rounded-xl text-xs">
 										<Icon name="x-circle" class="w-3.5 h-3.5" /> Rejected
 									</span>
@@ -522,6 +581,19 @@
 					</div>
 
 					<div class="flex flex-col gap-1.5">
+						<label class="text-[10px] font-bold text-slate-500 uppercase" for="dpgender">Gender * (Sets Cooldown Rules)</label>
+						<select
+							id="dpgender"
+							bind:value={profileGender}
+							class="border border-slate-200 p-3 rounded-xl text-sm bg-white"
+							disabled={!isEditing}
+						>
+							<option value="male">Male (90 days cooldown)</option>
+							<option value="female">Female (120 days cooldown)</option>
+						</select>
+					</div>
+
+					<div class="flex flex-col gap-1.5">
 						<label class="text-[10px] font-bold text-slate-500 uppercase" for="dpbg">Blood Group *</label>
 						<select
 							id="dpbg"
@@ -554,11 +626,11 @@
 							type="checkbox"
 							id="dpavailability"
 							bind:checked={profileIsAvailable}
-							class="w-4 h-4 text-red-650 accent-red-700"
-							disabled={!isEditing}
+							class="w-4 h-4 text-red-650 accent-red-700 disabled:opacity-50"
+							disabled={!isEditing || data.recovery?.inRecovery}
 						/>
 						<label for="dpavailability" class="text-xs font-semibold text-slate-800 cursor-pointer">
-							Active & Available for urgent emergency requests
+							{data.recovery?.inRecovery ? 'Temporarily Locked (Donation Recovery Active)' : 'Active & Available for urgent emergency requests'}
 						</label>
 					</div>
 				</div>
@@ -631,4 +703,8 @@
 			</div>
 		</div>
 	</div>
+{/if}
+
+{#if activeChatId}
+	<EmergencyChat chatId={activeChatId} user={data.user} onClose={() => activeChatId = null} />
 {/if}

@@ -1,4 +1,5 @@
-import { database } from '$lib/server/db.js';
+import { database, getUserById } from '$lib/server/db.js';
+import { calculateDonorRecovery } from '$lib/server/recovery.js';
 import { redirect } from '@sveltejs/kit';
 
 /** @type {import('./$types').PageServerLoad} */
@@ -6,12 +7,18 @@ export async function load({ locals }) {
 	if (!locals.user || locals.user.role !== 'donor') {
 		return {
 			user: null,
+			recovery: null,
+			chats: [],
 			requests: [],
 			history: [],
 			badges: [],
 			stats: { donationsCount: 0, livesSavedCount: 0 }
 		};
 	}
+
+	const dbUser = await getUserById(locals.user.id) || locals.user;
+	const recovery = calculateDonorRecovery(dbUser);
+	const chats = await database.getChatsForUser(locals.user.email, locals.user.id);
 
 	const donations = await database.getDonations();
 	const bloodRequests = await database.getRequests();
@@ -23,7 +30,7 @@ export async function load({ locals }) {
 
 	// Load pending, accepted, or completed blood requests that match donor's blood group
 	const matchedRequests = bloodRequests.filter(
-		r => (r.status === 'Pending' || r.status === 'Accepted' || r.status === 'Completed') && r.bloodGroup === locals.user.bloodGroup
+		r => (r.status === 'Pending' || r.status === 'Accepted' || r.status === 'Completed') && r.bloodGroup === dbUser.bloodGroup
 	);
 
 	const requests = (await Promise.all(
@@ -59,7 +66,9 @@ export async function load({ locals }) {
 	];
 
 	return {
-		user: locals.user,
+		user: dbUser,
+		recovery,
+		chats,
 		requests,
 		history,
 		badges,

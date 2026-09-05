@@ -3,8 +3,20 @@
 	import { db } from '$lib/auth.svelte.js';
 	import Icon from '$lib/components/Icon.svelte';
 	import { getInitials, getAvatarColor } from '$lib/avatar.js';
+	import GoogleMap from '$lib/components/GoogleMap.svelte';
+	import EmergencyChat from '$lib/components/EmergencyChat.svelte';
 
 	let { data } = $props();
+
+	// Active chat state
+	let activeChatId = $state(null);
+	let showPhoneMap = $state(new Map());
+
+	function toggleShowPhone(key) {
+		const updated = new Map(showPhoneMap);
+		updated.set(key, !updated.get(key));
+		showPhoneMap = updated;
+	}
 
 	// Request Blood form states
 	let patientName = $state('');
@@ -123,6 +135,7 @@
 	let searchBloodGroup = $state('all');
 	let searchCity = $state('');
 	let searchAvailability = $state('all');
+	let searchMaxDistance = $state('all');
 
 	// Filtered Donors List
 	let filteredDonors = $derived.by(() => {
@@ -130,14 +143,15 @@
 		return donors.filter(d => {
 			if (searchBloodGroup !== 'all' && d.bloodGroup !== searchBloodGroup) return false;
 			if (searchCity) {
-				const donorCity = (d.location || '').toLowerCase();
+				const donorCity = (d.location || d.approxArea || '').toLowerCase();
 				if (!donorCity.includes(searchCity.toLowerCase())) return false;
 			}
 			const isAvail = d.isAvailable !== false;
 			if (searchAvailability === 'available' && !isAvail) return false;
 			if (searchAvailability === 'unavailable' && isAvail) return false;
+			if (searchMaxDistance !== 'all' && d.distanceKm > Number(searchMaxDistance)) return false;
 			return true;
-		});
+		}).sort((a, b) => (a.distanceKm || 0) - (b.distanceKm || 0));
 	});
 
 	// Blood Availability Analytics
@@ -449,16 +463,39 @@
 														</div>
 													</div>
 
-													{#if dr.status === 'Accepted' && dr.donorDetails}
-														<div class="mt-3 pt-2.5 border-t border-slate-50 text-[10px] text-slate-500 space-y-1 bg-slate-50/50 p-2 rounded-lg">
-															<p><strong>Blood Group:</strong> {dr.donorDetails.bloodGroup}</p>
-															<p><strong>City:</strong> {dr.donorDetails.location || 'Not Specified'}</p>
-															<p><strong>Phone:</strong> {dr.donorDetails.phone || 'Not Provided'}</p>
-															<p><strong>Email:</strong> {dr.donorDetails.email}</p>
-															{#if dr.donorDetails.phone}
-																<a href="tel:{dr.donorDetails.phone}" class="mt-2 block w-full text-center bg-primary hover:bg-red-700 text-white font-bold py-1 rounded-md text-[9px] transition">
-																	Call Donor
-																</a>
+													{#if dr.status === 'Accepted'}
+														<div class="mt-3 pt-2.5 border-t border-slate-50 text-[10px] text-slate-500 space-y-2 bg-slate-50/50 p-2.5 rounded-lg">
+															<p><strong>Blood Group:</strong> {dr.donorDetails?.bloodGroup || req.bloodGroup}</p>
+															<p><strong>Approx Distance:</strong> {dr.distanceKm ? `${dr.distanceKm} km away` : 'Nearby'}</p>
+															<p><strong>Approx Area:</strong> {dr.approxArea || dr.donorDetails?.location || 'Local'}</p>
+
+															<!-- PRIMARY ACTION: Open Emergency Chat -->
+															<button
+																onclick={() => activeChatId = `${req.id}_${dr.donorId}`}
+																class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-extrabold py-2 rounded-xl text-xs transition cursor-pointer flex items-center justify-center gap-1.5 shadow-md"
+															>
+																<Icon name="message-square" class="w-3.5 h-3.5" /> 💬 Open Emergency Chat
+															</button>
+
+															<!-- SECONDARY / OPTIONAL FALLBACK -->
+															{#if showPhoneMap.get(`${req.id}_${dr.donorId}`)}
+																<div class="pt-2 border-t border-slate-200 text-[9px] text-slate-600 space-y-1">
+																	<p><strong>Phone:</strong> {dr.donorDetails?.phone || 'Not Provided'}</p>
+																	<p><strong>Email:</strong> {dr.donorDetails?.email}</p>
+																	{#if dr.donorDetails?.phone}
+																		<a href="tel:{dr.donorDetails.phone}" class="block w-full text-center bg-slate-800 text-white font-bold py-1 rounded-md text-[9px] transition">
+																			Call Phone
+																		</a>
+																	{/if}
+																</div>
+															{:else}
+																<button
+																	type="button"
+																	onclick={() => toggleShowPhone(`${req.id}_${dr.donorId}`)}
+																	class="w-full text-center text-[9px] font-bold text-slate-500 hover:text-slate-700 underline cursor-pointer mt-1"
+																>
+																	View Optional Phone Contact
+																</button>
 															{/if}
 														</div>
 													{/if}
@@ -591,16 +628,31 @@
 			</form>
 		</div>
 
+	<!-- TAB: MAP / NEARBY -->
+	{:else if db.activeTab === 'map'}
+		<div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-4 text-left">
+			<div class="border-b border-slate-100 pb-3 flex justify-between items-center flex-wrap gap-2">
+				<div>
+					<h2 class="text-xl font-bold text-slate-900 flex items-center gap-2">
+						<Icon name="map" class="w-6 h-6 text-red-600" /> Interactive Nearby Map
+					</h2>
+					<p class="text-xs text-slate-500">Explore available donors, blood banks, and hospital locations nearby.</p>
+				</div>
+			</div>
+
+			<GoogleMap donors={data.donors} bloodBanks={data.bloodBanks} userLocation={data.user} height="560px" />
+		</div>
+
 	<!-- TAB: SEARCH DONORS -->
 	{:else if db.activeTab === 'search-donors'}
 		<div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-6 text-left">
 			<div class="border-b border-slate-100 pb-4">
 				<h2 class="text-xl font-bold text-slate-900">Search Compatibility Matches</h2>
-				<p class="text-xs text-slate-500 mt-1">Locate active blood donors by blood group, city, or availability parameters.</p>
+				<p class="text-xs text-slate-500 mt-1">Locate active blood donors by blood group, city, availability, or distance radius parameters.</p>
 			</div>
 
 			<!-- Filters Form -->
-			<div class="grid sm:grid-cols-3 gap-4 bg-slate-50/50 p-4 border border-slate-100 rounded-2xl">
+			<div class="grid sm:grid-cols-4 gap-4 bg-slate-50/50 p-4 border border-slate-100 rounded-2xl">
 				<div class="flex flex-col gap-1.5">
 					<label class="text-[10px] font-bold text-slate-500 uppercase">Blood Group</label>
 					<select
@@ -624,6 +676,20 @@
 						<option>A1B-</option>
 						<option>A2B+</option>
 						<option>A2B-</option>
+					</select>
+				</div>
+
+				<div class="flex flex-col gap-1.5">
+					<label class="text-[10px] font-bold text-slate-500 uppercase">Distance Radius</label>
+					<select
+						bind:value={searchMaxDistance}
+						class="border border-slate-200 p-2.5 rounded-xl text-xs bg-white focus:outline-none"
+					>
+						<option value="all">Any Distance</option>
+						<option value="5">Within 5 km</option>
+						<option value="10">Within 10 km</option>
+						<option value="25">Within 25 km</option>
+						<option value="50">Within 50 km</option>
 					</select>
 				</div>
 
@@ -681,7 +747,9 @@
 									</div>
 									<div>
 										<h4 class="font-bold text-slate-900 text-sm">{donor.name}</h4>
-										<p class="text-[10px] text-gray-550 flex items-center gap-1"><Icon name="map-pin" class="w-3 h-3 text-gray-400" /> {donor.location || 'Not Specified'}</p>
+										<p class="text-[10px] text-gray-550 flex items-center gap-1">
+											<Icon name="map-pin" class="w-3 h-3 text-gray-400" /> Approx Area: {donor.approxArea || donor.location || 'Anna Nagar'} • <strong class="text-red-700">{donor.distanceKm ? `${donor.distanceKm} km away` : 'Nearby'}</strong>
+										</p>
 									</div>
 								</div>
 
@@ -696,14 +764,7 @@
 
 								<div class="mt-3 bg-slate-50 border border-slate-100 p-2.5 rounded-xl space-y-1 text-xs text-slate-700">
 									<p class="flex items-center gap-1.5"><Icon name="mail" class="w-3.5 h-3.5 text-gray-400" /> Email: <strong>{donor.email}</strong></p>
-									{#if donor.phone}
-										<p class="flex items-center justify-between gap-1.5">
-											<span class="flex items-center gap-1.5"><Icon name="phone" class="w-3.5 h-3.5 text-gray-400" /> Phone: <strong>{donor.phone}</strong></span>
-											<a href="tel:{donor.phone}" class="bg-primary hover:bg-red-700 text-white font-bold px-3 py-0.5 rounded-lg text-[10px] transition">
-												Call
-											</a>
-										</p>
-									{/if}
+									<p class="text-[9px] text-slate-400 italic mt-1">Exact home location protected for donor privacy.</p>
 								</div>
 							</div>
 						{/each}
@@ -899,4 +960,8 @@
 			</div>
 		</div>
 	</div>
+{/if}
+
+{#if activeChatId}
+	<EmergencyChat chatId={activeChatId} user={data.user} onClose={() => activeChatId = null} />
 {/if}

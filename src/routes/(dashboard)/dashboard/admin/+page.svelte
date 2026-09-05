@@ -5,8 +5,11 @@
 	import { onMount } from 'svelte';
 	import Icon from '$lib/components/Icon.svelte';
 	import { getInitials, getAvatarColor } from '$lib/avatar.js';
+	import EmergencyChat from '$lib/components/EmergencyChat.svelte';
 
 	let { data, form } = $props();
+
+	let adminInspectChatId = $state(null);
 
 	// Search & Filter State
 	let userSearchQuery = $state('');
@@ -978,22 +981,107 @@
 				<div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
 					{#each filteredDonors as donor}
 						<div class="border border-slate-100 p-5 rounded-3xl shadow-sm bg-white space-y-3">
-							<div class="flex items-center gap-3">
-								<span class="w-12 h-12 bg-red-700 text-white font-extrabold text-lg rounded-2xl flex items-center justify-center shadow-md shadow-red-700/10">
-									{donor.bloodGroup}
-								</span>
-								<div>
-									<h4 class="font-bold text-slate-900 text-sm">{donor.name}</h4>
-									<span class="text-[9px] text-slate-400 flex items-center gap-1"><Icon name="map-pin" class="w-3.5 h-3.5 text-gray-400" /> {donor.location}</span>
+							<div class="flex items-center justify-between">
+								<div class="flex items-center gap-3">
+									<span class="w-12 h-12 bg-red-700 text-white font-extrabold text-lg rounded-2xl flex items-center justify-center shadow-md shadow-red-700/10 shrink-0">
+										{donor.bloodGroup}
+									</span>
+									<div>
+										<h4 class="font-bold text-slate-900 text-sm">{donor.name}</h4>
+										<span class="text-[9px] text-slate-400 flex items-center gap-1"><Icon name="map-pin" class="w-3.5 h-3.5 text-gray-400" /> {donor.location}</span>
+									</div>
 								</div>
+								<span class="px-2 py-0.5 rounded-full text-[9px] font-extrabold uppercase tracking-wider shrink-0
+									{donor.recovery?.computedStatus === 'RECOVERY' ? 'bg-amber-100 text-amber-800 border border-amber-200' : ''}
+									{donor.recovery?.computedStatus === 'AVAILABLE' ? 'bg-emerald-100 text-emerald-800 border border-emerald-200' : ''}
+									{donor.recovery?.computedStatus === 'UNAVAILABLE' ? 'bg-slate-100 text-slate-700 border border-slate-200' : ''}
+									{donor.recovery?.computedStatus === 'SUSPENDED' ? 'bg-red-100 text-red-800 border border-red-200' : ''}">
+									{donor.recovery?.computedStatus || 'Available'}
+								</span>
 							</div>
-							<div class="text-[10px] space-y-1 text-slate-500 bg-slate-50 p-3 rounded-xl">
-								<p class="flex items-center gap-1.5"><Icon name="phone" class="w-3.5 h-3.5 text-gray-405" /> <strong>Phone:</strong> {donor.phone}</p>
-								<p class="flex items-center gap-1.5"><Icon name="mail" class="w-3.5 h-3.5 text-gray-405" /> <strong>Email:</strong> {donor.email}</p>
-								<p class="flex items-center gap-1.5"><Icon name="shield" class="w-3.5 h-3.5 text-gray-405" /> <strong>Status:</strong> <span class="font-bold uppercase text-emerald-600">{donor.status}</span></p>
+							<div class="text-[10px] space-y-1.5 text-slate-600 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+								<p class="flex items-center gap-1.5"><Icon name="phone" class="w-3.5 h-3.5 text-gray-400" /> <strong>Phone:</strong> {donor.phone}</p>
+								<p class="flex items-center gap-1.5"><Icon name="mail" class="w-3.5 h-3.5 text-gray-400" /> <strong>Email:</strong> {donor.email}</p>
+								<p><strong>Last Donation Date:</strong> <span class="font-bold text-slate-900">{donor.recovery?.lastDonationDate || 'No donations logged'}</span></p>
+								<p><strong>Next Eligible Date:</strong> <span class="font-bold text-emerald-700">{donor.recovery?.nextEligibleDate || 'Eligible Now'}</span></p>
+								<p><strong>Recovery Period:</strong> {donor.recovery?.totalDays || 90} Days ({donor.gender || 'male'})</p>
+								<p><strong>Total Completed Donations:</strong> <strong class="text-red-700">{donor.totalCompletedDonations || 0} Drives</strong></p>
+								<p><strong>Current Availability:</strong> <span class="font-bold">{donor.isAvailable !== false ? 'Enabled' : 'Disabled'}</span></p>
 							</div>
 						</div>
 					{/each}
+				</div>
+			{/if}
+		</div>
+
+	<!-- TAB: EMERGENCY CHATS MODERATION -->
+	{:else if db.activeTab === 'chats'}
+		<div class="bg-white border border-slate-100 rounded-3xl p-6 shadow-sm space-y-6 text-left">
+			<div class="border-b border-slate-100 pb-4 flex justify-between items-center flex-wrap gap-2">
+				<div>
+					<h3 class="text-lg font-bold text-slate-900 flex items-center gap-2">
+						<Icon name="message-square" class="w-5 h-5 text-red-600" /> Emergency Chats Moderation
+					</h3>
+					<p class="text-xs text-slate-500">Overview of emergency chat sessions. Message history is private unless reported for safety review.</p>
+				</div>
+			</div>
+
+			{#if !data.adminChats || data.adminChats.length === 0}
+				<div class="p-8 text-center bg-slate-50 border border-slate-100 rounded-2xl">
+					<p class="text-xs text-slate-500 font-semibold">No emergency chat sessions found.</p>
+				</div>
+			{:else}
+				<div class="overflow-x-auto">
+					<table class="w-full border-collapse text-left text-sm">
+						<thead>
+							<tr class="border-b border-slate-100 text-slate-400 text-[10px] font-bold uppercase">
+								<th class="py-3 px-4">Request ID</th>
+								<th class="py-3 px-4">Recipient</th>
+								<th class="py-3 px-4">Matched Donor</th>
+								<th class="py-3 px-4">Chat Status</th>
+								<th class="py-3 px-4">Safety Report Status</th>
+								<th class="py-3 px-4">Last Activity</th>
+								<th class="py-3 px-4 text-right">Actions</th>
+							</tr>
+						</thead>
+						<tbody class="divide-y divide-slate-50 text-xs">
+							{#each data.adminChats as chat}
+								<tr class="hover:bg-slate-50/50 transition">
+									<td class="py-3 px-4 font-bold text-slate-900">#{chat.requestId} ({chat.bloodGroup})</td>
+									<td class="py-3 px-4">{chat.recipientName} ({chat.recipientEmail})</td>
+									<td class="py-3 px-4">{chat.donorName} ({chat.donorEmail})</td>
+									<td class="py-3 px-4">
+										<span class="px-2 py-0.5 rounded text-[9px] font-extrabold uppercase
+											{chat.status === 'archived' ? 'bg-slate-100 text-slate-600' : 'bg-emerald-50 text-emerald-700 border border-emerald-200'}">
+											{chat.status}
+										</span>
+									</td>
+									<td class="py-3 px-4">
+										{#if chat.reported}
+											<span class="px-2 py-0.5 rounded text-[9px] font-extrabold bg-red-100 text-red-700 border border-red-200 animate-pulse">
+												⚠️ REPORTED: {chat.reportReason}
+											</span>
+										{:else}
+											<span class="text-[10px] text-slate-400">Normal / Clear</span>
+										{/if}
+									</td>
+									<td class="py-3 px-4 text-slate-500">{new Date(chat.lastMessageAt || chat.createdAt).toLocaleString()}</td>
+									<td class="py-3 px-4 text-right">
+										{#if chat.reported}
+											<button
+												onclick={() => adminInspectChatId = chat.id}
+												class="bg-red-600 hover:bg-red-700 text-white font-bold px-3 py-1 rounded-xl text-[10px] transition cursor-pointer"
+											>
+												Inspect Reported Chat
+											</button>
+										{:else}
+											<span class="text-[9px] text-slate-400 italic">Encrypted Private</span>
+										{/if}
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
 				</div>
 			{/if}
 		</div>
@@ -2064,4 +2152,8 @@
 			</button>
 		</div>
 	</div>
+{/if}
+
+{#if adminInspectChatId}
+	<EmergencyChat chatId={adminInspectChatId} user={data.user} onClose={() => adminInspectChatId = null} />
 {/if}

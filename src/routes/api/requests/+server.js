@@ -39,15 +39,39 @@ export async function POST({ request, locals }) {
 	try {
 		const newReq = await addRequest(body, userEmail);
 
-		// Find matching donors
+		// Find matching donors (Compatible blood group, Verified email, Active account, Available, NOT in recovery)
 		try {
+			const { calculateDonorRecovery } = await import('$lib/server/recovery.js');
+			const { calculateHaversineDistance, resolveLocationCoordinates, getFuzzedDonorLocation } = await import('$lib/server/location.js');
+
+			const reqCoords = (body.lat != null && body.lng != null)
+				? { lat: body.lat, lng: body.lng }
+				: resolveLocationCoordinates(`${body.hospital} ${body.city}`);
+
 			const allUsers = await database.getUsers();
-			const matchingDonors = allUsers.filter(u => 
-				u.role === 'donor' && 
-				u.status === 'active' && 
-				u.isAvailable !== false &&
-				u.bloodGroup === body.bloodGroup
-			);
+			const matchingDonors = allUsers
+				.filter(u => {
+					if (u.role !== 'donor') return false;
+					if (u.status === 'suspended') return false;
+					if (u.emailVerified === false) return false;
+					if (u.bloodGroup !== body.bloodGroup) return false;
+					if (u.isAvailable === false) return false;
+
+					// Enforce Recovery Cooldown Rule
+					const rec = calculateDonorRecovery(u);
+					if (rec.inRecovery) return false;
+
+					return true;
+				})
+				.map(donor => {
+					const donorLoc = getFuzzedDonorLocation(donor);
+					const dist = calculateHaversineDistance(reqCoords.lat, reqCoords.lng, donorLoc.lat, donorLoc.lng);
+					return {
+						...donor,
+						distanceKm: dist != null ? dist : 999
+					};
+				})
+				.sort((a, b) => a.distanceKm - b.distanceKm);
 
 			const { sendEmail } = await import('$lib/server/email.js');
 			for (const donor of matchingDonors) {
@@ -67,11 +91,11 @@ export async function POST({ request, locals }) {
 									<p style="margin: 4px 0;"><strong>Units Required:</strong> ${body.units} Bags</p>
 									<p style="margin: 4px 0;"><strong>Hospital Name:</strong> ${body.hospital}</p>
 									<p style="margin: 4px 0;"><strong>City:</strong> ${body.city}</p>
-									<p style="margin: 4px 0;"><strong>Recipient Contact Number:</strong> ${body.contact}</p>
 									<p style="margin: 4px 0;"><strong>Urgency Level:</strong> <span style="font-weight: bold; color: ${body.urgency === 'Critical' ? '#b91c1c' : '#d97706'}">${body.urgency || 'Normal'}</span></p>
+									${donor.distanceKm < 900 ? `<p style="margin: 4px 0;"><strong>Approximate Distance:</strong> ${donor.distanceKm} km away</p>` : ''}
 								</div>
 								
-								<p>If you are available to donate, please log in to your donor dashboard to accept this emergency request ticket.</p>
+								<p>If you are available to donate, please log in to your donor dashboard to accept this emergency request ticket and connect via Private Emergency Chat.</p>
 								<br/>
 								<p style="margin-top: 10px; font-weight: bold; color: #1e3a5f;">- LifeLink Team</p>
 							</div>

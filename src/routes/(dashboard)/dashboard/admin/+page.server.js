@@ -19,23 +19,36 @@ export async function load({ locals }) {
 		};
 	}
 
+	const { calculateDonorRecovery } = await import('$lib/server/recovery.js');
+
 	const users = await database.getUsers();
 	const bloodRequests = await database.getRequests();
 	const bloodBanks = await database.getBloodBanks();
 	const donations = await database.getDonations();
 	const logs = await database.getSystemLogs();
+	const adminChats = await database.getAdminChats();
+
+	const donorsList = users.filter(u => u.role === 'donor').map(u => {
+		const rec = calculateDonorRecovery(u);
+		const donorDonations = donations.filter(d => d.donorId === u.id || d.donorName.toLowerCase() === u.name.toLowerCase());
+		return {
+			...u,
+			recovery: rec,
+			totalCompletedDonations: donorDonations.length
+		};
+	});
 
 	const requestsWithResponses = await Promise.all(
 		bloodRequests.map(async (req) => {
 			const responses = await database.getRequestResponses(req.id);
 			
 			// Find all matching donors for this request
-			const matchingDonors = users.filter(u => 
-				u.role === 'donor' && 
+			const matchingDonors = donorsList.filter(u => 
 				u.status === 'active' && 
 				u.isAvailable !== false &&
 				u.emailVerified === true &&
-				u.bloodGroup === req.bloodGroup
+				u.bloodGroup === req.bloodGroup &&
+				!u.recovery.inRecovery
 			);
 
 			// Map matching donors to their responses or 'Waiting' status
@@ -86,7 +99,6 @@ export async function load({ locals }) {
 	};
 
 	// Calculate counts
-	const donorsList = users.filter(u => u.role === 'donor');
 	const totalDonors = donorsList.length;
 	const totalRequests = bloodRequests.length;
 	const resolvedRequests = bloodRequests.filter(r => r.status === 'Completed').length;
@@ -140,6 +152,7 @@ export async function load({ locals }) {
 		bloodBanks,
 		requests: requestsWithResponses,
 		donations,
+		adminChats,
 		systemLogs: logs,
 		analytics,
 		stats

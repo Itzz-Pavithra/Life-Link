@@ -32,9 +32,29 @@ export async function POST({ request, locals }) {
 		// Save response
 		const response = await database.saveDonorResponse(requestId, locals.user.id, locals.user.name, status);
 
-		// If accepted, update parent request status and send email notification
+		// If accepted, update parent request status, create chat session, and send email notification
 		if (status === 'Accepted') {
 			await updateBloodRequestStatus(requestId, 'Accepted', locals.user.email);
+
+			// Create/Activate Private Emergency Chat session
+			try {
+				const { getUserByEmail } = await import('$lib/server/db.js');
+				const recipientUser = await getUserByEmail(req.submittedBy);
+				await database.createChatSession({
+					requestId: req.id,
+					patientName: req.patientName,
+					bloodGroup: req.bloodGroup,
+					urgency: req.urgency,
+					hospital: req.hospital,
+					recipientEmail: req.submittedBy,
+					recipientName: recipientUser ? recipientUser.name : 'Recipient',
+					donorId: locals.user.id,
+					donorEmail: locals.user.email,
+					donorName: locals.user.name
+				});
+			} catch (chatErr) {
+				console.error('Error creating chat session upon acceptance:', chatErr);
+			}
 
 			// Add log
 			await addLog(locals.user.email, `Accepted blood request for ${req.patientName}`);
@@ -48,18 +68,16 @@ export async function POST({ request, locals }) {
 						<div style="font-family: sans-serif; max-width: 600px; margin: auto; padding: 20px; border: 1px solid #f1f5f9; border-radius: 16px;">
 							<h2 style="color: #10b981; border-bottom: 2px solid #ecfdf5; padding-bottom: 10px; text-align: center;">Emergency Request Accepted</h2>
 							<p>Hello,</p>
-							<p>Great news! A verified active donor has <strong>ACCEPTED</strong> your blood request for <strong>${req.patientName}</strong>.</p>
+							<p>Great news! Verified donor <strong>${locals.user.name}</strong> (<strong>${locals.user.bloodGroup}</strong>) has <strong>ACCEPTED</strong> your emergency blood request for <strong>${req.patientName}</strong>.</p>
 							
-							<h3 style="color: #1e3a5f;">Donor Contact Details:</h3>
 							<div style="background-color: #f0fdf4; border: 1px solid #d1fae5; padding: 15px; border-radius: 12px; margin: 20px 0;">
-								<p style="margin: 4px 0;"><strong>Name:</strong> ${locals.user.name}</p>
+								<p style="margin: 4px 0;"><strong>Donor Name:</strong> ${locals.user.name}</p>
 								<p style="margin: 4px 0;"><strong>Blood Group:</strong> ${locals.user.bloodGroup}</p>
 								<p style="margin: 4px 0;"><strong>Location/City:</strong> ${locals.user.location}</p>
-								<p style="margin: 4px 0;"><strong>Phone Number:</strong> ${locals.user.phone || 'Not Provided'}</p>
-								<p style="margin: 4px 0;"><strong>Email:</strong> ${locals.user.email}</p>
+								<p style="margin: 4px 0; color: #047857; font-weight: bold;">💬 Private Emergency Chat is now active on your LifeLink dashboard.</p>
 							</div>
 							
-							<p>Please get in touch with the donor as soon as possible to coordinate the donation.</p>
+							<p>Log in to your LifeLink dashboard to open the Private Emergency Chat and coordinate the donation details safely.</p>
 							<br/>
 							<p style="margin-top: 10px; font-weight: bold; color: #1e3a5f;">- LifeLink Team</p>
 						</div>
